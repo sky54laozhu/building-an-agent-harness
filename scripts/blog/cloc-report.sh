@@ -27,16 +27,18 @@ command -v node >/dev/null 2>&1 || {
 
 cd "$repo"
 
-tmp_engine="$(mktemp -t cloc-engine.XXXXXX.json)"
-tmp_web="$(mktemp -t cloc-web.XXXXXX.json)"
-trap 'rm -f "$tmp_engine" "$tmp_web"' EXIT
+tmp_dir="$(mktemp -d -t cloc-report.XXXXXX)"
+tmp_engine="$tmp_dir/engine.json"
+tmp_web="$tmp_dir/web.json"
+trap 'rm -rf "$tmp_dir"' EXIT
 
 cloc packages/engine/src --json > "$tmp_engine"
 cloc packages/web/app packages/web/components packages/web/lib --json > "$tmp_web"
 
 node -e '
-const e = require(process.argv[1]);
-const w = require(process.argv[2]);
+const fs = require("fs");
+const e = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
+const w = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const eTS = (e.TypeScript || {}).code || 0;
 const wTS = (w.TypeScript || {}).code || 0;
 console.log(JSON.stringify({ engine_ts: eTS, web_ts: wTS, total: eTS + wTS }, null, 2));
