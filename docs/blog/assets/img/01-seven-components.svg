@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14">
+  <title>Agent Harness 七层组件同心圆图</title>
+  <desc>以同心圆方式展示 Agent Harness 的 7 个必备组件：最内圈是无状态 LLM API；外层依次为 Agent Loop、Context Engine、Tool Protocol 与 Extension Points、Sandbox 与 Security、Session 与 Streaming、DevOps。圆越往外，越靠近用户与生产环境。</desc>
+  <style>
+    .label { fill: #1a1a1a; text-anchor: middle; font-weight: 500; }
+    .sub { fill: #5a5a5a; text-anchor: middle; font-size: 12px; }
+    .center { fill: #1a2233; }
+  </style>
+
+  <!-- Outermost: DevOps -->
+  <circle cx="360" cy="360" r="340" fill="#eef4ff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="360" y="40" class="label">DevOps（CI/CD · 部署 · 可观测）</text>
+
+  <!-- Session & Streaming -->
+  <circle cx="360" cy="360" r="290" fill="#dde9ff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="360" y="92" class="label">Session &amp; Streaming（断线续传 · 多模型路由）</text>
+
+  <!-- Sandbox & Security -->
+  <circle cx="360" cy="360" r="240" fill="#c9ddff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="360" y="144" class="label">Sandbox &amp; Security（沙箱 · 路径守卫 · 审批）</text>
+
+  <!-- Extension Points -->
+  <circle cx="360" cy="360" r="190" fill="#b3d0ff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="360" y="196" class="label">Extension Points（Hook · Skill · Plugin · MCP）</text>
+
+  <!-- Tool Protocol -->
+  <circle cx="360" cy="360" r="150" fill="#9cc3ff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="360" y="240" class="label">Tool Protocol（发现 · 调用 · 中断）</text>
+
+  <!-- Context Engine -->
+  <circle cx="360" cy="360" r="110" fill="#7ab2ff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="360" y="284" class="label">Context Engine</text>
+  <text x="360" y="302" class="sub">压缩 · 回放 · 检索</text>
+
+  <!-- Agent Loop -->
+  <circle cx="360" cy="360" r="70" fill="#4f97ff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="360" y="340" class="label" fill="#fff">Agent Loop</text>
+  <text x="360" y="358" class="sub" fill="#e6efff">异步生成器</text>
+
+  <!-- Center: LLM -->
+  <circle cx="360" cy="360" r="32" class="center"/>
+  <text x="360" y="365" class="label" fill="#fff">LLM API</text>
+
+  <!-- Direction arrow on the right -->
+  <text x="700" y="365" class="sub" text-anchor="end">越外 → 越靠近用户与生产</text>
+  <text x="700" y="385" class="sub" text-anchor="end">越内 → 越靠近模型本身</text>
+</svg>

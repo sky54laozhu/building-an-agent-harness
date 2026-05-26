@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14">
+  <title>同一个问题，多家答案：Claude Code / Cursor / Aider / HarWork 在 Harness 五个维度上的取舍</title>
+  <desc>横向对比 Claude Code、Cursor、Aider、HarWork 四个 AI 编程工具在 Loop 形态、上下文压缩、工具协议、沙箱、扩展点五个维度上的设计选择。表格首列为维度，后四列为各家方案，背景按家区分。</desc>
+  <style>
+    .h { font-weight: 600; fill: #1a1a1a; }
+    .c { fill: #2a2a2a; }
+    .row-bg-a { fill: #f6f7f9; }
+    .row-bg-b { fill: #ffffff; }
+    .col-cc { fill: #f0f5ff; }
+    .col-cursor { fill: #f5f0ff; }
+    .col-aider { fill: #fff5ec; }
+    .col-hw { fill: #ecf8ee; }
+    .grid { stroke: #d0d3d8; stroke-width: 1; }
+  </style>
+  <!-- Header row -->
+  <rect x="0" y="0" width="880" height="44" fill="#1a2233"/>
+  <text x="20" y="28" class="h" fill="#fff">维度</text>
+  <text x="200" y="28" class="h" fill="#fff">Claude Code</text>
+  <text x="370" y="28" class="h" fill="#fff">Cursor</text>
+  <text x="540" y="28" class="h" fill="#fff">Aider</text>
+  <text x="710" y="28" class="h" fill="#fff">HarWork</text>
+
+  <!-- Row 1: Loop -->
+  <rect x="0" y="44" width="880" height="60" class="row-bg-a"/>
+  <text x="20" y="80" class="h">Loop 形态</text>
+  <text x="200" y="80" class="c">终端 + 异步生成器</text>
+  <text x="370" y="80" class="c">编辑器内嵌</text>
+  <text x="540" y="80" class="c">终端 + Git</text>
+  <text x="710" y="80" class="c">终端 + Web 双形态</text>
+
+  <!-- Row 2: Context -->
+  <rect x="0" y="104" width="880" height="60" class="row-bg-b"/>
+  <text x="20" y="140" class="h">上下文压缩</text>
+  <text x="200" y="140" class="c">5 层渐进</text>
+  <text x="370" y="140" class="c">编辑器侧检索</text>
+  <text x="540" y="140" class="c">仓库 map + 选择注入</text>
+  <text x="710" y="140" class="c">5 层渐进</text>
+
+  <!-- Row 3: Tool Protocol -->
+  <rect x="0" y="164" width="880" height="60" class="row-bg-a"/>
+  <text x="20" y="200" class="h">工具协议</text>
+  <text x="200" y="200" class="c">Anthropic tool use</text>
+  <text x="370" y="200" class="c">编辑器协议</text>
+  <text x="540" y="200" class="c">Diff 应用</text>
+  <text x="710" y="200" class="c">tool use + 扩展</text>
+
+  <!-- Row 4: Sandbox -->
+  <rect x="0" y="224" width="880" height="60" class="row-bg-b"/>
+  <text x="20" y="260" class="h">沙箱</text>
+  <text x="200" y="260" class="c">OS 进程</text>
+  <text x="370" y="260" class="c">编辑器进程</text>
+  <text x="540" y="260" class="c">Git 工作树</text>
+  <text x="710" y="260" class="c">Per-User 持久 Docker</text>
+
+  <!-- Row 5: Extension -->
+  <rect x="0" y="284" width="880" height="60" class="row-bg-a"/>
+  <text x="20" y="320" class="h">扩展点</text>
+  <text x="200" y="320" class="c">Hook + Skill + Plugin + MCP</text>
+  <text x="370" y="320" class="c">编辑器内</text>
+  <text x="540" y="320" class="c">命令行参数</text>
+  <text x="710" y="320" class="c">Hook + Skill + Plugin</text>
+
+  <!-- Grid lines -->
+  <line x1="180" y1="44" x2="180" y2="344" class="grid"/>
+  <line x1="350" y1="44" x2="350" y2="344" class="grid"/>
+  <line x1="520" y1="44" x2="520" y2="344" class="grid"/>
+  <line x1="690" y1="44" x2="690" y2="344" class="grid"/>
+  <rect x="0" y="0" width="880" height="360" fill="none" stroke="#1a2233" stroke-width="2"/>
+</svg>

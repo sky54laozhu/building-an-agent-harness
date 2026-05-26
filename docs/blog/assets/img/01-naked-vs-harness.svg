@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 520" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14">
+  <title>裸 LLM 调用 vs Agent Harness：同一个 prompt 的不同遭遇</title>
+  <desc>左右两栏对比同一个用户请求"帮我修这个 bug"在两种系统下的处理路径。左侧裸 LLM 只能把代码贴进 prompt 拿回一段文本；右侧 Harness 走完循环、工具、沙箱、上下文、流式后，给出可回滚的文件变更与结构化日志。</desc>
+  <style>
+    .h { font-weight: 700; fill: #1a1a1a; text-anchor: middle; font-size: 18px; }
+    .h2 { font-weight: 600; fill: #1a1a1a; text-anchor: middle; }
+    .box { fill: #fff; stroke: #1a2233; stroke-width: 1.5; }
+    .box-bad { fill: #fff0ec; stroke: #c44a2c; stroke-width: 1.5; }
+    .box-good { fill: #ecf8ee; stroke: #2e7d3a; stroke-width: 1.5; }
+    .lbl { fill: #1a1a1a; text-anchor: middle; }
+    .arrow { fill: none; stroke: #5a5a5a; stroke-width: 1.5; marker-end: url(#mk); }
+    .out-bad { fill: #c44a2c; font-weight: 600; }
+    .out-good { fill: #2e7d3a; font-weight: 600; }
+  </style>
+  <defs>
+    <marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a5a5a"/>
+    </marker>
+  </defs>
+
+  <text x="245" y="32" class="h">裸 LLM 调用</text>
+  <text x="735" y="32" class="h">Agent Harness</text>
+
+  <!-- Common user prompt -->
+  <rect x="380" y="56" width="220" height="48" class="box"/>
+  <text x="490" y="86" class="h2">用户：帮我修这个 bug</text>
+
+  <!-- LEFT: naked path -->
+  <rect x="80" y="140" width="330" height="50" class="box-bad"/>
+  <text x="245" y="170" class="lbl">把整个文件贴进 prompt</text>
+  <path d="M490,104 L245,140" class="arrow"/>
+
+  <rect x="80" y="210" width="330" height="50" class="box-bad"/>
+  <text x="245" y="240" class="lbl">POST /v1/messages（单次同步调用）</text>
+  <path d="M245,190 L245,210" class="arrow"/>
+
+  <rect x="80" y="280" width="330" height="50" class="box-bad"/>
+  <text x="245" y="310" class="lbl">收到一大段文本 + 一段 diff</text>
+  <path d="M245,260 L245,280" class="arrow"/>
+
+  <rect x="80" y="350" width="330" height="120" class="box-bad"/>
+  <text x="245" y="378" class="lbl out-bad">没工具、没沙箱、没历史</text>
+  <text x="245" y="402" class="lbl">diff 自己 patch ｜ 出错没人回滚</text>
+  <text x="245" y="424" class="lbl">上下文一长就崩 ｜ 断线就丢</text>
+  <text x="245" y="448" class="lbl out-bad">手感像玩具</text>
+  <path d="M245,330 L245,350" class="arrow"/>
+
+  <!-- RIGHT: harness path -->
+  <rect x="570" y="140" width="330" height="50" class="box-good"/>
+  <text x="735" y="170" class="lbl">Agent Loop（异步生成器 + 中断协议）</text>
+  <path d="M490,104 L735,140" class="arrow"/>
+
+  <rect x="570" y="210" width="330" height="50" class="box-good"/>
+  <text x="735" y="240" class="lbl">Tool Protocol：grep · read · edit · run</text>
+  <path d="M735,190 L735,210" class="arrow"/>
+
+  <rect x="570" y="280" width="330" height="50" class="box-good"/>
+  <text x="735" y="310" class="lbl">Sandbox（持久 Docker · 路径守卫）</text>
+  <path d="M735,260 L735,280" class="arrow"/>
+
+  <rect x="570" y="350" width="330" height="50" class="box-good"/>
+  <text x="735" y="380" class="lbl">Context Engine（压缩 · 回放）+ 流式</text>
+  <path d="M735,330 L735,350" class="arrow"/>
+
+  <rect x="570" y="420" width="330" height="70" class="box-good"/>
+  <text x="735" y="448" class="lbl out-good">可回滚文件变更 + 结构化日志</text>
+  <text x="735" y="470" class="lbl">断线能续 ｜ 改主意能撤 ｜ 账单可拆</text>
+  <path d="M735,400 L735,420" class="arrow"/>
+</svg>
