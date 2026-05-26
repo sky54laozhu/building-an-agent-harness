@@ -1,0 +1,22 @@
+# Symlink to internal HarWork spec — never publish
+_spec
+
+# macOS
+.DS_Store
+
+# Editor scratch
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Node tooling (likely to land later for Mermaid CLI etc.)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build / temp
+dist/
+*.log
+*.tmp
