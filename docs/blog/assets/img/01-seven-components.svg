@@ -5,6 +5,7 @@
   <style>
     .label { fill: #1a1a1a; text-anchor: middle; font-weight: 500; }
     .sub { fill: #5a5a5a; text-anchor: middle; font-size: 12px; }
+    .sub-on-ring { fill: #1a1a1a; text-anchor: middle; font-size: 12px; }
     .center { fill: #1a2233; }
   </style>
 
@@ -30,17 +31,17 @@
 
   <!-- Context Engine -->
   <circle cx="360" cy="360" r="110" fill="#7ab2ff" stroke="#1a2233" stroke-width="1.5"/>
-  <text x="360" y="284" class="label">Context Engine</text>
-  <text x="360" y="302" class="sub">压缩 · 回放 · 检索</text>
+  <text x="360" y="268" class="label">Context Engine</text>
+  <text x="360" y="284" class="sub-on-ring">压缩 · 回放 · 检索</text>
 
-  <!-- Agent Loop (label placed in top band of ring to avoid overlap with center disc) -->
+  <!-- Agent Loop (label in top band of ring; sub in bottom band — both avoid center disc) -->
   <circle cx="360" cy="360" r="70" fill="#4f97ff" stroke="#1a2233" stroke-width="1.5"/>
   <text x="360" y="316" class="label">Agent Loop</text>
-  <text x="360" y="412" class="sub">异步生成器</text>
+  <text x="360" y="412" class="sub-on-ring">异步生成器</text>
 
   <!-- Center: LLM -->
   <circle cx="360" cy="360" r="32" class="center"/>
-  <text x="360" y="365" class="label" fill="#fff">LLM API</text>
+  <text x="360" y="366" class="label" fill="#fff" font-size="16" font-weight="600">LLM API</text>
 
   <!-- Direction arrow on the right -->
   <text x="700" y="365" class="sub" text-anchor="end">越外 → 越靠近用户与生产</text>

@@ -52,10 +52,10 @@
   <!-- Row 5: Extension -->
   <rect x="0" y="284" width="880" height="60" class="row-bg-a"/>
   <text x="20" y="320" class="h">扩展点</text>
-  <text x="200" y="320" class="c">Hook + Skill + Plugin + MCP</text>
+  <text x="200" y="320" class="c">Hook·Skill·Plugin·MCP</text>
   <text x="370" y="320" class="c">编辑器内</text>
   <text x="540" y="320" class="c">命令行参数</text>
-  <text x="710" y="320" class="c">Hook + Skill + Plugin</text>
+  <text x="710" y="320" class="c">Hook·Skill·Plugin</text>
 
   <!-- Grid lines -->
   <line x1="180" y1="44" x2="180" y2="344" class="grid"/>
