@@ -1,0 +1,38 @@
+name: blog-lint
+on:
+  pull_request:
+    paths: ['docs/blog/**']
+  push:
+    branches: [master]
+    paths: ['docs/blog/**']
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: zh/en parity check
+        shell: bash
+        run: |
+          shopt -s nullglob
+          articles=(docs/blog/zh/*.md)
+          if [ ${#articles[@]} -eq 0 ]; then
+            echo "no zh articles yet, parity vacuously holds"
+            exit 0
+          fi
+          for f in "${articles[@]}"; do
+            base=$(basename "$f")
+            test -f "docs/blog/en/$base" || { echo "missing en/$base"; exit 1; }
+          done
+
+      - name: image alt check
+        shell: bash
+        run: |
+          # 所有 ![]() 不允许 alt 为空
+          ! grep -rE '!\[\]\(' docs/blog/zh docs/blog/en
+
+      - name: dead link check
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: --no-progress docs/blog/zh docs/blog/en
