@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 520" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14">
-  <title>裸 LLM 调用 vs Agent Harness：同一个 prompt 的不同遭遇</title>
-  <desc>左右两栏对比同一个用户请求"帮我修这个 bug"在两种系统下的处理路径。左侧裸 LLM 只能把代码贴进 prompt 拿回一段文本；右侧 Harness 走完循环、工具、沙箱、上下文、流式后，给出可回滚的文件变更与结构化日志。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 520" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14" role="img" aria-labelledby="t3 d3">
+  <title id="t3">裸 LLM 调用 vs Agent Harness：同一个 prompt 的不同遭遇</title>
+  <desc id="d3">左右两栏对比同一个用户请求"帮我修这个 bug"在两种系统下的处理路径。左侧裸 LLM 只能把代码贴进 prompt 拿回一段文本；右侧 Harness 走完循环、工具、沙箱、上下文、流式后，给出可回滚的文件变更与结构化日志。</desc>
   <style>
     .h { font-weight: 700; fill: #1a1a1a; text-anchor: middle; font-size: 18px; }
     .h2 { font-weight: 600; fill: #1a1a1a; text-anchor: middle; }
@@ -10,8 +10,8 @@
     .box-good { fill: #ecf8ee; stroke: #2e7d3a; stroke-width: 1.5; }
     .lbl { fill: #1a1a1a; text-anchor: middle; }
     .arrow { fill: none; stroke: #5a5a5a; stroke-width: 1.5; marker-end: url(#mk); }
-    .out-bad { fill: #c44a2c; font-weight: 600; }
-    .out-good { fill: #2e7d3a; font-weight: 600; }
+    .out-bad { fill: #9a3a1f; font-weight: 600; }
+    .out-good { fill: #20602b; font-weight: 600; }
   </style>
   <defs>
     <marker id="mk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">

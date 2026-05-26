@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14">
-  <title>Agent Harness 七层组件同心圆图</title>
-  <desc>以同心圆方式展示 Agent Harness 的 7 个必备组件：最内圈是无状态 LLM API；外层依次为 Agent Loop、Context Engine、Tool Protocol 与 Extension Points、Sandbox 与 Security、Session 与 Streaming、DevOps。圆越往外，越靠近用户与生产环境。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 720" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14" role="img" aria-labelledby="t2 d2">
+  <title id="t2">Agent Harness 七层组件同心圆图</title>
+  <desc id="d2">以同心圆方式展示 Agent Harness 的 7 个必备组件：最内圈是无状态 LLM API；外层依次为 Agent Loop、Context Engine、Tool Protocol 与 Extension Points、Sandbox 与 Security、Session 与 Streaming、DevOps。圆越往外，越靠近用户与生产环境。</desc>
   <style>
     .label { fill: #1a1a1a; text-anchor: middle; font-weight: 500; }
     .sub { fill: #5a5a5a; text-anchor: middle; font-size: 12px; }
@@ -33,10 +33,10 @@
   <text x="360" y="284" class="label">Context Engine</text>
   <text x="360" y="302" class="sub">压缩 · 回放 · 检索</text>
 
-  <!-- Agent Loop -->
+  <!-- Agent Loop (label placed in top band of ring to avoid overlap with center disc) -->
   <circle cx="360" cy="360" r="70" fill="#4f97ff" stroke="#1a2233" stroke-width="1.5"/>
-  <text x="360" y="340" class="label" fill="#fff">Agent Loop</text>
-  <text x="360" y="358" class="sub" fill="#e6efff">异步生成器</text>
+  <text x="360" y="316" class="label">Agent Loop</text>
+  <text x="360" y="412" class="sub">异步生成器</text>
 
   <!-- Center: LLM -->
   <circle cx="360" cy="360" r="32" class="center"/>

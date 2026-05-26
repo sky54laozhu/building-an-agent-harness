@@ -1,16 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14">
-  <title>同一个问题，多家答案：Claude Code / Cursor / Aider / HarWork 在 Harness 五个维度上的取舍</title>
-  <desc>横向对比 Claude Code、Cursor、Aider、HarWork 四个 AI 编程工具在 Loop 形态、上下文压缩、工具协议、沙箱、扩展点五个维度上的设计选择。表格首列为维度，后四列为各家方案，背景按家区分。</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 360" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14" role="img" aria-labelledby="t1 d1">
+  <title id="t1">同一个问题，多家答案：Claude Code / Cursor / Aider / HarWork 在 Harness 五个维度上的取舍</title>
+  <desc id="d1">横向对比 Claude Code、Cursor、Aider、HarWork 四个 AI 编程工具在 Loop 形态、上下文压缩、工具协议、沙箱、扩展点五个维度上的设计选择。表格首列为维度，后四列为各家方案，行底色交替提升可读性。</desc>
   <style>
     .h { font-weight: 600; fill: #1a1a1a; }
     .c { fill: #2a2a2a; }
     .row-bg-a { fill: #f6f7f9; }
     .row-bg-b { fill: #ffffff; }
-    .col-cc { fill: #f0f5ff; }
-    .col-cursor { fill: #f5f0ff; }
-    .col-aider { fill: #fff5ec; }
-    .col-hw { fill: #ecf8ee; }
     .grid { stroke: #d0d3d8; stroke-width: 1; }
   </style>
   <!-- Header row -->
