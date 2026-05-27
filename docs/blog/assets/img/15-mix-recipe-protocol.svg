@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 540" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-mp d-mp">
+  <title id="t-mp">mix 配方协议 · JSON 不合成 HTML</title>
+  <desc id="d-mp">展示 HarWork 的 mix-and-match 数据流：用户在 variant-mix-panel.tsx 的 8 个预定义 section 上 button-grid 选择 → UI 用 Object.entries + Map 折叠成 sources 数组 → POST /variants/mix 后服务端校验 sources 跨 project 安全、写一条 designVariants 记录（metadata=JSON.stringify recipe）→ 返回 mixed variant，不合成 HTML。下游 LLM 拿 metadata 重新生成 HTML（当前未自动化）。配方 = 意图，不是产物。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .ui-box { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.5; }
+    .api-box { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .db-box { fill: #dcfce7; stroke: #15803d; stroke-width: 1.5; }
+    .future-box { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; stroke-dasharray: 5 3; }
+    .arrow { stroke: #1d4ed8; stroke-width: 1.5; fill: none; }
+    .arrow-future { stroke: #b91c1c; stroke-width: 1.5; fill: none; stroke-dasharray: 4 2; }
+    .pill-A { fill: #6366f1; stroke: #4338ca; }
+    .pill-B { fill: #14b8a6; stroke: #0f766e; }
+    .pill-C { fill: #f59e0b; stroke: #b45309; }
+    .pill-empty { fill: #fff; stroke: #9ca3af; }
+  </style>
+  <defs>
+    <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d4ed8"/>
+    </marker>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="28" class="header" font-size="14">mix 配方协议 · 服务端只存 metadata，不合成 HTML</text>
+
+  <!-- UI panel: 8 sections × 3 variants grid -->
+  <rect x="20" y="50" width="270" height="370" rx="6" class="ui-box"/>
+  <text x="155" y="70" text-anchor="middle" class="header">① UI · variant-mix-panel.tsx</text>
+  <text x="155" y="86" text-anchor="middle" class="label-mono-sm">8 个预定义 section · 3 个 variant</text>
+
+  <g font-size="10" font-family="SF Mono, Consolas, monospace">
+    <text x="30" y="115" class="label">navigation</text>
+    <rect x="115" y="103" width="32" height="16" rx="3" class="pill-empty"/><text x="131" y="115" text-anchor="middle">A</text>
+    <rect x="152" y="103" width="32" height="16" rx="3" class="pill-B"/><text x="168" y="115" text-anchor="middle" fill="#fff">B</text>
+    <rect x="189" y="103" width="32" height="16" rx="3" class="pill-empty"/><text x="205" y="115" text-anchor="middle">C</text>
+
+    <text x="30" y="145" class="label">hero</text>
+    <rect x="115" y="133" width="32" height="16" rx="3" class="pill-A"/><text x="131" y="145" text-anchor="middle" fill="#fff">A</text>
+    <rect x="152" y="133" width="32" height="16" rx="3" class="pill-empty"/><text x="168" y="145" text-anchor="middle">B</text>
+    <rect x="189" y="133" width="32" height="16" rx="3" class="pill-empty"/><text x="205" y="145" text-anchor="middle">C</text>
+
+    <text x="30" y="175" class="label">content</text>
+    <rect x="115" y="163" width="32" height="16" rx="3" class="pill-empty"/><text x="131" y="175" text-anchor="middle">A</text>
+    <rect x="152" y="163" width="32" height="16" rx="3" class="pill-empty"/><text x="168" y="175" text-anchor="middle">B</text>
+    <rect x="189" y="163" width="32" height="16" rx="3" class="pill-C"/><text x="205" y="175" text-anchor="middle" fill="#fff">C</text>
+
+    <text x="30" y="205" class="label">sidebar</text>
+    <rect x="115" y="193" width="32" height="16" rx="3" class="pill-empty"/><text x="131" y="205" text-anchor="middle">A</text>
+    <rect x="152" y="193" width="32" height="16" rx="3" class="pill-empty"/><text x="168" y="205" text-anchor="middle">B</text>
+    <rect x="189" y="193" width="32" height="16" rx="3" class="pill-empty"/><text x="205" y="205" text-anchor="middle">C</text>
+
+    <text x="30" y="235" class="label">footer</text>
+    <rect x="115" y="223" width="32" height="16" rx="3" class="pill-empty"/><text x="131" y="235" text-anchor="middle">A</text>
+    <rect x="152" y="223" width="32" height="16" rx="3" class="pill-empty"/><text x="168" y="235" text-anchor="middle">B</text>
+    <rect x="189" y="223" width="32" height="16" rx="3" class="pill-C"/><text x="205" y="235" text-anchor="middle" fill="#fff">C</text>
+
+    <text x="30" y="265" class="label">colorScheme</text>
+    <rect x="115" y="253" width="32" height="16" rx="3" class="pill-A"/><text x="131" y="265" text-anchor="middle" fill="#fff">A</text>
+    <rect x="152" y="253" width="32" height="16" rx="3" class="pill-empty"/><text x="168" y="265" text-anchor="middle">B</text>
+    <rect x="189" y="253" width="32" height="16" rx="3" class="pill-empty"/><text x="205" y="265" text-anchor="middle">C</text>
+
+    <text x="30" y="295" class="label">typography</text>
+    <rect x="115" y="283" width="32" height="16" rx="3" class="pill-empty"/><text x="131" y="295" text-anchor="middle">A</text>
+    <rect x="152" y="283" width="32" height="16" rx="3" class="pill-B"/><text x="168" y="295" text-anchor="middle" fill="#fff">B</text>
+    <rect x="189" y="283" width="32" height="16" rx="3" class="pill-empty"/><text x="205" y="295" text-anchor="middle">C</text>
+
+    <text x="30" y="325" class="label">layout</text>
+    <rect x="115" y="313" width="32" height="16" rx="3" class="pill-empty"/><text x="131" y="325" text-anchor="middle">A</text>
+    <rect x="152" y="313" width="32" height="16" rx="3" class="pill-empty"/><text x="168" y="325" text-anchor="middle">B</text>
+    <rect x="189" y="313" width="32" height="16" rx="3" class="pill-empty"/><text x="205" y="325" text-anchor="middle">C</text>
+  </g>
+
+  <rect x="30" y="350" width="250" height="60" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="40" y="368" class="label header">折叠成 sources（line 34-44）</text>
+  <text x="40" y="384" class="label-mono-sm">Map&lt;variantId, sections[]&gt;</text>
+  <text x="40" y="400" class="label-mono-sm">→ Array.from(entries).map(...)</text>
+
+  <!-- API box -->
+  <rect x="310" y="50" width="270" height="370" rx="6" class="api-box"/>
+  <text x="445" y="70" text-anchor="middle" class="header">② POST /variants/mix</text>
+  <text x="445" y="86" text-anchor="middle" class="label-mono-sm">variants/mix/route.ts</text>
+
+  <rect x="320" y="100" width="250" height="80" rx="4" fill="#fff" stroke="#a16207"/>
+  <text x="330" y="118" class="label header">Request body</text>
+  <text x="330" y="134" class="label-mono-sm">{</text>
+  <text x="330" y="148" class="label-mono-sm">  sources: [</text>
+  <text x="330" y="162" class="label-mono-sm">    { variantId: 'A', sections: ['hero',</text>
+  <text x="330" y="174" class="label-mono-sm">      'colorScheme'] }, ...</text>
+
+  <rect x="320" y="190" width="250" height="100" rx="4" fill="#fff" stroke="#a16207"/>
+  <text x="330" y="208" class="label header">服务端校验</text>
+  <text x="330" y="224" class="label-mono-sm">• line 48-53: sources.length ≥ 2</text>
+  <text x="330" y="240" class="label-mono-sm">• line 56-66: 每 source 有 variantId</text>
+  <text x="330" y="256" class="label-mono-sm">  + 非空 sections</text>
+  <text x="330" y="272" class="label-mono-sm">• line 70-82: inArray + projectId 校验</text>
+  <text x="330" y="284" class="note">  防跨 project 偷数据</text>
+
+  <rect x="320" y="300" width="250" height="105" rx="4" fill="#fff" stroke="#a16207"/>
+  <text x="330" y="318" class="label header">buildMixedVariantMetadata</text>
+  <text x="330" y="334" class="label-mono-sm">variant-utils.ts:20-28</text>
+  <text x="330" y="350" class="label-mono-sm">{ type: 'mixed',</text>
+  <text x="330" y="364" class="label-mono-sm">  sources: [...],</text>
+  <text x="330" y="378" class="label-mono-sm">  createdAt: ISO }</text>
+  <text x="330" y="395" class="note">配方 = 意图，不是 HTML</text>
+
+  <!-- DB box -->
+  <rect x="600" y="50" width="260" height="200" rx="6" class="db-box"/>
+  <text x="730" y="70" text-anchor="middle" class="header">③ 写 design_variants</text>
+  <text x="730" y="86" text-anchor="middle" class="label-mono-sm">design-variants-schema.ts</text>
+
+  <rect x="610" y="100" width="240" height="140" rx="4" fill="#fff" stroke="#15803d"/>
+  <text x="620" y="118" class="label-mono-sm">id: nanoid()</text>
+  <text x="620" y="134" class="label-mono-sm">projectId: '...'  variantIndex: 0</text>
+  <text x="620" y="150" class="label-mono-sm">label: 'Mixed Variant'</text>
+  <text x="620" y="166" class="label-mono-sm">snapshotPath: 'variants/.../...json'</text>
+  <text x="620" y="178" class="note">  ↑ 占位符，无文件实际写入</text>
+  <text x="620" y="196" class="label-mono-sm">metadata: JSON.stringify(recipe)</text>
+  <text x="620" y="212" class="label-mono-sm">status: 'active'</text>
+  <text x="620" y="228" class="note">  → 201 返回客户端</text>
+
+  <!-- Future / agent step -->
+  <rect x="600" y="265" width="260" height="155" rx="6" class="future-box"/>
+  <text x="730" y="285" text-anchor="middle" class="header" fill="#b91c1c">④ 当前未自动化的环节</text>
+
+  <rect x="610" y="295" width="240" height="115" rx="4" fill="#fff" stroke="#b91c1c"/>
+  <text x="620" y="313" class="label header" fill="#b91c1c">LLM 拿 metadata 重新生成</text>
+  <text x="620" y="331" class="label-mono-sm">读 mixed variant 的 metadata.sources</text>
+  <text x="620" y="347" class="label-mono-sm">→ 拉对应 variant 的 snapshotHtml</text>
+  <text x="620" y="363" class="label-mono-sm">→ 拼 prompt: "用 A 的 hero,</text>
+  <text x="620" y="377" class="label-mono-sm">    B 的 nav, C 的 footer"</text>
+  <text x="620" y="395" class="note">当前需要用户在 chat 里手动触发</text>
+
+  <line x1="290" y1="230" x2="320" y2="230" class="arrow" marker-end="url(#ar1)"/>
+  <line x1="580" y1="350" x2="610" y2="160" class="arrow" marker-end="url(#ar1)"/>
+  <line x1="730" y1="245" x2="730" y2="262" class="arrow-future" marker-end="url(#ar2)"/>
+
+  <text x="20" y="455" class="header">本质押注</text>
+  <text x="20" y="475" class="label-sm">把"hero 是什么 DOM 节点"的语义判断交给 LLM；服务端只保管意图（哪个 variant 的哪个 section）</text>
+  <text x="20" y="492" class="label-sm">→ 服务端不写 section diff/merge 算法 · AI 改 HTML 结构（&lt;nav&gt; ↔ &lt;header&gt;）时算法不用跟着改</text>
+  <text x="20" y="509" class="note">代价：服务端→LLM 重新生成的链路在当前 codebase 还没自动化</text>
+</svg>

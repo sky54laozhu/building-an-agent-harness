@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 540" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-sm d-sm">
+  <title id="t-sm">variant 3 状态机 + 线性版本日志</title>
+  <desc id="d-sm">展示 design_variants 表的 3 状态枚举（active / selected / discarded）和 design_versions 表的"线性版本日志"（无 parentVersionId）：variant 生命周期 POST→active，PATCH status=selected 让用户挑中，DELETE 软删变 discarded（不物理删）；GET 默认过滤 discarded。下半部分展示 design_versions 是单调递增 versionNumber 的线性日志，v4 通过 mix 出生但 schema 里无父子链接——靠 mix variant 的 metadata 反查 sources，先线性后树是承认产品形态在变。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .state-active { fill: #fef9c3; stroke: #a16207; stroke-width: 2; }
+    .state-selected { fill: #ddd6fe; stroke: #6d28d9; stroke-width: 2; }
+    .state-discarded { fill: #fecaca; stroke: #b91c1c; stroke-width: 2; stroke-dasharray: 4 2; }
+    .arrow { stroke: #1a1a1a; stroke-width: 1.5; fill: none; }
+    .arrow-soft { stroke: #b91c1c; stroke-width: 1.5; fill: none; stroke-dasharray: 4 2; }
+    .version-node { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.5; }
+    .version-mix { fill: #fde68a; stroke: #b45309; stroke-width: 2; }
+    .lookup-arrow { stroke: #b45309; stroke-width: 1.5; fill: none; stroke-dasharray: 3 2; }
+  </style>
+  <defs>
+    <marker id="ar-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a"/>
+    </marker>
+    <marker id="ar-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+    <marker id="ar-y" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b45309"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="28" class="header" font-size="14">variant 3 状态机 · design_variants.status enum</text>
+  <text x="20" y="46" class="note">design-variants-schema.ts:14-16 · ['active', 'selected', 'discarded'] default 'active'</text>
+
+  <!-- State machine -->
+  <circle cx="180" cy="160" r="58" class="state-active"/>
+  <text x="180" y="155" text-anchor="middle" class="label header">active</text>
+  <text x="180" y="172" text-anchor="middle" class="label-sm">候选中</text>
+  <text x="180" y="186" text-anchor="middle" class="note">默认状态</text>
+
+  <circle cx="440" cy="160" r="58" class="state-selected"/>
+  <text x="440" y="155" text-anchor="middle" class="label header" fill="#6d28d9">selected</text>
+  <text x="440" y="172" text-anchor="middle" class="label-sm">用户挑中</text>
+  <text x="440" y="186" text-anchor="middle" class="note">作为主方案</text>
+
+  <circle cx="700" cy="160" r="58" class="state-discarded"/>
+  <text x="700" y="155" text-anchor="middle" class="label header" fill="#b91c1c">discarded</text>
+  <text x="700" y="172" text-anchor="middle" class="label-sm">软删</text>
+  <text x="700" y="186" text-anchor="middle" class="note">不物理删除</text>
+
+  <!-- Entry arrow -->
+  <line x1="60" y1="160" x2="120" y2="160" class="arrow" marker-end="url(#ar-b)"/>
+  <text x="60" y="150" class="label-mono-sm">POST /variants</text>
+  <text x="60" y="178" class="note">line 70: status='active'</text>
+
+  <!-- active → selected -->
+  <path d="M 240 145 Q 310 110, 380 145" class="arrow" marker-end="url(#ar-b)"/>
+  <text x="270" y="115" class="label-mono-sm">PATCH status='selected'</text>
+  <text x="270" y="128" class="note">[variantId]/route.ts:106-108</text>
+
+  <!-- selected → active (revert) -->
+  <path d="M 380 180 Q 310 215, 240 180" class="arrow" marker-end="url(#ar-b)"/>
+  <text x="270" y="227" class="label-mono-sm">PATCH status='active'</text>
+  <text x="270" y="241" class="note">用户反悔</text>
+
+  <!-- active → discarded -->
+  <path d="M 230 200 Q 440 280, 650 200" class="arrow-soft" marker-end="url(#ar-r)"/>
+  <text x="380" y="270" class="label-mono-sm" fill="#b91c1c">DELETE → 软删（不物理删除）</text>
+  <text x="380" y="284" class="note">[variantId]/route.ts:166-167 · status='discarded'</text>
+
+  <!-- selected → discarded -->
+  <path d="M 498 160 Q 600 130, 640 160" class="arrow-soft" marker-end="url(#ar-r)"/>
+
+  <!-- GET filter note -->
+  <rect x="20" y="295" width="840" height="46" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="30" y="313" class="label header">GET /variants 默认过滤</text>
+  <text x="30" y="330" class="label-mono-sm">variants/route.ts:131-132 · 不传 ?status → 默认 status='active' · discarded 永远不出现在列表里（除非 ?status=discarded 显式拉）</text>
+
+  <!-- Version log -->
+  <text x="20" y="368" class="header" font-size="14">design_versions · 单调递增 versionNumber（无 parentVersionId）</text>
+  <text x="20" y="384" class="note">design-schema.ts:30-45 · 故意的线性日志，没有 DAG / 树结构</text>
+
+  <rect x="40" y="400" width="80" height="60" rx="6" class="version-node"/>
+  <text x="80" y="425" text-anchor="middle" class="label header">v1</text>
+  <text x="80" y="442" text-anchor="middle" class="label-sm">原稿</text>
+  <text x="80" y="455" text-anchor="middle" class="note">10:30</text>
+
+  <rect x="160" y="400" width="80" height="60" rx="6" class="version-node"/>
+  <text x="200" y="425" text-anchor="middle" class="label header">v2</text>
+  <text x="200" y="442" text-anchor="middle" class="label-sm">迭代</text>
+  <text x="200" y="455" text-anchor="middle" class="note">11:15</text>
+
+  <rect x="280" y="400" width="80" height="60" rx="6" class="version-node"/>
+  <text x="320" y="425" text-anchor="middle" class="label header">v3</text>
+  <text x="320" y="442" text-anchor="middle" class="label-sm">迭代</text>
+  <text x="320" y="455" text-anchor="middle" class="note">11:48</text>
+
+  <rect x="400" y="400" width="100" height="60" rx="6" class="version-mix"/>
+  <text x="450" y="425" text-anchor="middle" class="label header">v4 (mix)</text>
+  <text x="450" y="442" text-anchor="middle" class="label-sm">A.hero + B.nav</text>
+  <text x="450" y="455" text-anchor="middle" class="note">12:05</text>
+
+  <rect x="540" y="400" width="80" height="60" rx="6" class="version-node"/>
+  <text x="580" y="425" text-anchor="middle" class="label header">v5</text>
+  <text x="580" y="442" text-anchor="middle" class="label-sm">基于 v4 改</text>
+  <text x="580" y="455" text-anchor="middle" class="note">12:22</text>
+
+  <line x1="120" y1="430" x2="158" y2="430" class="arrow" marker-end="url(#ar-b)"/>
+  <line x1="240" y1="430" x2="278" y2="430" class="arrow" marker-end="url(#ar-b)"/>
+  <line x1="360" y1="430" x2="398" y2="430" class="arrow" marker-end="url(#ar-b)"/>
+  <line x1="500" y1="430" x2="538" y2="430" class="arrow" marker-end="url(#ar-b)"/>
+
+  <!-- Mix lookup -->
+  <path d="M 450 460 Q 360 510, 200 460" class="lookup-arrow" marker-end="url(#ar-y)"/>
+  <path d="M 450 460 Q 290 520, 80 460" class="lookup-arrow" marker-end="url(#ar-y)"/>
+  <text x="220" y="513" class="label-mono-sm" fill="#b45309">metadata.sources 反查 v1/v2 取 section</text>
+
+  <rect x="640" y="395" width="220" height="70" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="650" y="413" class="label header">为什么不是 DAG？</text>
+  <text x="650" y="430" class="label-sm">90% 用户在最新版线性迭代</text>
+  <text x="650" y="445" class="label-sm">10% 只需"回退到 v3"</text>
+  <text x="650" y="460" class="note">→ 加 parentVersionId 是过度设计</text>
+</svg>

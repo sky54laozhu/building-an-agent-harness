@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 540" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-cl d-cl">
+  <title id="t-cl">3 列对比画布布局 · 强制 400px 窄宽度策略</title>
+  <desc id="d-cl">展示 variant-comparison-canvas.tsx 的核心布局策略：用 CSS grid repeat(N, 1fr) 等分 3 列，每个 iframe 强制宽度 Math.min(viewport, 400)，desktop 设计稿在对比时压成 400px 渲染（牺牲像素保真换布局对比效率），列头栏含 label / status badge / Select 按钮，下方 iframe 用 sandbox="allow-scripts"（与 Part 14 一致）。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .canvas-bg { fill: #f4f4f5; stroke: #a1a1aa; stroke-width: 1; }
+    .col { fill: #ffffff; stroke: #d4d4d8; stroke-width: 1.5; }
+    .col-header { fill: #fafafa; stroke: #d4d4d8; stroke-width: 1; }
+    .iframe-box { fill: #fefce8; stroke: #a16207; stroke-width: 1; stroke-dasharray: 3 2; }
+    .btn-select { fill: #fff; stroke: #6b7280; }
+    .btn-chosen { fill: #6366f1; stroke: #4338ca; }
+    .selected-badge { fill: #ede9fe; stroke: #6d28d9; }
+    .arrow { stroke: #1d4ed8; stroke-width: 1.5; fill: none; }
+  </style>
+  <defs>
+    <marker id="ar-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d4ed8"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="28" class="header" font-size="14">3 列对比画布 · CSS grid + 强制窄宽度</text>
+  <text x="20" y="46" class="note">variant-comparison-canvas.tsx:24-44 · gridTemplateColumns: repeat(N, 1fr)</text>
+
+  <!-- Canvas background -->
+  <rect x="20" y="60" width="840" height="380" rx="6" class="canvas-bg"/>
+  <text x="30" y="78" class="label-mono-sm" fill="#6b7280">flex-1 overflow-auto bg-muted/30 p-4</text>
+
+  <!-- Column 1: Variant A -->
+  <rect x="40" y="90" width="260" height="335" rx="6" class="col"/>
+  <rect x="40" y="90" width="260" height="34" rx="6" class="col-header"/>
+  <text x="55" y="111" class="label header">Variant A</text>
+  <rect x="180" y="98" width="55" height="18" rx="3" class="selected-badge"/>
+  <text x="207" y="111" text-anchor="middle" class="label-sm" fill="#6d28d9">Selected</text>
+  <rect x="245" y="98" width="46" height="18" rx="3" class="btn-chosen"/>
+  <text x="268" y="111" text-anchor="middle" class="label-sm" fill="#fff">Chosen</text>
+
+  <rect x="60" y="140" width="220" height="275" rx="4" class="iframe-box"/>
+  <text x="170" y="160" text-anchor="middle" class="label header" fill="#a16207">iframe sandbox</text>
+  <text x="170" y="176" text-anchor="middle" class="label-mono-sm">="allow-scripts"</text>
+  <text x="170" y="194" text-anchor="middle" class="note">width: 400px (强制压缩)</text>
+  <rect x="80" y="210" width="180" height="34" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="170" y="232" text-anchor="middle" class="label-sm">&lt;header&gt; · Navigation</text>
+  <rect x="80" y="252" width="180" height="60" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="170" y="288" text-anchor="middle" class="label-sm">&lt;section class="hero"&gt;</text>
+  <rect x="80" y="320" width="180" height="50" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="170" y="350" text-anchor="middle" class="label-sm">&lt;main&gt; · Content</text>
+  <rect x="80" y="378" width="180" height="26" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="170" y="395" text-anchor="middle" class="label-sm">&lt;footer&gt;</text>
+
+  <!-- Column 2: Variant B -->
+  <rect x="310" y="90" width="260" height="335" rx="6" class="col"/>
+  <rect x="310" y="90" width="260" height="34" rx="6" class="col-header"/>
+  <text x="325" y="111" class="label header">Variant B</text>
+  <rect x="515" y="98" width="46" height="18" rx="3" class="btn-select"/>
+  <text x="538" y="111" text-anchor="middle" class="label-sm">Select</text>
+
+  <rect x="330" y="140" width="220" height="275" rx="4" class="iframe-box"/>
+  <text x="440" y="160" text-anchor="middle" class="label header" fill="#a16207">iframe sandbox</text>
+  <text x="440" y="176" text-anchor="middle" class="label-mono-sm">="allow-scripts"</text>
+  <text x="440" y="194" text-anchor="middle" class="note">width: 400px</text>
+  <rect x="350" y="210" width="180" height="50" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="440" y="240" text-anchor="middle" class="label-sm">&lt;nav&gt; · 不一样的 Nav</text>
+  <rect x="350" y="268" width="180" height="44" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="440" y="294" text-anchor="middle" class="label-sm">hero（更短）</text>
+  <rect x="350" y="320" width="180" height="58" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="440" y="352" text-anchor="middle" class="label-sm">&lt;main&gt; + Sidebar</text>
+  <rect x="350" y="386" width="180" height="18" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="440" y="399" text-anchor="middle" class="label-sm">footer (细)</text>
+
+  <!-- Column 3: Variant C -->
+  <rect x="580" y="90" width="260" height="335" rx="6" class="col"/>
+  <rect x="580" y="90" width="260" height="34" rx="6" class="col-header"/>
+  <text x="595" y="111" class="label header">Variant C</text>
+  <rect x="785" y="98" width="46" height="18" rx="3" class="btn-select"/>
+  <text x="808" y="111" text-anchor="middle" class="label-sm">Select</text>
+
+  <rect x="600" y="140" width="220" height="275" rx="4" class="iframe-box"/>
+  <text x="710" y="160" text-anchor="middle" class="label header" fill="#a16207">iframe sandbox</text>
+  <text x="710" y="176" text-anchor="middle" class="label-mono-sm">="allow-scripts"</text>
+  <text x="710" y="194" text-anchor="middle" class="note">width: 400px</text>
+  <rect x="620" y="210" width="180" height="28" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="710" y="229" text-anchor="middle" class="label-sm">&lt;header&gt; · 极简 Nav</text>
+  <rect x="620" y="246" width="180" height="76" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="710" y="288" text-anchor="middle" class="label-sm">hero（大字号）</text>
+  <rect x="620" y="330" width="180" height="46" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="710" y="357" text-anchor="middle" class="label-sm">3 列 grid 内容区</text>
+  <rect x="620" y="384" width="180" height="20" rx="3" fill="#fff" stroke="#a16207"/>
+  <text x="710" y="398" text-anchor="middle" class="label-sm">footer</text>
+
+  <!-- Annotations under canvas -->
+  <text x="20" y="465" class="header">关键决策（line refs）</text>
+  <text x="20" y="485" class="label-mono-sm">• columnCount = Math.min(visibleVariants.length, 3)  ← line 25</text>
+  <text x="20" y="502" class="label-mono-sm">• iframeWidth  = Math.min(viewportWidths[viewport] || 1280, 400)  ← line 26 · desktop 也压成 400</text>
+  <text x="20" y="519" class="label-mono-sm">• gridTemplateColumns: `repeat(${columnCount}, 1fr)`  ← line 43 · 等分而非 flex（避免高度差导致 column 抖动）</text>
+  <text x="20" y="534" class="note">trade-off: 牺牲 desktop 像素保真 · 换"对比时看布局结构和比例"的视觉效率</text>
+</svg>
