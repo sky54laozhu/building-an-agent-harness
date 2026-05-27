@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ol d-ol">
+  <title id="t-ol">CAS 语义乐观锁时序图</title>
+  <desc id="d-ol">展示 HarWork 内存版 VersionStore 的 applyEdit CAS 语义：A 和 B 都从 v=5 开始读，A 先提交 editVersion=5（命中 CAS）→ server v=6 ack accepted + 广播；B 后提交 editVersion=5（CAS 失败）→ server ack accepted:false + design:conflict 包含冲突方 A 的名字和 area。两个客户端从同一版本 fork、各自带版本号回到 server 做比对，相等才接受，是纯内存 Map 的乐观锁。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .client-a { fill: #ddd6fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .client-b { fill: #bfdbfe; stroke: #1d4ed8; stroke-width: 1.5; }
+    .server { fill: #fef3c7; stroke: #b45309; stroke-width: 1.5; }
+    .lifeline { stroke: #9ca3af; stroke-width: 1; stroke-dasharray: 3 3; }
+    .msg-ok { stroke: #15803d; stroke-width: 1.8; fill: none; }
+    .msg-fail { stroke: #b91c1c; stroke-width: 1.8; fill: none; stroke-dasharray: 5 3; }
+    .msg-bcast { stroke: #1d4ed8; stroke-width: 1.5; fill: none; }
+  </style>
+  <defs>
+    <marker id="ar-g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#15803d"/>
+    </marker>
+    <marker id="ar-r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+    <marker id="ar-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d4ed8"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="28" class="header" font-size="14">乐观锁 CAS 时序 · version-store.ts:44-57</text>
+  <text x="20" y="46" class="note">A 先提交命中、B 后提交冲突 · 内存 Map&lt;projectId, number&gt; · 无 DB 事务</text>
+
+  <!-- Actor boxes -->
+  <rect x="60" y="65" width="140" height="34" rx="4" class="client-a"/>
+  <text x="130" y="86" text-anchor="middle" class="label header">Client A (hero)</text>
+
+  <rect x="370" y="65" width="140" height="34" rx="4" class="server"/>
+  <text x="440" y="86" text-anchor="middle" class="label header">Server / VersionStore</text>
+
+  <rect x="680" y="65" width="140" height="34" rx="4" class="client-b"/>
+  <text x="750" y="86" text-anchor="middle" class="label header">Client B (footer)</text>
+
+  <!-- Lifelines -->
+  <line x1="130" y1="100" x2="130" y2="520" class="lifeline"/>
+  <line x1="440" y1="100" x2="440" y2="520" class="lifeline"/>
+  <line x1="750" y1="100" x2="750" y2="520" class="lifeline"/>
+
+  <!-- Step 1: both clients sync v=5 -->
+  <line x1="135" y1="120" x2="435" y2="120" class="msg-bcast" marker-end="url(#ar-b)"/>
+  <text x="170" y="115" class="label-mono-sm">design:sync</text>
+  <line x1="435" y1="140" x2="135" y2="140" class="msg-bcast" marker-end="url(#ar-b)"/>
+  <text x="170" y="135" class="label-mono-sm">currentVersion: 5</text>
+
+  <line x1="745" y1="120" x2="445" y2="120" class="msg-bcast" marker-end="url(#ar-b)"/>
+  <text x="600" y="115" class="label-mono-sm">design:sync</text>
+  <line x1="445" y1="140" x2="745" y2="140" class="msg-bcast" marker-end="url(#ar-b)"/>
+  <text x="600" y="135" class="label-mono-sm">currentVersion: 5</text>
+
+  <!-- Server state label v=5 -->
+  <rect x="395" y="155" width="90" height="22" rx="3" fill="#fff" stroke="#b45309"/>
+  <text x="440" y="170" text-anchor="middle" class="label-mono-sm">versions = 5</text>
+
+  <!-- Step 2: A submits editVersion=5 -->
+  <line x1="135" y1="200" x2="435" y2="200" class="msg-ok" marker-end="url(#ar-g)"/>
+  <text x="155" y="195" class="label-mono-sm">design:edit { editVersion: 5, area: 'hero' }</text>
+
+  <rect x="365" y="215" width="150" height="40" rx="3" fill="#dcfce7" stroke="#15803d"/>
+  <text x="440" y="232" text-anchor="middle" class="label-mono-sm" fill="#15803d">applyEdit: 5 === 5</text>
+  <text x="440" y="247" text-anchor="middle" class="label-mono-sm" fill="#15803d">→ accepted, v=6</text>
+
+  <line x1="435" y1="275" x2="135" y2="275" class="msg-ok" marker-end="url(#ar-g)"/>
+  <text x="155" y="270" class="label-mono-sm" fill="#15803d">design:edit:ack { accepted: true, newVersion: 6 }</text>
+
+  <!-- Broadcast to B -->
+  <line x1="445" y1="295" x2="745" y2="295" class="msg-bcast" marker-end="url(#ar-b)"/>
+  <text x="490" y="290" class="label-mono-sm">design:edit { editVersion: 6, area: 'hero', userName: 'A' }</text>
+  <text x="490" y="307" class="note">→ B 收到广播但未刷新本地 editVersion</text>
+
+  <!-- Step 3: B submits editVersion=5 (stale!) -->
+  <line x1="745" y1="340" x2="445" y2="340" class="msg-fail" marker-end="url(#ar-r)"/>
+  <text x="480" y="335" class="label-mono-sm" fill="#b91c1c">design:edit { editVersion: 5, area: 'footer' }</text>
+
+  <rect x="365" y="355" width="150" height="40" rx="3" fill="#fee2e2" stroke="#b91c1c"/>
+  <text x="440" y="372" text-anchor="middle" class="label-mono-sm" fill="#b91c1c">applyEdit: 5 !== 6</text>
+  <text x="440" y="387" text-anchor="middle" class="label-mono-sm" fill="#b91c1c">→ conflict</text>
+
+  <line x1="435" y1="415" x2="745" y2="415" class="msg-fail" marker-end="url(#ar-r)"/>
+  <text x="470" y="410" class="label-mono-sm" fill="#b91c1c">design:edit:ack { accepted: false, newVersion: 6 }</text>
+
+  <line x1="435" y1="445" x2="745" y2="445" class="msg-fail" marker-end="url(#ar-r)"/>
+  <text x="470" y="440" class="label-mono-sm" fill="#b91c1c">design:conflict { conflictingUserName: 'A', area: 'footer', currentVersion: 6 }</text>
+  <text x="470" y="460" class="note">→ B 端协议级冲突信号已到，但 UI 渲染尚未实装</text>
+
+  <rect x="60" y="485" width="800" height="36" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="70" y="503" class="label header">本质押注</text>
+  <text x="70" y="518" class="label-sm">CAS 在内存里跑 O(1) · 不走 DB 事务 · engine 重启 → 客户端 design:sync 自动校准</text>
+</svg>

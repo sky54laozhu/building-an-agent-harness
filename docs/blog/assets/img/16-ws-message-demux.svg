@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 520" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-dx d-dx">
+  <title id="t-dx">5 种 WebSocket 消息类型分流</title>
+  <desc id="d-dx">展示 HarWork 的"单 WS + 消息 type 分流"工程选择：物理上只有一条 WebSocket 连接（带 JWT auth），ws-message-handlers.ts 按 msg.type 分流 → design:join/edit/sync 走 DesignCollabServer、chat 走 Agent Loop、permission_response/reconnect 走各自 handler。早期 spec 想给 design-collab 单开 endpoint 但实操后发现复用 session 管理代价太高，最终单 WS。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .client { fill: #ddd6fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .ws { fill: #fef3c7; stroke: #b45309; stroke-width: 2; }
+    .demux { fill: #fff7ed; stroke: #ea580c; stroke-width: 1.8; }
+    .handler-collab { fill: #dcfce7; stroke: #15803d; stroke-width: 1.5; }
+    .handler-chat { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 1.5; }
+    .handler-other { fill: #fce7f3; stroke: #be185d; stroke-width: 1.5; }
+    .arrow { stroke: #1a1a1a; stroke-width: 1.5; fill: none; }
+    .arrow-collab { stroke: #15803d; stroke-width: 1.5; fill: none; }
+    .arrow-chat { stroke: #1d4ed8; stroke-width: 1.5; fill: none; }
+    .arrow-other { stroke: #be185d; stroke-width: 1.5; fill: none; }
+  </style>
+  <defs>
+    <marker id="ar-blk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a"/>
+    </marker>
+    <marker id="ar-grn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#15803d"/>
+    </marker>
+    <marker id="ar-blu" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1d4ed8"/>
+    </marker>
+    <marker id="ar-pnk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#be185d"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="28" class="header" font-size="14">单 WebSocket + msg.type 分流 · ws-message-handlers.ts:123-146</text>
+  <text x="20" y="46" class="note">物理一条 WS（避免 session 双套管理）· 逻辑上 5 种消息类型走 3 个 handler</text>
+
+  <!-- Client side: 5 message types -->
+  <rect x="20" y="70" width="160" height="340" rx="6" class="client"/>
+  <text x="100" y="92" text-anchor="middle" class="label header">Client</text>
+  <text x="100" y="108" text-anchor="middle" class="note">浏览器 / Web Worker</text>
+
+  <g font-size="10" font-family="SF Mono, Consolas, monospace">
+    <rect x="30" y="125" width="140" height="40" rx="4" fill="#fff" stroke="#15803d"/>
+    <text x="100" y="142" text-anchor="middle" class="label-mono-sm" fill="#15803d">design:join</text>
+    <text x="100" y="156" text-anchor="middle" class="note">{ projectId, userName }</text>
+
+    <rect x="30" y="175" width="140" height="40" rx="4" fill="#fff" stroke="#15803d"/>
+    <text x="100" y="192" text-anchor="middle" class="label-mono-sm" fill="#15803d">design:edit</text>
+    <text x="100" y="206" text-anchor="middle" class="note">{ editVersion, area, payload }</text>
+
+    <rect x="30" y="225" width="140" height="40" rx="4" fill="#fff" stroke="#15803d"/>
+    <text x="100" y="242" text-anchor="middle" class="label-mono-sm" fill="#15803d">design:sync</text>
+    <text x="100" y="256" text-anchor="middle" class="note">{ projectId }</text>
+
+    <rect x="30" y="275" width="140" height="40" rx="4" fill="#fff" stroke="#1d4ed8"/>
+    <text x="100" y="292" text-anchor="middle" class="label-mono-sm" fill="#1d4ed8">chat</text>
+    <text x="100" y="306" text-anchor="middle" class="note">{ content, model, ... }</text>
+
+    <rect x="30" y="325" width="140" height="40" rx="4" fill="#fff" stroke="#be185d"/>
+    <text x="100" y="342" text-anchor="middle" class="label-mono-sm" fill="#be185d">permission_response</text>
+    <text x="100" y="356" text-anchor="middle" class="note">{ approved, ... }</text>
+
+    <rect x="30" y="375" width="140" height="28" rx="4" fill="#fff" stroke="#be185d"/>
+    <text x="100" y="394" text-anchor="middle" class="label-mono-sm" fill="#be185d">reconnect</text>
+  </g>
+
+  <!-- WS pipe -->
+  <rect x="210" y="180" width="60" height="160" rx="6" class="ws"/>
+  <text x="240" y="205" text-anchor="middle" class="label header">WS</text>
+  <text x="240" y="222" text-anchor="middle" class="label-sm">JWT</text>
+  <text x="240" y="238" text-anchor="middle" class="label-sm">auth</text>
+  <text x="240" y="262" text-anchor="middle" class="label-mono-sm">1 conn</text>
+  <text x="240" y="278" text-anchor="middle" class="label-mono-sm">/user</text>
+  <text x="240" y="305" text-anchor="middle" class="note">heartbeat</text>
+  <text x="240" y="320" text-anchor="middle" class="note">30s ping</text>
+
+  <!-- Demux -->
+  <rect x="300" y="180" width="160" height="160" rx="6" class="demux"/>
+  <text x="380" y="202" text-anchor="middle" class="label header">handleMessage</text>
+  <text x="380" y="218" text-anchor="middle" class="label-mono-sm">ws-message-handlers.ts</text>
+  <text x="380" y="240" text-anchor="middle" class="label-mono-sm">switch (msg.type)</text>
+
+  <text x="380" y="265" text-anchor="middle" class="label-mono-sm" fill="#15803d">case 'design:*' →</text>
+  <text x="380" y="280" text-anchor="middle" class="label-mono-sm" fill="#1d4ed8">case 'chat' →</text>
+  <text x="380" y="295" text-anchor="middle" class="label-mono-sm" fill="#be185d">case 'permission_*' →</text>
+  <text x="380" y="320" text-anchor="middle" class="note">line 123-146</text>
+
+  <!-- Handlers -->
+  <rect x="500" y="100" width="180" height="80" rx="6" class="handler-collab"/>
+  <text x="590" y="122" text-anchor="middle" class="label header" fill="#15803d">DesignCollabServer</text>
+  <text x="590" y="138" text-anchor="middle" class="label-mono-sm">collab-server.ts</text>
+  <text x="590" y="152" text-anchor="middle" class="label-sm">joinProject / handleEdit</text>
+  <text x="590" y="166" text-anchor="middle" class="label-sm">handleSync (CAS)</text>
+
+  <rect x="500" y="200" width="180" height="80" rx="6" class="handler-chat"/>
+  <text x="590" y="222" text-anchor="middle" class="label header" fill="#1d4ed8">Agent Loop (handleChat)</text>
+  <text x="590" y="238" text-anchor="middle" class="label-mono-sm">handleChat</text>
+  <text x="590" y="252" text-anchor="middle" class="label-sm">SessionManager + Executor</text>
+  <text x="590" y="266" text-anchor="middle" class="label-sm">+ Tools + Models</text>
+
+  <rect x="500" y="300" width="180" height="80" rx="6" class="handler-other"/>
+  <text x="590" y="322" text-anchor="middle" class="label header" fill="#be185d">Other Handlers</text>
+  <text x="590" y="338" text-anchor="middle" class="label-mono-sm">handlePermissionResponse</text>
+  <text x="590" y="352" text-anchor="middle" class="label-mono-sm">handleReconnect</text>
+  <text x="590" y="368" text-anchor="middle" class="label-sm">(Part 12 30s grace)</text>
+
+  <!-- Arrows -->
+  <line x1="180" y1="145" x2="210" y2="220" class="arrow-collab" marker-end="url(#ar-grn)"/>
+  <line x1="180" y1="195" x2="210" y2="240" class="arrow-collab" marker-end="url(#ar-grn)"/>
+  <line x1="180" y1="245" x2="210" y2="260" class="arrow-collab" marker-end="url(#ar-grn)"/>
+  <line x1="180" y1="295" x2="210" y2="280" class="arrow-chat" marker-end="url(#ar-blu)"/>
+  <line x1="180" y1="345" x2="210" y2="300" class="arrow-other" marker-end="url(#ar-pnk)"/>
+  <line x1="180" y1="390" x2="210" y2="325" class="arrow-other" marker-end="url(#ar-pnk)"/>
+
+  <line x1="270" y1="240" x2="300" y2="240" class="arrow" marker-end="url(#ar-blk)"/>
+
+  <line x1="460" y1="220" x2="500" y2="140" class="arrow-collab" marker-end="url(#ar-grn)"/>
+  <line x1="460" y1="260" x2="500" y2="240" class="arrow-chat" marker-end="url(#ar-blu)"/>
+  <line x1="460" y1="300" x2="500" y2="340" class="arrow-other" marker-end="url(#ar-pnk)"/>
+
+  <!-- Why single channel -->
+  <rect x="700" y="100" width="160" height="280" rx="6" fill="#fff7ed" stroke="#ea580c"/>
+  <text x="780" y="122" text-anchor="middle" class="label header" fill="#ea580c">为什么不分两条 WS？</text>
+  <text x="710" y="148" class="label-sm">spec 原本想给 design-collab</text>
+  <text x="710" y="162" class="label-sm">单开一条 endpoint</text>
+  <text x="710" y="184" class="label-sm">但实操发现：</text>
+  <text x="710" y="204" class="label-mono-sm">• session 30s 宽限</text>
+  <text x="710" y="220" class="label-mono-sm">  (Part 12) 要复制一份</text>
+  <text x="710" y="238" class="label-mono-sm">• 500 事件 ring buffer</text>
+  <text x="710" y="254" class="label-mono-sm">  要复制一份</text>
+  <text x="710" y="272" class="label-mono-sm">• JWT auth 两遍</text>
+  <text x="710" y="288" class="label-mono-sm">• 双 conn 心跳成本翻倍</text>
+  <text x="710" y="316" class="label header" fill="#ea580c">最终选择</text>
+  <text x="710" y="334" class="label-sm">单 WS + msg.type 分流</text>
+  <text x="710" y="350" class="label-sm">逻辑通道 ≠ 物理通道</text>
+  <text x="710" y="368" class="note">复杂度收敛在 handler</text>
+
+  <!-- Footer -->
+  <rect x="20" y="430" width="840" height="76" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="30" y="450" class="label header">Server 主动推 design:* 消息</text>
+  <text x="30" y="468" class="label-mono-sm" fill="#15803d">design:edit:ack { accepted, newVersion }  · design:conflict { conflictingUserName, area }  · design:edit { editVersion, area, userName } (广播)  · design:sync { currentVersion }</text>
+  <text x="30" y="488" class="note">同一条 WS 双向 — 客户端发的 design:edit = "我要编辑"，server 发的 design:edit = "其他人编辑了，请刷新"</text>
+  <text x="30" y="502" class="note">design:edit 的命名歧义是协议的工程债 · 修法是 server → client 改名 design:edit:broadcast</text>
+</svg>
