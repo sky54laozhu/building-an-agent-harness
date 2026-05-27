@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 760" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14" role="img" aria-labelledby="t-stack d-stack">
+  <title id="t-stack">HarWork Harness 16 层栈纵向图</title>
+  <desc id="d-stack">从下到上依次是 16 层栈：第 1 层数据库与加密存储、第 2 层 LLM Provider 抽象、第 3 层 Agent Loop、第 4 层上下文工程、第 5 层沙箱、第 6 层安全分析、第 7 层 Tool Registry、第 8 层 Skill 系统、第 9 层 Hook 生命周期、第 10 层流式协议、第 11 层会话管理、第 12 层多模型路由、第 13 层配额与审计、第 14 层可观测、第 15 层部署、第 16 层 CI/CD。每层右侧标注对应的系列板块号。</desc>
+  <style>
+    .layer-label { fill: #1a1a1a; font-weight: 500; }
+    .vol-label { fill: #1a2233; text-anchor: end; font-weight: 600; font-size: 12px; }
+    .group-label { fill: #5a5a5a; text-anchor: middle; font-size: 11px; font-style: italic; }
+    .num { fill: #1a2233; font-weight: 700; }
+    .legend { fill: #5a5a5a; font-size: 12px; }
+  </style>
+
+  <!-- Outer frame -->
+  <rect x="0" y="0" width="880" height="760" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="440" y="32" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">HarWork Harness：自下而上 16 层栈</text>
+  <text x="440" y="54" text-anchor="middle" class="legend">底部 = 模型不知道的事；顶部 = LLM 不参与的事；中间 14 层 = 把单次调用串成产品的全部工程</text>
+
+  <!-- Stack layers, top-down rendering (16 at top, 1 at bottom) -->
+  <!-- Each layer: 38px tall, x=60, width=700; right column x=780 for volume ref -->
+
+  <!-- Layer 16: CI/CD -->
+  <rect x="60" y="80" width="700" height="38" fill="#eef4ff" stroke="#1a2233"/>
+  <text x="76" y="104" class="num">16</text>
+  <text x="108" y="104" class="layer-label">CI/CD — canary 部署 + 多探针自动回滚</text>
+  <text x="820" y="104" class="vol-label">→ 板块七</text>
+
+  <!-- Layer 15: Deployment -->
+  <rect x="60" y="118" width="700" height="38" fill="#eef4ff" stroke="#1a2233"/>
+  <text x="76" y="142" class="num">15</text>
+  <text x="108" y="142" class="layer-label">部署 — Docker Compose / k8s-ready 多副本</text>
+  <text x="820" y="142" class="vol-label">→ 板块七</text>
+
+  <!-- Layer 14: Observability -->
+  <rect x="60" y="156" width="700" height="38" fill="#eef4ff" stroke="#1a2233"/>
+  <text x="76" y="180" class="num">14</text>
+  <text x="108" y="180" class="layer-label">可观测 — 结构化日志 + Sentry + Prometheus 指标</text>
+  <text x="820" y="180" class="vol-label">→ 板块七</text>
+
+  <!-- Layer 13: Quota & Audit -->
+  <rect x="60" y="194" width="700" height="38" fill="#eef4ff" stroke="#1a2233"/>
+  <text x="76" y="218" class="num">13</text>
+  <text x="108" y="218" class="layer-label">配额与审计 — 按 user × model × tool 切费</text>
+  <text x="820" y="218" class="vol-label">→ 板块七</text>
+
+  <!-- Group bracket: DevOps -->
+  <line x1="50" y1="80" x2="50" y2="232" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="80" x2="58" y2="80" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="232" x2="58" y2="232" stroke="#1a2233" stroke-width="2"/>
+  <text x="25" y="160" class="group-label" transform="rotate(-90 25 160)">DevOps · 治理</text>
+
+  <!-- Layer 12: Multi-model -->
+  <rect x="60" y="240" width="700" height="38" fill="#dde9ff" stroke="#1a2233"/>
+  <text x="76" y="264" class="num">12</text>
+  <text x="108" y="264" class="layer-label">多模型路由 — 5 厂商 12+ 模型，自动失败转移</text>
+  <text x="820" y="264" class="vol-label">→ 板块五</text>
+
+  <!-- Layer 11: Session -->
+  <rect x="60" y="278" width="700" height="38" fill="#dde9ff" stroke="#1a2233"/>
+  <text x="76" y="302" class="num">11</text>
+  <text x="108" y="302" class="layer-label">会话管理 — WebSocket + 30s 断线宽限 + 事件回放</text>
+  <text x="820" y="302" class="vol-label">→ 板块五</text>
+
+  <!-- Layer 10: Streaming -->
+  <rect x="60" y="316" width="700" height="38" fill="#dde9ff" stroke="#1a2233"/>
+  <text x="76" y="340" class="num">10</text>
+  <text x="108" y="340" class="layer-label">流式协议 — async generator → WebSocket 事件 1:1 映射</text>
+  <text x="820" y="340" class="vol-label">→ 板块五</text>
+
+  <!-- Group bracket: Session/Streaming -->
+  <line x1="50" y1="240" x2="50" y2="354" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="240" x2="58" y2="240" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="354" x2="58" y2="354" stroke="#1a2233" stroke-width="2"/>
+  <text x="25" y="297" class="group-label" transform="rotate(-90 25 297)">会话与流式</text>
+
+  <!-- Layer 9: Hook -->
+  <rect x="60" y="362" width="700" height="38" fill="#c9ddff" stroke="#1a2233"/>
+  <text x="76" y="386" class="num">9</text>
+  <text x="108" y="386" class="layer-label">Hook 生命周期 — 8 种事件，社区可扩展</text>
+  <text x="820" y="386" class="vol-label">→ 板块三</text>
+
+  <!-- Layer 8: Skill -->
+  <rect x="60" y="400" width="700" height="38" fill="#c9ddff" stroke="#1a2233"/>
+  <text x="76" y="424" class="num">8</text>
+  <text x="108" y="424" class="layer-label">Skill 系统 — bundled / managed / WebSocket 三态</text>
+  <text x="820" y="424" class="vol-label">→ 板块三</text>
+
+  <!-- Layer 7: Tool -->
+  <rect x="60" y="438" width="700" height="38" fill="#c9ddff" stroke="#1a2233"/>
+  <text x="76" y="462" class="num">7</text>
+  <text x="108" y="462" class="layer-label">Tool Registry — 18 个内置工具，统一发现与调用</text>
+  <text x="820" y="462" class="vol-label">→ 板块三</text>
+
+  <!-- Group bracket: Tools/Extensions -->
+  <line x1="50" y1="362" x2="50" y2="476" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="362" x2="58" y2="362" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="476" x2="58" y2="476" stroke="#1a2233" stroke-width="2"/>
+  <text x="25" y="419" class="group-label" transform="rotate(-90 25 419)">工具与扩展</text>
+
+  <!-- Layer 6: Security -->
+  <rect x="60" y="484" width="700" height="38" fill="#b3d0ff" stroke="#1a2233"/>
+  <text x="76" y="508" class="num">6</text>
+  <text x="108" y="508" class="layer-label">安全分析 — Bash 138 条规则 + 路径守卫 + 审批队列</text>
+  <text x="820" y="508" class="vol-label">→ 板块四</text>
+
+  <!-- Layer 5: Sandbox -->
+  <rect x="60" y="522" width="700" height="38" fill="#b3d0ff" stroke="#1a2233"/>
+  <text x="76" y="546" class="num">5</text>
+  <text x="108" y="546" class="layer-label">沙箱 — Per-User 持久 Docker，秒级 pause/resume</text>
+  <text x="820" y="546" class="vol-label">→ 板块四</text>
+
+  <!-- Group bracket: Sandbox/Security -->
+  <line x1="50" y1="484" x2="50" y2="560" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="484" x2="58" y2="484" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="560" x2="58" y2="560" stroke="#1a2233" stroke-width="2"/>
+  <text x="25" y="522" class="group-label" transform="rotate(-90 25 522)">沙箱与安全</text>
+
+  <!-- Layer 4: Context -->
+  <rect x="60" y="568" width="700" height="38" fill="#9cc3ff" stroke="#1a2233"/>
+  <text x="76" y="592" class="num">4</text>
+  <text x="108" y="592" class="layer-label">上下文工程 — 5 层渐进压缩（瘦身/摘要/折叠/检索/兜底）</text>
+  <text x="820" y="592" class="vol-label">→ 板块二</text>
+
+  <!-- Layer 3: Agent Loop -->
+  <rect x="60" y="606" width="700" height="38" fill="#9cc3ff" stroke="#1a2233"/>
+  <text x="76" y="630" class="num">3</text>
+  <text x="108" y="630" class="layer-label">Agent Loop — async generator + AbortController + Hook 触发</text>
+  <text x="820" y="630" class="vol-label">→ 板块二</text>
+
+  <!-- Layer 2: LLM Provider -->
+  <rect x="60" y="644" width="700" height="38" fill="#9cc3ff" stroke="#1a2233"/>
+  <text x="76" y="668" class="num">2</text>
+  <text x="108" y="668" class="layer-label">LLM Provider 抽象 — 统一 5 厂商 SDK 差异为内部协议</text>
+  <text x="820" y="668" class="vol-label">→ 板块二</text>
+
+  <!-- Group bracket: Core Loop -->
+  <line x1="50" y1="568" x2="50" y2="682" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="568" x2="58" y2="568" stroke="#1a2233" stroke-width="2"/>
+  <line x1="50" y1="682" x2="58" y2="682" stroke="#1a2233" stroke-width="2"/>
+  <text x="25" y="625" class="group-label" transform="rotate(-90 25 625)">核心循环</text>
+
+  <!-- Layer 1: DB -->
+  <rect x="60" y="690" width="700" height="38" fill="#7ab2ff" stroke="#1a2233"/>
+  <text x="76" y="714" class="num">1</text>
+  <text x="108" y="714" class="layer-label">数据库 + 加密存储 — SQLite + Drizzle ORM，20+ 表，AES-GCM</text>
+  <text x="820" y="714" class="vol-label">→ 板块七</text>
+
+  <!-- Bottom legend -->
+  <text x="60" y="744" class="legend">▲ 越往上越靠近用户（CI/CD）｜▼ 越往下越靠近模型（数据库与 LLM Provider）</text>
+</svg>

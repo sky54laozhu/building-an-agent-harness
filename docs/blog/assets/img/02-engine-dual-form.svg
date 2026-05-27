@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 460" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14" role="img" aria-labelledby="t-dual d-dual">
+  <title id="t-dual">@harwork/engine 的双形态部署</title>
+  <desc id="d-dual">左侧"嵌入模式"：web 与 engine 跑在同一个 Node 进程内，通过函数调用通信，适合单机自用。右侧"服务模式"：web 容器与 engine 容器分别部署，通过 WebSocket 通信，适合多租户 SaaS。切换两种形态只需改一个环境变量 WORKSPACE_BACKEND。底层共用同一份 engine 源码，不需要维护两套代码。</desc>
+  <style>
+    .mode-title { fill: #1a2233; text-anchor: middle; font-weight: 700; font-size: 16px; }
+    .mode-sub { fill: #5a5a5a; text-anchor: middle; font-size: 12px; }
+    .box-label { fill: #1a1a1a; text-anchor: middle; font-weight: 600; }
+    .box-sub { fill: #5a5a5a; text-anchor: middle; font-size: 11px; }
+    .channel-label { fill: #1a2233; text-anchor: middle; font-size: 11px; font-style: italic; }
+    .legend { fill: #5a5a5a; font-size: 12px; }
+    .web-fill { fill: #c9ddff; }
+    .engine-fill { fill: #4f97ff; }
+  </style>
+
+  <!-- Outer frame -->
+  <rect x="0" y="0" width="880" height="460" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="440" y="32" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">同一份 engine 源码，两种部署形态</text>
+  <text x="440" y="54" text-anchor="middle" class="legend">切换 = 改 WORKSPACE_BACKEND 一个环境变量</text>
+
+  <!-- Vertical divider -->
+  <line x1="440" y1="80" x2="440" y2="420" stroke="#1a2233" stroke-width="1" stroke-dasharray="6,4"/>
+
+  <!-- Arrow marker -->
+  <defs>
+    <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <!-- ============ LEFT: Embedded Mode ============ -->
+  <text x="220" y="100" class="mode-title">嵌入模式（embedded）</text>
+  <text x="220" y="120" class="mode-sub">前后端同进程 · 单机自用</text>
+
+  <!-- Process container (left) -->
+  <rect x="60" y="140" width="320" height="240" rx="10" fill="#fff" stroke="#1a2233" stroke-width="2" stroke-dasharray="3,3"/>
+  <text x="220" y="160" text-anchor="middle" fill="#5a5a5a" font-size="11" font-style="italic">Node.js 进程</text>
+
+  <!-- web box (inside) -->
+  <rect x="90" y="180" width="120" height="80" rx="6" class="web-fill" stroke="#1a2233"/>
+  <text x="150" y="208" class="box-label">@harwork/web</text>
+  <text x="150" y="226" class="box-sub">Next.js</text>
+  <text x="150" y="242" class="box-sub">UI · API · 路由</text>
+
+  <!-- engine box (inside) -->
+  <rect x="230" y="180" width="120" height="80" rx="6" class="engine-fill" stroke="#1a2233"/>
+  <text x="290" y="208" class="box-label" fill="#fff">@harwork/engine</text>
+  <text x="290" y="226" class="box-sub" fill="#fff">Agent Loop</text>
+  <text x="290" y="242" class="box-sub" fill="#fff">Tool · Hook · Skill</text>
+
+  <!-- communication arrow inside -->
+  <line x1="210" y1="220" x2="230" y2="220" stroke="#1a2233" stroke-width="2" marker-end="url(#arrow2)"/>
+  <text x="220" y="278" class="channel-label">函数调用（同进程）</text>
+
+  <!-- DB box -->
+  <rect x="120" y="300" width="200" height="50" rx="6" fill="#f6f7f9" stroke="#5a5a5a"/>
+  <text x="220" y="320" class="box-label">SQLite 本地文件</text>
+  <text x="220" y="338" class="box-sub">harwork.db</text>
+
+  <!-- pros -->
+  <text x="60" y="402" class="legend">✓ 启动简单：pnpm dev 一条命令</text>
+  <text x="60" y="420" class="legend">✓ 适合：本地开发 / 单机自用 / OSS 用户</text>
+
+  <!-- ============ RIGHT: Service Mode ============ -->
+  <text x="660" y="100" class="mode-title">服务模式（service）</text>
+  <text x="660" y="120" class="mode-sub">前后端分离 · 多租户 SaaS</text>
+
+  <!-- web container (right) -->
+  <rect x="470" y="160" width="160" height="100" rx="10" fill="#fff" stroke="#1a2233" stroke-width="2" stroke-dasharray="3,3"/>
+  <text x="550" y="180" text-anchor="middle" fill="#5a5a5a" font-size="11" font-style="italic">Docker 容器 · web</text>
+  <rect x="490" y="195" width="120" height="55" rx="6" class="web-fill" stroke="#1a2233"/>
+  <text x="550" y="218" class="box-label">@harwork/web</text>
+  <text x="550" y="236" class="box-sub">Next.js standalone</text>
+
+  <!-- engine container (right) -->
+  <rect x="690" y="160" width="160" height="100" rx="10" fill="#fff" stroke="#1a2233" stroke-width="2" stroke-dasharray="3,3"/>
+  <text x="770" y="180" text-anchor="middle" fill="#5a5a5a" font-size="11" font-style="italic">Docker 容器 · engine</text>
+  <rect x="710" y="195" width="120" height="55" rx="6" class="engine-fill" stroke="#1a2233"/>
+  <text x="770" y="218" class="box-label" fill="#fff">@harwork/engine</text>
+  <text x="770" y="236" class="box-sub" fill="#fff">WebSocket :7777</text>
+
+  <!-- WS arrow between containers -->
+  <line x1="630" y1="222" x2="690" y2="222" stroke="#1a2233" stroke-width="2" marker-end="url(#arrow2)" marker-start="url(#arrow2)"/>
+  <text x="660" y="214" class="channel-label">WebSocket</text>
+  <text x="660" y="248" class="channel-label">事件流（双向）</text>
+
+  <!-- DB shared volume -->
+  <rect x="560" y="300" width="200" height="50" rx="6" fill="#f6f7f9" stroke="#5a5a5a"/>
+  <text x="660" y="320" class="box-label">PostgreSQL / 共享卷</text>
+  <text x="660" y="338" class="box-sub">多副本可读写</text>
+
+  <!-- pros -->
+  <text x="470" y="402" class="legend">✓ 可独立伸缩：web 与 engine 各自扩容</text>
+  <text x="470" y="420" class="legend">✓ 适合：多租户 SaaS / 企业内网 / 灰度发布</text>
+</svg>

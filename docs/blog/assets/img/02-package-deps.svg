@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 460" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="14" role="img" aria-labelledby="t-pkg d-pkg">
+  <title id="t-pkg">HarWork 4 个 npm 包的依赖关系</title>
+  <desc id="d-pkg">中心节点 @harwork/engine 是核心库，三个外围节点 @harwork/web、@harwork/cli、@harwork/skills-catalog 都依赖 engine。web 是 Next.js 应用，cli 是终端入口，skills-catalog 是数据包。engine 自身能以库或服务两种形态部署。</desc>
+  <style>
+    .pkg-name { fill: #1a1a1a; text-anchor: middle; font-weight: 600; font-size: 15px; }
+    .pkg-role { fill: #5a5a5a; text-anchor: middle; font-size: 12px; }
+    .pkg-form { fill: #1a2233; text-anchor: middle; font-size: 11px; font-style: italic; }
+    .arrow-label { fill: #5a5a5a; font-size: 11px; }
+    .center-pkg { fill: #4f97ff; }
+    .ext-pkg { fill: #c9ddff; }
+    .legend { fill: #5a5a5a; font-size: 12px; }
+  </style>
+
+  <!-- Outer frame -->
+  <rect x="0" y="0" width="880" height="460" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="440" y="34" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">@harwork 命名空间下 4 个 npm 包</text>
+  <text x="440" y="56" text-anchor="middle" class="legend">engine 是核心，其余 3 个都从 engine import；engine 自身能跑库形态或服务形态</text>
+
+  <!-- Arrows: from external nodes to center -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <!-- web → engine -->
+  <line x1="200" y1="180" x2="370" y2="230" stroke="#1a2233" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="240" y="195" class="arrow-label">import as library</text>
+
+  <!-- cli → engine -->
+  <line x1="200" y1="320" x2="370" y2="270" stroke="#1a2233" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="240" y="320" class="arrow-label">embed</text>
+
+  <!-- skills-catalog → engine -->
+  <line x1="680" y1="250" x2="530" y2="250" stroke="#1a2233" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="565" y="240" class="arrow-label">seed data</text>
+
+  <!-- Center: @harwork/engine -->
+  <rect x="370" y="200" width="160" height="100" rx="8" class="center-pkg" stroke="#1a2233" stroke-width="2"/>
+  <text x="450" y="232" class="pkg-name" fill="#fff">@harwork/engine</text>
+  <text x="450" y="252" class="pkg-role" fill="#fff">第 2-12 层栈实现</text>
+  <text x="450" y="270" class="pkg-form" fill="#fff">库 + 服务双形态</text>
+  <text x="450" y="288" class="pkg-form" fill="#fff">~14K LOC</text>
+
+  <!-- Left top: @harwork/web -->
+  <rect x="80" y="140" width="160" height="80" rx="8" class="ext-pkg" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="160" y="170" class="pkg-name">@harwork/web</text>
+  <text x="160" y="190" class="pkg-role">Next.js 应用 + UI + API</text>
+  <text x="160" y="208" class="pkg-form">~26K LOC</text>
+
+  <!-- Left bottom: @harwork/cli -->
+  <rect x="80" y="280" width="160" height="80" rx="8" class="ext-pkg" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="160" y="310" class="pkg-name">@harwork/cli</text>
+  <text x="160" y="330" class="pkg-role">终端入口（类 claude code）</text>
+  <text x="160" y="348" class="pkg-form">薄壳层</text>
+
+  <!-- Right: @harwork/skills-catalog -->
+  <rect x="680" y="210" width="180" height="80" rx="8" class="ext-pkg" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="770" y="240" class="pkg-name">@harwork/skills-catalog</text>
+  <text x="770" y="260" class="pkg-role">官方 Skill 种子库</text>
+  <text x="770" y="278" class="pkg-form">数据包，非代码</text>
+
+  <!-- Bottom: engine dual-form annotation -->
+  <line x1="450" y1="300" x2="450" y2="350" stroke="#5a5a5a" stroke-width="1" stroke-dasharray="4,3"/>
+  <rect x="240" y="350" width="420" height="90" rx="6" fill="#f6f7f9" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="450" y="372" text-anchor="middle" fill="#1a2233" font-weight="600" font-size="13">同一份 engine 可切两种形态</text>
+  <text x="258" y="394" class="legend">• 嵌入模式：web import engine，单进程</text>
+  <text x="258" y="412" class="legend">• 服务模式：engine 独立 Docker，对外 WebSocket</text>
+  <text x="258" y="430" class="legend">• 切换 = 改 WORKSPACE_BACKEND 一个环境变量</text>
+</svg>
