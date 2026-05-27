@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-tl d-tl">
+  <title id="t-tl">Agent Loop 单轮 11 步时序图</title>
+  <desc id="d-tl">展示 HarWork Agent Loop 单轮迭代的 11 个步骤：① 顶层 abort 检查 ② 加载 CLAUDE.md / memory ③ 估算 token 预算 ④ 触发 L5 压缩（如需） ⑤ 转换消息格式给 SDK ⑥ 调 LLM 开始流式 ⑦ yield 每个 token 给 WebSocket ⑧ 收 usage 与 tool_calls ⑨ 判断是否有 tool 调用 ⑩ 执行工具子 generator ⑪ 回灌结果进入下一轮。右侧列出每步对应的 loop.ts 代码行号。</desc>
+  <style>
+    .step-num { fill: #fff; font-weight: 700; text-anchor: middle; font-size: 13px; }
+    .step-label { fill: #1a1a1a; font-weight: 600; font-size: 13px; }
+    .step-sub { fill: #5a5a5a; font-size: 11px; }
+    .step-line { fill: #1a2233; font-size: 11px; font-style: italic; }
+    .arrow { stroke: #1a2233; stroke-width: 2; fill: none; }
+    .legend { fill: #5a5a5a; font-size: 12px; }
+    .yield-mark { fill: #0a7c2e; font-weight: 700; font-size: 11px; }
+  </style>
+
+  <!-- Outer frame -->
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="440" y="32" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">Agent Loop 单轮 11 步时序 — loop.ts 实测</text>
+  <text x="440" y="52" text-anchor="middle" class="legend">绿色 ★yield 标记的步骤会即时把事件流给 WebSocket — 不需等本轮结束</text>
+
+  <!-- Vertical timeline -->
+  <line x1="80" y1="80" x2="80" y2="520" stroke="#1a2233" stroke-width="2"/>
+
+  <!-- Steps -->
+  <!-- Step 1: Abort check -->
+  <circle cx="80" cy="90" r="14" fill="#1a2233"/>
+  <text x="80" y="94" class="step-num">1</text>
+  <text x="110" y="86" class="step-label">顶层 abort 检查</text>
+  <text x="110" y="102" class="step-sub">中断信号传入则 yield error 并 return — 不进入压缩</text>
+  <text x="780" y="94" class="step-line" text-anchor="end">loop.ts:97</text>
+
+  <!-- Step 2: Load instructions / memory -->
+  <circle cx="80" cy="130" r="14" fill="#1a2233"/>
+  <text x="80" y="134" class="step-num">2</text>
+  <text x="110" y="126" class="step-label">加载 CLAUDE.md + memory 文件</text>
+  <text x="110" y="142" class="step-sub">只在第 1 轮做；后续 turn 直接复用</text>
+  <text x="780" y="134" class="step-line" text-anchor="end">loop.ts:45-73</text>
+
+  <!-- Step 3: Token budget -->
+  <circle cx="80" cy="170" r="14" fill="#1a2233"/>
+  <text x="80" y="174" class="step-num">3</text>
+  <text x="110" y="166" class="step-label">估算 effectiveBudget</text>
+  <text x="110" y="182" class="step-sub">contextWindow − 8K output − 13K buffer − systemPrompt</text>
+  <text x="780" y="174" class="step-line" text-anchor="end">loop.ts:102-108</text>
+
+  <!-- Step 4: L5 compact -->
+  <circle cx="80" cy="210" r="14" fill="#1a2233"/>
+  <text x="80" y="214" class="step-num">4</text>
+  <text x="110" y="206" class="step-label">L5 语义压缩（如需）</text>
+  <text x="110" y="222" class="step-sub">tokens ≥ budget × 0.85 且 messages &gt; 10 时调 LLM 摘要</text>
+  <text x="780" y="214" class="step-line" text-anchor="end">loop.ts:115</text>
+
+  <!-- Step 5: Convert to AI SDK format -->
+  <circle cx="80" cy="250" r="14" fill="#1a2233"/>
+  <text x="80" y="254" class="step-num">5</text>
+  <text x="110" y="246" class="step-label">messages → AI SDK 消息格式</text>
+  <text x="110" y="262" class="step-sub">用 toVercelMessages 把内部消息转为 streamText 所需</text>
+  <text x="780" y="254" class="step-line" text-anchor="end">loop.ts:475-525</text>
+
+  <!-- Step 6: Stream LLM -->
+  <circle cx="80" cy="290" r="14" fill="#4f97ff"/>
+  <text x="80" y="294" class="step-num">6</text>
+  <text x="110" y="286" class="step-label">streamText() — LLM 开始流式</text>
+  <text x="110" y="302" class="step-sub">最多重试 3 次，每次间隔指数退避 + abort-aware sleep</text>
+  <text x="780" y="294" class="step-line" text-anchor="end">loop.ts:199-220</text>
+
+  <!-- Step 7: yield text_delta -->
+  <circle cx="80" cy="330" r="14" fill="#0a7c2e"/>
+  <text x="80" y="334" class="step-num">7</text>
+  <text x="110" y="326" class="step-label">yield text_delta — 每个 token</text>
+  <text x="110" y="342" class="step-sub">同时区分 text-delta 与 reasoning-delta（thinking）</text>
+  <text x="745" y="334" class="yield-mark" text-anchor="end">★ yield</text>
+  <text x="780" y="334" class="step-line" text-anchor="end">loop.ts:227-235</text>
+
+  <!-- Step 8: usage + tool_calls -->
+  <circle cx="80" cy="370" r="14" fill="#0a7c2e"/>
+  <text x="80" y="374" class="step-num">8</text>
+  <text x="110" y="366" class="step-label">收 usage + 提取 toolCalls</text>
+  <text x="110" y="382" class="step-sub">yield usage_update（本轮 token 用量 + 累计成本）</text>
+  <text x="745" y="374" class="yield-mark" text-anchor="end">★ yield</text>
+  <text x="780" y="374" class="step-line" text-anchor="end">loop.ts:242-265</text>
+
+  <!-- Step 9: no tools branch -->
+  <circle cx="80" cy="410" r="14" fill="#1a2233"/>
+  <text x="80" y="414" class="step-num">9</text>
+  <text x="110" y="406" class="step-label">无 tool 调用 → 触发 Stop hook</text>
+  <text x="110" y="422" class="step-sub">hook 返回 exit 2 = 注入反馈、继续 loop；否则 message_complete</text>
+  <text x="780" y="414" class="step-line" text-anchor="end">loop.ts:306-356</text>
+
+  <!-- Step 10: execute tools -->
+  <circle cx="80" cy="450" r="14" fill="#0a7c2e"/>
+  <text x="80" y="454" class="step-num">10</text>
+  <text x="110" y="446" class="step-label">executeTools 子 generator — for await + yield 透传</text>
+  <text x="110" y="462" class="step-sub">并发分组、isConcurrencySafe 检查、单工具 abort（详见第 05 篇）</text>
+  <text x="745" y="454" class="yield-mark" text-anchor="end">★ yield</text>
+  <text x="780" y="454" class="step-line" text-anchor="end">loop.ts:405-416</text>
+
+  <!-- Step 11: results back -->
+  <circle cx="80" cy="490" r="14" fill="#1a2233"/>
+  <text x="80" y="494" class="step-num">11</text>
+  <text x="110" y="486" class="step-label">tool_results 入 messages → continue while</text>
+  <text x="110" y="502" class="step-sub">回到步骤 1，进入下一轮；maxTurns 到了则 yield max_turns_reached</text>
+  <text x="780" y="494" class="step-line" text-anchor="end">loop.ts:418-468</text>
+
+  <!-- Arrow back to start -->
+  <path d="M 80 510 Q 30 510 30 80 Q 30 60 60 60 L 70 60" class="arrow" marker-end="url(#timeline-arrow)"/>
+  <defs>
+    <marker id="timeline-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+  <text x="20" y="290" class="legend" transform="rotate(-90 20 290)" text-anchor="middle">continue while</text>
+
+  <!-- Bottom legend -->
+  <text x="80" y="540" class="legend">★ yield 步骤（共 4 处）在事件出现的瞬间就发到 WebSocket — 用户看到字的延迟 ≈ LLM provider 的 TTFB，不是整轮耗时。</text>
+</svg>

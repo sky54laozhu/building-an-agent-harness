@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 480" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-app d-app">
+  <title id="t-app">Agent Loop 四种实现方案对比</title>
+  <desc id="d-app">对比 while+callback、Promise 链、状态机、async generator 四种 Agent Loop 实现，在流式、可中断、可分支、调试体验四个维度上的得分。async generator 是唯一在四项约束上都拿到满分的方案。</desc>
+  <style>
+    .col-head { fill: #fff; font-weight: 600; font-size: 13px; text-anchor: middle; }
+    .row-head { fill: #1a1a1a; font-weight: 600; font-size: 13px; }
+    .cell { font-size: 12px; text-anchor: middle; }
+    .good { fill: #0a7c2e; font-weight: 600; }
+    .bad { fill: #b71c1c; font-weight: 600; }
+    .meh { fill: #8c6d1f; font-weight: 600; }
+    .grid { stroke: #d0d3d8; stroke-width: 1; }
+    .winner-bg { fill: #e8f5ec; }
+    .legend { fill: #5a5a5a; font-size: 11px; }
+  </style>
+
+  <!-- Outer frame -->
+  <rect x="0" y="0" width="880" height="480" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="440" y="32" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">四种 Agent Loop 形态：哪种能扛住四个约束？</text>
+  <text x="440" y="52" text-anchor="middle" class="legend">✓ = 天然满足  △ = 勉强能做但代价大  ✗ = 不可行或维护性差</text>
+
+  <!-- Winner column highlight -->
+  <rect x="700" y="80" width="160" height="320" class="winner-bg"/>
+
+  <!-- Header row -->
+  <rect x="20" y="80" width="160" height="44" fill="#1a2233"/>
+  <rect x="180" y="80" width="170" height="44" fill="#1a2233"/>
+  <rect x="350" y="80" width="170" height="44" fill="#1a2233"/>
+  <rect x="520" y="80" width="180" height="44" fill="#1a2233"/>
+  <rect x="700" y="80" width="160" height="44" fill="#0a7c2e"/>
+
+  <text x="100" y="107" class="col-head">约束</text>
+  <text x="265" y="100" class="col-head">while + callback</text>
+  <text x="265" y="116" class="col-head" font-size="11" font-weight="400">阻塞循环</text>
+  <text x="435" y="100" class="col-head">Promise 链</text>
+  <text x="435" y="116" class="col-head" font-size="11" font-weight="400">.then 回调</text>
+  <text x="610" y="100" class="col-head">状态机</text>
+  <text x="610" y="116" class="col-head" font-size="11" font-weight="400">XState / FSM</text>
+  <text x="780" y="100" class="col-head">async generator ★</text>
+  <text x="780" y="116" class="col-head" font-size="11" font-weight="400">async function*</text>
+
+  <!-- Row 1: 流式 -->
+  <text x="32" y="156" class="row-head">流式 token</text>
+  <text x="265" y="156" class="cell bad">✗ 等整段</text>
+  <text x="435" y="156" class="cell meh">△ 需配合 stream</text>
+  <text x="610" y="156" class="cell meh">△ 显式发事件</text>
+  <text x="780" y="156" class="cell good">✓ yield 即送</text>
+
+  <line x1="20" y1="170" x2="860" y2="170" class="grid"/>
+
+  <!-- Row 2: 中断 -->
+  <text x="32" y="196" class="row-head">可中断</text>
+  <text x="265" y="196" class="cell meh">△ 循环顶检</text>
+  <text x="435" y="196" class="cell bad">✗ signal 难穿</text>
+  <text x="610" y="196" class="cell meh">△ 状态显式终</text>
+  <text x="780" y="196" class="cell good">✓ 顶层 abort 检查</text>
+
+  <line x1="20" y1="210" x2="860" y2="210" class="grid"/>
+
+  <!-- Row 3: 分支递归 -->
+  <text x="32" y="236" class="row-head">分支 / 递归</text>
+  <text x="265" y="236" class="cell meh">△ 嵌套循环</text>
+  <text x="435" y="236" class="cell bad">✗ 回调地狱</text>
+  <text x="610" y="236" class="cell bad">✗ 状态爆炸</text>
+  <text x="780" y="236" class="cell good">✓ yield* 委托</text>
+
+  <line x1="20" y1="250" x2="860" y2="250" class="grid"/>
+
+  <!-- Row 4: 背压 -->
+  <text x="32" y="276" class="row-head">背压（慢消费者）</text>
+  <text x="265" y="276" class="cell bad">✗ 全部内存</text>
+  <text x="435" y="276" class="cell meh">△ 手写队列</text>
+  <text x="610" y="276" class="cell meh">△ 手写背压</text>
+  <text x="780" y="276" class="cell good">✓ await 自动</text>
+
+  <line x1="20" y1="290" x2="860" y2="290" class="grid"/>
+
+  <!-- Row 5: 调试体验 -->
+  <text x="32" y="316" class="row-head">栈帧 / 调试</text>
+  <text x="265" y="316" class="cell good">✓ 线性</text>
+  <text x="435" y="316" class="cell bad">✗ 栈断裂</text>
+  <text x="610" y="316" class="cell bad">✗ 状态难追</text>
+  <text x="780" y="316" class="cell good">✓ 线性 + 暂停</text>
+
+  <line x1="20" y1="330" x2="860" y2="330" class="grid"/>
+
+  <!-- Row 6: 社区 -->
+  <text x="32" y="356" class="row-head">生态熟悉度</text>
+  <text x="265" y="356" class="cell good">✓ 人人会</text>
+  <text x="435" y="356" class="cell good">✓ 人人会</text>
+  <text x="610" y="356" class="cell meh">△ 学曲线高</text>
+  <text x="780" y="356" class="cell good">✓ ES2018+</text>
+
+  <line x1="20" y1="370" x2="860" y2="370" class="grid"/>
+
+  <!-- Row 7: Summary -->
+  <text x="32" y="396" class="row-head">综合得分</text>
+  <text x="265" y="396" class="cell bad">2 / 6</text>
+  <text x="435" y="396" class="cell bad">1 / 6</text>
+  <text x="610" y="396" class="cell bad">1 / 6</text>
+  <text x="780" y="396" class="cell good" font-size="14">6 / 6 ★</text>
+
+  <!-- Footer notes -->
+  <text x="20" y="436" class="legend">注 1：状态机能用代码硬撑出所有能力，但每加一个工具状态空间就放大；async generator 加工具只要多一个 yield。</text>
+  <text x="20" y="456" class="legend">注 2：四家主流 Harness（Claude Code · Cursor · Aider · HarWork）在 Loop 这一层最终都选了 async generator。</text>
+
+  <!-- Grid borders -->
+  <line x1="180" y1="80" x2="180" y2="410" class="grid"/>
+  <line x1="350" y1="80" x2="350" y2="410" class="grid"/>
+  <line x1="520" y1="80" x2="520" y2="410" class="grid"/>
+  <line x1="700" y1="80" x2="700" y2="410" class="grid"/>
+  <rect x="20" y="80" width="840" height="330" fill="none" stroke="#1a2233" stroke-width="1.5"/>
+</svg>

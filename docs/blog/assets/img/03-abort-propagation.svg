@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 620" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ap d-ap">
+  <title id="t-ap">AbortSignal 传播树</title>
+  <desc id="d-ap">展示 AbortSignal 从用户触发（Ctrl-C / 关浏览器 / 超时）经 WebSocket 会话的 AbortController 进入 agentLoop 后，分发到 5 条并发等待路径：① 顶层 abort 检查 ② streamText 的 LLM 流 ③ sleepWithAbort 重试间隔 ④ executeTools 子 generator ⑤ 子进程 / 流 / DB 事务的实际清理动作。每个节点标注对应代码位置。</desc>
+  <style>
+    .root-node { fill: #b71c1c; }
+    .ctrl-node { fill: #1a2233; }
+    .check-node { fill: #4f97ff; }
+    .leaf-node { fill: #0a7c2e; }
+    .node-text { fill: #fff; font-weight: 600; font-size: 12px; text-anchor: middle; }
+    .node-sub { fill: #fff; font-size: 10px; text-anchor: middle; }
+    .label-main { fill: #1a1a1a; font-weight: 600; font-size: 12px; }
+    .label-sub { fill: #5a5a5a; font-size: 11px; }
+    .label-code { fill: #1a2233; font-size: 10px; font-style: italic; }
+    .edge { stroke: #1a2233; stroke-width: 1.8; fill: none; }
+    .edge-fast { stroke: #b71c1c; stroke-width: 2; fill: none; stroke-dasharray: 4 3; }
+    .legend { fill: #5a5a5a; font-size: 11px; }
+    .legend-title { fill: #1a1a1a; font-weight: 600; font-size: 12px; }
+  </style>
+
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="arr-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b71c1c"/>
+    </marker>
+  </defs>
+
+  <!-- Outer frame -->
+  <rect x="0" y="0" width="880" height="620" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="440" y="30" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">AbortSignal 传播树 —— 一次中断如何穿透 5 层</text>
+  <text x="440" y="50" text-anchor="middle" class="legend">红色虚线 = 中断信号传播路径；黑色实线 = 正常调用关系</text>
+
+  <!-- Level 1: User trigger (root) -->
+  <rect x="350" y="70" width="180" height="46" rx="8" class="root-node"/>
+  <text x="440" y="90" class="node-text">用户触发中断</text>
+  <text x="440" y="106" class="node-sub">Ctrl-C · 关浏览器 · 超时</text>
+
+  <!-- Level 2: WebSocket AbortController -->
+  <rect x="330" y="150" width="220" height="46" rx="8" class="ctrl-node"/>
+  <text x="440" y="170" class="node-text">WebSocket Session AbortController</text>
+  <text x="440" y="186" class="node-sub">session.ts → controller.abort()</text>
+
+  <!-- Edge: root → controller -->
+  <path d="M 440 116 L 440 150" class="edge-fast" marker-end="url(#arr-red)"/>
+
+  <!-- Level 3: agentLoop signal -->
+  <rect x="330" y="230" width="220" height="46" rx="8" class="ctrl-node"/>
+  <text x="440" y="250" class="node-text">context.abortController.signal</text>
+  <text x="440" y="266" class="node-sub">传入 agentLoop({ messages, tools, ... })</text>
+
+  <!-- Edge: controller → context -->
+  <path d="M 440 196 L 440 230" class="edge-fast" marker-end="url(#arr-red)"/>
+
+  <!-- Level 4: 4 branches -->
+  <!-- Branch 1: top-level check -->
+  <rect x="40" y="330" width="170" height="50" rx="6" class="check-node"/>
+  <text x="125" y="350" class="node-text">① 顶层 abort 检查</text>
+  <text x="125" y="366" class="node-sub">每轮 while 顶部</text>
+
+  <!-- Branch 2: streamText -->
+  <rect x="230" y="330" width="170" height="50" rx="6" class="check-node"/>
+  <text x="315" y="350" class="node-text">② streamText abortSignal</text>
+  <text x="315" y="366" class="node-sub">LLM provider HTTP 流</text>
+
+  <!-- Branch 3: sleepWithAbort -->
+  <rect x="420" y="330" width="170" height="50" rx="6" class="check-node"/>
+  <text x="505" y="350" class="node-text">③ sleepWithAbort</text>
+  <text x="505" y="366" class="node-sub">重试间隔等待</text>
+
+  <!-- Branch 4: executeTools -->
+  <rect x="610" y="330" width="170" height="50" rx="6" class="check-node"/>
+  <text x="695" y="350" class="node-text">④ executeTools signal</text>
+  <text x="695" y="366" class="node-sub">工具子 generator</text>
+
+  <!-- Edges from context to 4 branches -->
+  <path d="M 380 276 Q 380 305 125 330" class="edge-fast" marker-end="url(#arr-red)"/>
+  <path d="M 415 276 Q 415 305 315 330" class="edge-fast" marker-end="url(#arr-red)"/>
+  <path d="M 465 276 Q 465 305 505 330" class="edge-fast" marker-end="url(#arr-red)"/>
+  <path d="M 500 276 Q 500 305 695 330" class="edge-fast" marker-end="url(#arr-red)"/>
+
+  <!-- Code references for branches -->
+  <text x="125" y="395" text-anchor="middle" class="label-code">loop.ts:97</text>
+  <text x="315" y="395" text-anchor="middle" class="label-code">loop.ts:203</text>
+  <text x="505" y="395" text-anchor="middle" class="label-code">retry.ts</text>
+  <text x="695" y="395" text-anchor="middle" class="label-code">loop.ts:405-416</text>
+
+  <!-- Reaction at branches -->
+  <text x="125" y="416" text-anchor="middle" class="label-sub">→ return 退出</text>
+  <text x="125" y="432" text-anchor="middle" class="label-sub">generator 清理</text>
+
+  <text x="315" y="416" text-anchor="middle" class="label-sub">→ fetch.abort()</text>
+  <text x="315" y="432" text-anchor="middle" class="label-sub">下游不再吐 token</text>
+
+  <text x="505" y="416" text-anchor="middle" class="label-sub">→ sleep 立即 reject</text>
+  <text x="505" y="432" text-anchor="middle" class="label-sub">不等满 retry delay</text>
+
+  <text x="695" y="416" text-anchor="middle" class="label-sub">→ 透传给子 generator</text>
+  <text x="695" y="432" text-anchor="middle" class="label-sub">由叶子节点真正清理</text>
+
+  <!-- Level 5: Leaf cleanup actions (only from branch 4) -->
+  <rect x="430" y="475" width="160" height="40" rx="5" class="leaf-node"/>
+  <text x="510" y="492" class="node-text">kill subprocess</text>
+  <text x="510" y="506" class="node-sub">SIGTERM → wait 2s → SIGKILL</text>
+
+  <rect x="600" y="475" width="160" height="40" rx="5" class="leaf-node"/>
+  <text x="680" y="492" class="node-text">close stream</text>
+  <text x="680" y="506" class="node-sub">readable.destroy()</text>
+
+  <rect x="770" y="475" width="90" height="40" rx="5" class="leaf-node"/>
+  <text x="815" y="492" class="node-text">rollback</text>
+  <text x="815" y="506" class="node-sub">DB tx</text>
+
+  <!-- Edges from branch 4 to leaves -->
+  <path d="M 670 380 Q 670 440 510 475" class="edge-fast" marker-end="url(#arr-red)"/>
+  <path d="M 695 380 Q 695 440 680 475" class="edge-fast" marker-end="url(#arr-red)"/>
+  <path d="M 740 380 Q 770 440 800 475" class="edge-fast" marker-end="url(#arr-red)"/>
+
+  <!-- Caption under leaves -->
+  <text x="615" y="540" text-anchor="middle" class="label-sub">每个工具按自己的"清理协议"释放资源——这是中断真正落地的地方</text>
+
+  <!-- Why-it-works legend (left side) -->
+  <rect x="30" y="475" width="370" height="105" rx="6" fill="#f6f7f9" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="42" y="494" class="legend-title">为什么 4 条路径必须都接 signal？</text>
+  <text x="42" y="514" class="legend">• 只接 ① ——LLM 还在吐 token，浪费 5s 流量 + 钱</text>
+  <text x="42" y="532" class="legend">• 只接 ① ② ——重试间隔里按 Ctrl-C 要等 4s 才生效</text>
+  <text x="42" y="550" class="legend">• 只接 ①②③ ——工具子进程继续跑（npm install / git clone）</text>
+  <text x="42" y="568" class="legend">• 全接 ——abort → 命中最近的检查点 &lt; 100ms 内停下</text>
+
+  <!-- Bottom note -->
+  <text x="440" y="600" text-anchor="middle" class="legend">关键设计：一个 AbortController，N 个监听点；中断信号沿"调用栈+await链"双向传播——这是 async generator 比状态机省 200 行代码的原因。</text>
+</svg>
