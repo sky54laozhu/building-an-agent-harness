@@ -12,7 +12,15 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 # Part 03: Agent Loop — Why It Has to Be an Async Generator, Not a Plain Async Function
 
-> Part 01 gave you a 20-line Loop skeleton. HarWork's real `agent/loop.ts` is 640 lines. The extra 620 lines aren't "logic" — they're what keeps the original 20 lines from crashing under disconnects, window overflows, concurrent tools, and user interrupts. This article answers: why is the Loop an `async function*`, and where exactly does a plain `async function` die?
+> [!NOTE]
+> **TL;DR**
+> - Agent Loop fights four constraints at once — streaming / async / interruptible / branchable — and any pair of them already breaks a plain `async function`.
+> - `async function*` (async generator) is the smallest JavaScript primitive that unifies **control flow** and **data flow** in one keyword. `yield` is *pause*, not *return*.
+> - Claude Code, Cursor, and HarWork landed on async generators independently — **not because it's the most powerful, but because it's the one you'll regret least**.
+
+**Jump to:** [Problem](#problem-statement) · [Why naive fails](#why-naive-approaches-fail) · [Solution](#core-solution-async-generator) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Pitfalls](#three-production-pitfalls)
+
+Part 01 gave you a 20-line Loop skeleton. HarWork's real `agent/loop.ts` is 640 lines. The extra 620 lines aren't "logic" — they're what keeps the original 20 lines from crashing under disconnects, window overflows, concurrent tools, and user interrupts. This article answers: why is the Loop an `async function*`, and where exactly does a plain `async function` die?
 
 ## Problem Statement
 
@@ -164,7 +172,10 @@ HarWork's Loop yields these event types (from the `StreamEvent` union): `text_de
 
 ## Counterintuitive Conclusion
 
-> **`yield` isn't "output," it's "pause."** The hard part of the Agent Loop isn't "the loop itself" — it's making everything that happens *between* loop iterations (streaming tokens, tool results, compaction, abort, retry, hooks) **pausable and observable**. The async generator is the cheapest implementation in JavaScript: one language keyword, zero external dependencies.
+> [!IMPORTANT]
+> **`yield` isn't "output," it's "pause."**
+>
+> The hard part of the Agent Loop isn't "the loop itself" — it's making everything that happens *between* loop iterations (streaming tokens, tool results, compaction, abort, retry, hooks) **pausable and observable**. The async generator is the cheapest implementation in JavaScript: one language keyword, zero external dependencies.
 
 Put differently: **the Agent Loop is not an "algorithm" — it's an "event stream shape."** You can implement the same behavior with state machines, Observables, or callback pyramids, but the code balloons 3–5×, readability drops to 30%, and debugging a null-pointer takes six breakpoints. Switch to async generators and the entire Loop reads top-to-bottom as linear code, every `yield` is an observation point, every `await` is an interruption point. That's why Claude Code, Cursor, and HarWork independently landed on async generators — **not because it's the most powerful, but because it's the one you'll regret least**.
 
@@ -174,11 +185,20 @@ Going further: **async generators unify "control flow" and "data flow" in a sing
 
 Theory aside — three real traps HarWork has paid for, that you'll hit too:
 
-**Pitfall 1: Early `for await` break may not clean up the generator.** If the consumer exits the loop while the generator is mid-await, the generator hangs on that await forever, never freeing resources. HarWork's fix: every blocking await accepts `abortSignal`. On `return()`, the signal fires, the inner await throws `AbortError`, and the generator unwinds.
+> [!WARNING]
+> **Pitfall 1 — Early `for await` break may not clean up the generator.**
+>
+> If the consumer exits the loop while the generator is mid-await, the generator hangs on that await forever, never freeing resources. **HarWork's fix**: every blocking await accepts `abortSignal`. On `return()`, the signal fires, the inner await throws `AbortError`, and the generator unwinds.
 
-**Pitfall 2: After `yield`, the suspended generator holds onto every local variable.** If you held a 50 MB grep result buffer right before yielding, that memory doesn't free during the pause. HarWork writes large tool outputs to disk attachments first — `messages` only stores "first 500 chars + attachment_id" so long yields don't pin memory (Part 04 L2 compaction tier).
+> [!WARNING]
+> **Pitfall 2 — After `yield`, the suspended generator holds onto every local variable.**
+>
+> If you held a 50 MB grep result buffer right before yielding, that memory doesn't free during the pause. **HarWork's fix**: large tool outputs go to disk attachments first; `messages` only stores "first 500 chars + attachment_id" so long yields don't pin memory (Part 04 L2 compaction tier).
 
-**Pitfall 3: Errors thrown from a generator surface in unintuitive places.** A `throw` after `yield` shows up in the consumer's `for await`, not the generator's actual offending line. HarWork's pattern: at every potentially-throwing site, `yield { type: 'error', code, message }` first, then `return`. Errors become data, not control flow.
+> [!WARNING]
+> **Pitfall 3 — Errors thrown from a generator surface in unintuitive places.**
+>
+> A `throw` after `yield` shows up in the consumer's `for await`, not the generator's actual offending line. **HarWork's fix**: at every potentially-throwing site, `yield { type: 'error', code, message }` first, then `return`. Errors become data, not control flow.
 
 The three pitfalls together say: **async generators aren't free**. They express "control flow + data flow" in the most compact syntax, but you have to understand pause semantics, lifecycle, and error propagation. Hand a generator to someone who only knows plain `async function`, and within six months they'll have six "mysterious hangs" in production.
 

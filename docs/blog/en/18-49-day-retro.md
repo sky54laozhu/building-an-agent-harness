@@ -11,7 +11,15 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 # Part 18: Retrospective — 49 Days Solo-Building a Harness, What Worked and What Didn't
 
-> A series finale shouldn't be "look how great I am" — it should be "what I'd do differently next time." 49 days, 287 commits, 60.7K LOC, 110 tests, 17 blog posts + 51 diagrams — that's the entire HarWork solo war effort. This post doesn't ship code or P95 charts. It delivers **4 things done right / 5 things done wrong / 4 tech-choice regrets / 4 solo tradeoffs**, plus the series closing checklist: reading map, keyword index, acknowledgments, contact. **Honest disclosure is the last pillar holding up this series' long-tail traffic.**
+> [!NOTE]
+> **TL;DR**
+> - 49 days · 287 commits · 60.7K LOC · 110 tests · 17 blog posts + 51 diagrams — full HarWork solo numbers, fact-checked against real `git log`.
+> - **4 things done right** (async generator / Adapter / tests / CLAUDE.md) are all Day 1-5 decisions. **5 things done wrong** (admin bloat / SQLite / no PR / no OpenAPI / no Sentry) are all Day 10+ path-dependent.
+> - The real secret isn't "high efficiency" — it's **high rejection rate**. The "won't do" list is longer than the "do" list.
+
+**Jump to:** [Timeline](#1-timeline-real-git-log-not-memory) · [Done right](#2-four-things-done-right) · [Done wrong](#3-five-things-done-wrong) · [Tech regrets](#4-four-tech-choice-regrets-which-look-right-in-hindsight) · [Solo tradeoffs](#5-four-solo-tradeoffs) · [Counter-intuitive](#counter-intuitive-takeaway) · [Closing checklist](#series-closing-checklist)
+
+A series finale shouldn't be "look how great I am" — it should be "what I'd do differently next time." This post doesn't ship code or P95 charts. It delivers **4 things done right / 5 things done wrong / 4 tech-choice regrets / 4 solo tradeoffs**, plus the series closing checklist: reading map, keyword index, acknowledgments, contact. **Honest disclosure is the last pillar holding up this series' long-tail traffic.**
 
 ## 1. Timeline (Real git log, Not Memory)
 
@@ -105,7 +113,10 @@ Commit type distribution (from `git log --pretty=format:'%s' | grep -oE '^[a-z]+
 
 ## Counter-Intuitive Takeaway
 
-> **The real secret to 49 days of solo Harness-building isn't "high efficiency" — it's "high rejection rate."** I rejected the full admin backend, rejected i18n, rejected native mobile, rejected LDAP, rejected Bun migration, rejected PostgreSQL switch, rejected Sentry, rejected OpenAPI gen — the 49-day output sits entirely inside "the 1/3 of scope I didn't reject." **A solo project's true enemy isn't 'can't finish' — it's 'want to do everything'**. The core skill of an indie developer is saying no, not coding fast.
+> [!IMPORTANT]
+> **The real secret to 49 days of solo Harness-building isn't "high efficiency" — it's "high rejection rate."**
+>
+> I rejected the full admin backend, rejected i18n, rejected native mobile, rejected LDAP, rejected Bun migration, rejected PostgreSQL switch, rejected Sentry, rejected OpenAPI gen — the 49-day output sits entirely inside "the 1/3 of scope I didn't reject." **A solo project's true enemy isn't 'can't finish' — it's 'want to do everything'**. The core skill of an indie developer is saying no, not coding fast.
 
 More counter-intuitive: **fix:feat 1:3.4 isn't a quality signal in either direction — it's a process signal**. Textbook 1:1 leaves room for "PR review catches bugs / QA finds bugs / users report bugs" — collaboration-flow processes. A solo project consumes fix inside the feat commit, statistically invisible. **You can't measure a solo project's health with team metrics** — what you measure is "do you still trust your code from 3 months ago?" — the Day 3 `agent-loop.ts` I still trust, **that's the quality signal**.
 

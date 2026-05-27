@@ -12,7 +12,15 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 # 第 03 篇：Agent Loop —— 为什么必须是 async generator，不能是普通 async function
 
-> 第 01 篇我给了一个 20 行的 Loop 骨架。HarWork 真实的 `agent/loop.ts` 是 640 行——差出来的 620 行，没有一行是"逻辑"，全是为了让那 20 行**在断线、超窗、并发、中断时不崩**。本文要回答的问题是：为什么 Loop 必须用 `async function*`，普通 `async function` 会死在哪一步？
+> [!NOTE]
+> **TL;DR**
+> - Agent Loop 同时被四个约束撕扯——流式 / 异步 / 可中断 / 可分支——任意两个叠加，普通 `async function` 就开始打架。
+> - `async function*`（async generator）是 JavaScript 里把**控制流**和**数据流**用一个关键字统一起来的最小原语——`yield` 不是"返回"，是"暂停"。
+> - Claude Code、Cursor、HarWork 不约而同选了 async generator——**不是它最强，而是它最不会让你后悔**。
+
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [核心方案](#核心方案async-generator) · [实现要点](#关键实现要点) · [反直觉结论](#反直觉结论) · [生产陷阱](#async-generator-在生产中的三个陷阱)
+
+第 01 篇我给了一个 20 行的 Loop 骨架。HarWork 真实的 `agent/loop.ts` 是 640 行——差出来的 620 行，没有一行是"逻辑"，全是为了让那 20 行**在断线、超窗、并发、中断时不崩**。本文要回答的问题是：为什么 Loop 必须用 `async function*`，普通 `async function` 会死在哪一步？
 
 ## 问题陈述
 
@@ -164,7 +172,10 @@ HarWork 的 Loop 一共会 yield 这些事件类型（来自 `StreamEvent` 联�
 
 ## 反直觉结论
 
-> **`yield` 不是"输出"，是"暂停"。** Agent Loop 真正难的不是"循环本身"，而是"把循环之间发生的事情（流式 token、工具结果、压缩、中断、重试、hook）做成可暂停可观测"。async generator 是目前 JavaScript 里**最便宜的实现**——一个语言关键字，零外部依赖。
+> [!IMPORTANT]
+> **`yield` 不是"输出"，是"暂停"。**
+>
+> Agent Loop 真正难的不是"循环本身"，而是"把循环之间发生的事情（流式 token、工具结果、压缩、中断、重试、hook）做成可暂停可观测"。async generator 是目前 JavaScript 里**最便宜的实现**——一个语言关键字，零外部依赖。
 
 换种说法：**Agent Loop 的本质不是一个"算法"，是一种"事件流形态"**。你可以用状态机、Observable、回调金字塔写出同样行为，但代码量会膨胀 3-5 倍，可读性掉到 30%，调试一个 NPE 要打 6 个断点。换用 async generator，整个 Loop 是一段从上往下读的线性代码，每个 `yield` 是一个观察点，每个 `await` 是一个可中断点。这是为什么 Claude Code、Cursor、HarWork 不约而同选了 async generator——**不是它最强，而是它最不会让你后悔**。
 
@@ -174,11 +185,20 @@ HarWork 的 Loop 一共会 yield 这些事件类型（来自 `StreamEvent` 联�
 
 理论说完，给三个 HarWork 真实踩过的坑——你迟早也会踩：
 
-**陷阱一：`for await` 提前 break，generator 未必清理。** 如果消费方在 generator 还有未完成的 await 时退出循环，generator 会卡在那个 await 上，永远不释放。HarWork 的修复是给所有阻塞 await 都接 `abortSignal`，generator `return()` 时信号触发，内部 await 抛 AbortError 立刻退出。
+> [!WARNING]
+> **陷阱一 — `for await` 提前 break，generator 未必清理。**
+>
+> 如果消费方在 generator 还有未完成的 await 时退出循环，generator 会卡在那个 await 上，永远不释放。**HarWork 的修复**：给所有阻塞 await 都接 `abortSignal`，generator `return()` 时信号触发，内部 await 抛 AbortError 立刻退出。
 
-**陷阱二：`yield` 之后，generator 暂停的状态会持有所有局部变量。** 如果你在 yield 之前持有了一个大对象（比如 50MB 的 grep 结果 buffer），yield 暂停期间内存不会释放。HarWork 的工具结果会先写入磁盘 attachment，messages 里只存"前 500 字 + attachment_id"，避免长 yield 卡住内存（详见第 04 篇 L2 压缩层）。
+> [!WARNING]
+> **陷阱二 — `yield` 之后，generator 暂停的状态会持有所有局部变量。**
+>
+> 如果你在 yield 之前持有了一个大对象（比如 50 MB 的 grep 结果 buffer），yield 暂停期间内存不会释放。**HarWork 的修复**：工具结果先写入磁盘 attachment，messages 里只存"前 500 字 + attachment_id"，避免长 yield 卡住内存（详见第 04 篇 L2 压缩层）。
 
-**陷阱三：错误从 generator 抛出的位置不直观。** 在 `yield` 之后抛错，错误堆栈指向的是消费方的 `for await`，不是 generator 内部的真正出错行。HarWork 在每个可能抛错的位置都先 `yield { type: 'error', code, message }`、然后再 `return`——错误成了数据，不再依赖 throw 机制。
+> [!WARNING]
+> **陷阱三 — 错误从 generator 抛出的位置不直观。**
+>
+> 在 `yield` 之后抛错，错误堆栈指向的是消费方的 `for await`，不是 generator 内部的真正出错行。**HarWork 的修复**：在每个可能抛错的位置都先 `yield { type: 'error', code, message }`、然后再 `return`——错误成了数据，不再依赖 throw 机制。
 
 这三个陷阱合起来想表达的事：**async generator 不是免费的**——它把"控制流 + 数据流"用最简洁的语法表达出来，但代价是你必须理解暂停语义、生命周期、错误传播这三件事。如果你只会用普通 async function，硬切 generator 半年内会有六次"莫名其妙的 hang 死"事故。
 
