@@ -12,15 +12,9 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 # 第 03 篇：Agent Loop —— 为什么必须是 async generator，不能是普通 async function
 
-> [!NOTE]
-> **TL;DR**
-> - Agent Loop 同时被四个约束撕扯——流式 / 异步 / 可中断 / 可分支——任意两个叠加，普通 `async function` 就开始打架。
-> - `async function*`（async generator）是 JavaScript 里把**控制流**和**数据流**用一个关键字统一起来的最小原语——`yield` 不是"返回"，是"暂停"。
-> - Claude Code、Cursor、HarWork 不约而同选了 async generator——**不是它最强，而是它最不会让你后悔**。
+> 第 01 篇我给了一个 20 行的 Loop 骨架。HarWork 真实的 `agent/loop.ts` 是 640 行——差出来的 620 行，没有一行是"逻辑"，全是为了让那 20 行**在断线、超窗、并发、中断时不崩**。本文要回答的问题是：为什么 Loop 必须用 `async function*`，普通 `async function` 会死在哪一步？
 
 **章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [核心方案](#核心方案async-generator) · [实现要点](#关键实现要点) · [反直觉结论](#反直觉结论) · [生产陷阱](#async-generator-在生产中的三个陷阱)
-
-第 01 篇我给了一个 20 行的 Loop 骨架。HarWork 真实的 `agent/loop.ts` 是 640 行——差出来的 620 行，没有一行是"逻辑"，全是为了让那 20 行**在断线、超窗、并发、中断时不崩**。本文要回答的问题是：为什么 Loop 必须用 `async function*`，普通 `async function` 会死在哪一步？
 
 ## 问题陈述
 

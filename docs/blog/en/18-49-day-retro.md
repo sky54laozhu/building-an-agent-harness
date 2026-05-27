@@ -11,15 +11,9 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 # Part 18: Retrospective — 49 Days Solo-Building a Harness, What Worked and What Didn't
 
-> [!NOTE]
-> **TL;DR**
-> - 49 days · 287 commits · 60.7K LOC · 110 tests · 17 blog posts + 51 diagrams — full HarWork solo numbers, fact-checked against real `git log`.
-> - **4 things done right** (async generator / Adapter / tests / CLAUDE.md) are all Day 1-5 decisions. **5 things done wrong** (admin bloat / SQLite / no PR / no OpenAPI / no Sentry) are all Day 10+ path-dependent.
-> - The real secret isn't "high efficiency" — it's **high rejection rate**. The "won't do" list is longer than the "do" list.
+> A series finale shouldn't be "look how great I am" — it should be "what I'd do differently next time." 49 days, 287 commits, 60.7K LOC, 110 tests, 17 blog posts + 51 diagrams — that's the entire HarWork solo war effort. This post doesn't ship code or P95 charts. It delivers **4 things done right / 5 things done wrong / 4 tech-choice regrets / 4 solo tradeoffs**, plus the series closing checklist: reading map, keyword index, acknowledgments, contact. **Honest disclosure is the last pillar holding up this series' long-tail traffic.**
 
 **Jump to:** [Timeline](#1-timeline-real-git-log-not-memory) · [Done right](#2-four-things-done-right) · [Done wrong](#3-five-things-done-wrong) · [Tech regrets](#4-four-tech-choice-regrets-which-look-right-in-hindsight) · [Solo tradeoffs](#5-four-solo-tradeoffs) · [Counter-intuitive](#counter-intuitive-takeaway) · [Closing checklist](#series-closing-checklist)
-
-A series finale shouldn't be "look how great I am" — it should be "what I'd do differently next time." This post doesn't ship code or P95 charts. It delivers **4 things done right / 5 things done wrong / 4 tech-choice regrets / 4 solo tradeoffs**, plus the series closing checklist: reading map, keyword index, acknowledgments, contact. **Honest disclosure is the last pillar holding up this series' long-tail traffic.**
 
 ## 1. Timeline (Real git log, Not Memory)
 

@@ -12,15 +12,9 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 # Part 03: Agent Loop — Why It Has to Be an Async Generator, Not a Plain Async Function
 
-> [!NOTE]
-> **TL;DR**
-> - Agent Loop fights four constraints at once — streaming / async / interruptible / branchable — and any pair of them already breaks a plain `async function`.
-> - `async function*` (async generator) is the smallest JavaScript primitive that unifies **control flow** and **data flow** in one keyword. `yield` is *pause*, not *return*.
-> - Claude Code, Cursor, and HarWork landed on async generators independently — **not because it's the most powerful, but because it's the one you'll regret least**.
+> Part 01 gave you a 20-line Loop skeleton. HarWork's real `agent/loop.ts` is 640 lines. The extra 620 lines aren't "logic" — they're what keeps the original 20 lines from crashing under disconnects, window overflows, concurrent tools, and user interrupts. This article answers: why is the Loop an `async function*`, and where exactly does a plain `async function` die?
 
 **Jump to:** [Problem](#problem-statement) · [Why naive fails](#why-naive-approaches-fail) · [Solution](#core-solution-async-generator) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Pitfalls](#three-production-pitfalls)
-
-Part 01 gave you a 20-line Loop skeleton. HarWork's real `agent/loop.ts` is 640 lines. The extra 620 lines aren't "logic" — they're what keeps the original 20 lines from crashing under disconnects, window overflows, concurrent tools, and user interrupts. This article answers: why is the Loop an `async function*`, and where exactly does a plain `async function` die?
 
 ## Problem Statement
 
