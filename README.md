@@ -1,49 +1,57 @@
 # Building an Agent Harness
 
-> A 19-article bilingual deep dive on the engineering behind a production-grade AI Agent Harness, drawn from HarWork — a solo-built platform shipped in 69 days.
+> An 18-article bilingual deep dive on the engineering behind a production-grade AI Agent Harness, drawn from HarWork — a solo-built platform shipped in 49 days.
 >
-> 19 篇双语工程拆解 · 从 HarWork（一人 69 天打造的企业级 Agent Harness）的真实实现讲起。
+> 18 篇双语工程拆解 · 从 HarWork（一人 49 天打造的企业级 Agent Harness）的真实实现讲起。
 
 ## Status
 
-🚧 **Scaffolding** · Article 01 in preparation. See [reading map](./docs/blog/reading-map.md) once published.
+✅ **Complete** · 18/18 articles published (ZH + EN), 54 original SVG diagrams.
 
-## What you'll find here
+📖 **Start here**: [docs/blog/reading-map.md](./docs/blog/reading-map.md) — full bilingual reading map with topical reverse-index.
+
+## At a glance
+
+- **287 commits / 49 days / 60,444 LOC / 110 tests** — the real HarWork numbers behind the series
+- **18 parts** organized into 7 themes (Thesis → Core Loop → Tools → Sandbox → Storage → Streaming → Design → DevOps → Retro)
+- **54 SVG diagrams**, all with `<title>` / `<desc>` for accessibility
+- **~180K Chinese characters** + **~40K English words**
+
+## Repo layout
 
 | Path | Purpose |
 |------|---------|
-| [`docs/blog/zh/`](./docs/blog/zh/) | 中文版 19 篇 |
-| [`docs/blog/en/`](./docs/blog/en/) | English version, 19 articles |
-| [`docs/blog/assets/`](./docs/blog/assets/) | Diagrams, code snippets, images |
+| [`docs/blog/reading-map.md`](./docs/blog/reading-map.md) | **Entry point** — bilingual reading map + reverse index |
+| [`docs/blog/zh/`](./docs/blog/zh/) | 中文版 18 篇 |
+| [`docs/blog/en/`](./docs/blog/en/) | English version, 18 articles |
+| [`docs/blog/assets/img/`](./docs/blog/assets/img/) | 54 original SVG diagrams |
 | [`docs/blog/seo-matrix.md`](./docs/blog/seo-matrix.md) | Keyword × article map |
+| [`docs/blog/publishing-checklist.md`](./docs/blog/publishing-checklist.md) | Per-article release checklist |
 | [`docs/blog/DECISIONS.md`](./docs/blog/DECISIONS.md) | Hosting / structure ADRs |
 | [`scripts/blog/`](./scripts/blog/) | Content production tooling |
 
-## Reading order
+## Reading paths
 
-- **From scratch**: 01 → 02 → ... → 19
-- **Skim path (8 articles)**: 01 → 02 → 03 → 07 → 10 → 11 → 13 → 18
-- **Hacker News path**: 01 → 11 → 18 → 19
-
-Full reading map lands with Article 01.
+- **From scratch (18 articles)**: 01 → 02 → ... → 18
+- **Skim path (8 articles)**: 01 → 03 → 04 → 07 → 08 → 10 → 13 → 18
+- **Hacker News path (4 articles)**: 01 → 11 → 17 → 18
+- **"I want to learn X" reverse index**: see [reading-map.md](./docs/blog/reading-map.md#按我想了解-x反查)
 
 ## Series themes
 
-1. **Foundations** — what an Agent Harness *is*, full architecture map
-2. **Core loop** — async generators, context compression, tool orchestration, memory
-3. **Tools & extensions** — protocol, skills, hooks
-4. **Sandbox & security** — per-user Docker, 138-rule bash analyzer, three-layer permissions
-5. **Session & streaming** — WebSocket resilience, multi-model routing
-6. **Design collaboration** — Harness as substrate for non-code AI artifacts
-7. **DevOps & retrospective** — solo CI/CD, 69-day postmortem
+1. **Thesis (01-02)** — what an Agent Harness *is*, full architecture map
+2. **Core loop (03-06)** — async generators, context compression, tool orchestration, long-term memory
+3. **Tools & sandbox (07-09)** — protocol, permissions, hooks
+4. **Session storage (10-11)** — 30-table schema, persistent per-user Docker
+5. **Streaming (12-13)** — WebSocket 30s grace, multi-model routing
+6. **Design collaboration (14-16)** — AI artifacts, variants, optimistic-lock collab
+7. **DevOps & retro (17-18)** — canary CI/CD, 49-day solo retrospective
 
 ## License
 
 Content (articles, diagrams): TBD — likely [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
 Tooling (`scripts/blog/`): TBD — likely MIT
 
-Final license decisions land before Article 01 ships.
-
 ---
 
-🔗 中文读者：每篇都有 `zh/` 版本，结构对齐 / [seo-matrix.md](./docs/blog/seo-matrix.md) 含全部中英关键词映射。
+🔗 中文读者：[阅读地图](./docs/blog/reading-map.md) · [seo-matrix.md](./docs/blog/seo-matrix.md) 含全部中英关键词映射。
