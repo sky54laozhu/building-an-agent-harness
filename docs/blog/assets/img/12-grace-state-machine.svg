@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-gs d-gs">
+  <title id="t-gs">Grace Timer 状态机 · 4 状态 · agent-running × connection-count</title>
+  <desc id="d-gs">Session 的 grace timer 由两个变量驱动：connectionCount 和 isAgentRunning。4 种组合产生 4 个状态：active（连着+跑）、idle-warm（连着+不跑）、grace-armed（断了+跑）、grace-disarmed（断了+不跑）。grace timer 只在 grace-armed 进入，30 秒后双检还在该状态才 abort。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 13px; }
+    .state-active { fill: #d1fae5; stroke: #047857; stroke-width: 2; }
+    .state-warm { fill: #dbeafe; stroke: #2563eb; stroke-width: 2; }
+    .state-armed { fill: #fef3c7; stroke: #a16207; stroke-width: 2; }
+    .state-disarm { fill: #f3f4f6; stroke: #6b7280; stroke-width: 2; }
+    .state-abort { fill: #fee2e2; stroke: #b91c1c; stroke-width: 2; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .arrow-warn { stroke: #a16207; stroke-width: 2; fill: none; }
+    .arrow-danger { stroke: #b91c1c; stroke-width: 2; fill: none; }
+    .arrow-back { stroke: #047857; stroke-width: 2; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="g-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="g-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a16207"/>
+    </marker>
+    <marker id="g-danger" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+    <marker id="g-back" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#047857"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">Grace Timer 状态机 · 4 状态 + 1 终态</text>
+  <text x="440" y="48" text-anchor="middle" class="note">session/manager.ts:74-93 · 仅在 (连接=0 AND agent 在跑) 时启动 grace</text>
+
+  <!-- 4-quadrant axis labels -->
+  <line x1="80" y1="290" x2="800" y2="290" stroke="#9ca3af" stroke-dasharray="3 3"/>
+  <line x1="440" y1="80" x2="440" y2="490" stroke="#9ca3af" stroke-dasharray="3 3"/>
+  <text x="200" y="495" text-anchor="middle" class="label-sm" fill="#6b7280">connectionCount &gt; 0</text>
+  <text x="680" y="495" text-anchor="middle" class="label-sm" fill="#6b7280">connectionCount = 0</text>
+  <text x="55" y="180" text-anchor="middle" class="label-sm" fill="#6b7280" transform="rotate(-90, 55, 180)">isAgentRunning = true</text>
+  <text x="55" y="380" text-anchor="middle" class="label-sm" fill="#6b7280" transform="rotate(-90, 55, 380)">isAgentRunning = false</text>
+
+  <!-- ACTIVE (left top) -->
+  <rect x="100" y="100" width="280" height="160" rx="8" class="state-active"/>
+  <text x="240" y="128" text-anchor="middle" class="header" fill="#065f46">① ACTIVE</text>
+  <text x="240" y="148" text-anchor="middle" class="label-sm">用户连着、agent 正在跑</text>
+  <text x="240" y="166" text-anchor="middle" class="label-sm">最常见状态</text>
+  <rect x="120" y="180" width="240" height="65" rx="4" fill="#fff" stroke="#047857"/>
+  <text x="135" y="198" class="label-mono-sm">connections.size &gt; 0</text>
+  <text x="135" y="214" class="label-mono-sm">_isAgentRunning = true</text>
+  <text x="135" y="230" class="label-mono-sm">_graceTimer = null</text>
+
+  <!-- GRACE-ARMED (right top) -->
+  <rect x="500" y="100" width="280" height="160" rx="8" class="state-armed"/>
+  <text x="640" y="128" text-anchor="middle" class="header" fill="#78350f">③ GRACE-ARMED</text>
+  <text x="640" y="148" text-anchor="middle" class="label-sm">连接断了，但 agent 还在跑</text>
+  <text x="640" y="166" text-anchor="middle" class="label-sm">30 秒倒计时启动</text>
+  <rect x="520" y="180" width="240" height="65" rx="4" fill="#fff" stroke="#a16207"/>
+  <text x="535" y="198" class="label-mono-sm">connections.size = 0</text>
+  <text x="535" y="214" class="label-mono-sm">_isAgentRunning = true</text>
+  <text x="535" y="230" class="label-mono-sm" fill="#a16207" font-weight="600">_graceTimer = setTimeout 30s</text>
+
+  <!-- IDLE-WARM (left bottom) -->
+  <rect x="100" y="320" width="280" height="150" rx="8" class="state-warm"/>
+  <text x="240" y="348" text-anchor="middle" class="header" fill="#1e40af">② IDLE-WARM</text>
+  <text x="240" y="368" text-anchor="middle" class="label-sm">用户连着，但 agent 没在跑</text>
+  <text x="240" y="384" text-anchor="middle" class="label-sm">空闲状态（等用户输入）</text>
+  <rect x="120" y="398" width="240" height="60" rx="4" fill="#fff" stroke="#2563eb"/>
+  <text x="135" y="416" class="label-mono-sm">connections.size &gt; 0</text>
+  <text x="135" y="432" class="label-mono-sm">_isAgentRunning = false</text>
+  <text x="135" y="448" class="label-mono-sm">_graceTimer = null</text>
+
+  <!-- GRACE-DISARMED (right bottom) -->
+  <rect x="500" y="320" width="280" height="150" rx="8" class="state-disarm"/>
+  <text x="640" y="348" text-anchor="middle" class="header" fill="#374151">④ GRACE-DISARMED</text>
+  <text x="640" y="368" text-anchor="middle" class="label-sm">连接断了，agent 也没跑</text>
+  <text x="640" y="384" text-anchor="middle" class="label-sm">不做任何事（idle sweep 会管）</text>
+  <rect x="520" y="398" width="240" height="60" rx="4" fill="#fff" stroke="#6b7280"/>
+  <text x="535" y="416" class="label-mono-sm">connections.size = 0</text>
+  <text x="535" y="432" class="label-mono-sm">_isAgentRunning = false</text>
+  <text x="535" y="448" class="label-mono-sm">no timer</text>
+
+  <!-- Transitions -->
+  <!-- ACTIVE → GRACE-ARMED (disconnect) -->
+  <path d="M 380 160 L 500 160" class="arrow-warn" marker-end="url(#g-warn)"/>
+  <text x="440" y="155" text-anchor="middle" class="label-mono-sm" fill="#78350f" font-weight="600">removeConn</text>
+  <text x="440" y="172" text-anchor="middle" class="note">连接断 · 启动 timer</text>
+
+  <!-- GRACE-ARMED → ACTIVE (reconnect, back) -->
+  <path d="M 500 200 L 380 200" class="arrow-back" marker-end="url(#g-back)"/>
+  <text x="440" y="195" text-anchor="middle" class="label-mono-sm" fill="#047857" font-weight="600">addConn</text>
+  <text x="440" y="218" text-anchor="middle" class="note">30s 内重连 · clearTimeout</text>
+
+  <!-- ACTIVE → IDLE-WARM (agent done) -->
+  <path d="M 240 260 L 240 320" class="arrow" marker-end="url(#g-arr)"/>
+  <text x="295" y="285" text-anchor="middle" class="label-mono-sm">setAgentRunning(false)</text>
+
+  <!-- IDLE-WARM → ACTIVE (new chat) -->
+  <path d="M 260 320 L 260 260" class="arrow" marker-end="url(#g-arr)"/>
+  <text x="320" y="305" text-anchor="middle" class="label-mono-sm">setAgentRunning(true)</text>
+
+  <!-- IDLE-WARM → GRACE-DISARMED (disconnect, no agent) -->
+  <path d="M 380 380 L 500 380" class="arrow" marker-end="url(#g-arr)"/>
+  <text x="440" y="375" text-anchor="middle" class="label-mono-sm">removeConn</text>
+  <text x="440" y="392" text-anchor="middle" class="note">连接断 · 什么都不做</text>
+
+  <!-- GRACE-DISARMED → IDLE-WARM (reconnect) -->
+  <path d="M 500 420 L 380 420" class="arrow-back" marker-end="url(#g-back)"/>
+  <text x="440" y="415" text-anchor="middle" class="label-mono-sm" fill="#047857">addConn</text>
+  <text x="440" y="438" text-anchor="middle" class="note">重连 · 直接恢复</text>
+
+  <!-- GRACE-ARMED → ABORT (timeout fired) -->
+  <path d="M 640 260 L 640 320" class="arrow-danger" marker-end="url(#g-danger)"/>
+  <text x="725" y="295" text-anchor="middle" class="label-mono-sm" fill="#b91c1c" font-weight="600">30s timeout → abort()</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="510" width="800" height="40" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="528" class="label" font-weight="700">核心 guard：<tspan class="label-mono">connections.size === 0 &amp;&amp; isAgentRunning</tspan>——两个条件 AND 才进 grace。setTimeout 回调再 check 一次防 race。</text>
+  <text x="55" y="544" class="label">用户关浏览器但 agent 没跑 → 不动它（idle sweep 30min 后管容器）；用户关浏览器 + agent 在跑 → 30s grace 后 abort。</text>
+</svg>

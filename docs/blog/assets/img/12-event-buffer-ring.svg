@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-eb d-eb">
+  <title id="t-eb">EventBuffer ring buffer + lastEventId 重连协议</title>
+  <desc id="d-eb">EventBuffer 500 容量、eventId 单调递增、超容量 FIFO shift。重连时 client 发自己的 lastEventId，server 用 getAfter 筛出缺的事件全推过去，再附 state_restore。500 是 ring buffer 上限——长跑超过 500 条事件用户重连只能从 SQLite 历史读，不能从 buffer 补。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 13px; }
+    .slot { fill: #fff; stroke: #9ca3af; stroke-width: 1; }
+    .slot-old { fill: #f3f4f6; stroke: #9ca3af; stroke-width: 1; }
+    .slot-active { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .slot-missed { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .slot-dropped { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; stroke-dasharray: 3 2; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .arrow-warn { stroke: #a16207; stroke-width: 2; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="e-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="e-warn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a16207"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">EventBuffer · 500 容量 ring buffer · lastEventId 重连协议</text>
+  <text x="440" y="48" text-anchor="middle" class="note">session/event-buffer.ts:3-32 · ws-message-handlers.ts:319-330</text>
+
+  <!-- Buffer visualization (top) -->
+  <text x="50" y="85" class="header">▶ Buffer 内部结构（容量 500 · FIFO）</text>
+
+  <!-- Slots 0..500 representation -->
+  <g transform="translate(50, 100)">
+    <!-- old/dropped section -->
+    <rect x="0" y="0" width="80" height="40" class="slot-dropped"/>
+    <text x="40" y="18" text-anchor="middle" class="label-mono-sm" fill="#7f1d1d">id 1-100</text>
+    <text x="40" y="32" text-anchor="middle" class="label-sm" fill="#7f1d1d">shift() 掉</text>
+
+    <!-- old but still in buffer -->
+    <rect x="85" y="0" width="100" height="40" class="slot-old"/>
+    <text x="135" y="18" text-anchor="middle" class="label-mono-sm">id 101-300</text>
+    <text x="135" y="32" text-anchor="middle" class="label-sm">在 buffer 里</text>
+
+    <!-- client lastEventId boundary -->
+    <line x1="185" y1="-10" x2="185" y2="50" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 2"/>
+    <text x="185" y="-15" text-anchor="middle" class="label-mono-sm" fill="#1e40af" font-weight="600">client lastEventId = 580</text>
+
+    <!-- missed but reachable -->
+    <rect x="190" y="0" width="160" height="40" class="slot-missed"/>
+    <text x="270" y="18" text-anchor="middle" class="label-mono-sm" fill="#78350f">id 581-600</text>
+    <text x="270" y="32" text-anchor="middle" class="label-sm" fill="#78350f">getAfter() 返回</text>
+
+    <!-- new active -->
+    <rect x="355" y="0" width="220" height="40" class="slot-active"/>
+    <text x="465" y="18" text-anchor="middle" class="label-mono-sm" fill="#065f46">id 601 → ...</text>
+    <text x="465" y="32" text-anchor="middle" class="label-sm" fill="#065f46">未来 event 继续 push</text>
+
+    <!-- server side _nextId pointer -->
+    <line x1="580" y1="-10" x2="580" y2="50" stroke="#047857" stroke-width="2" stroke-dasharray="4 2"/>
+    <text x="600" y="-15" class="label-mono-sm" fill="#047857" font-weight="600">_nextId = 601</text>
+  </g>
+
+  <!-- Logic block -->
+  <rect x="40" y="180" width="380" height="180" rx="6" fill="#fff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="60" y="200" class="header">▶ push() 行为</text>
+  <rect x="60" y="210" width="340" height="55" rx="3" fill="#f9fafb" stroke="#9ca3af"/>
+  <text x="70" y="227" class="label-mono-sm">stamped = { ...event, eventId: _nextId++ }</text>
+  <text x="70" y="241" class="label-mono-sm">buffer.push(stamped)</text>
+  <text x="70" y="255" class="label-mono-sm">if (buffer.length &gt; 500) buffer.shift()</text>
+
+  <text x="60" y="290" class="header">▶ getAfter(lastEventId) 行为</text>
+  <rect x="60" y="300" width="340" height="50" rx="3" fill="#f9fafb" stroke="#9ca3af"/>
+  <text x="70" y="317" class="label-mono-sm">return buffer.filter(</text>
+  <text x="70" y="331" class="label-mono-sm">  e =&gt; (e.eventId ?? 0) &gt; lastEventId</text>
+  <text x="70" y="345" class="label-mono-sm">) // O(n) 线性查找</text>
+
+  <!-- Reconnect protocol -->
+  <rect x="440" y="180" width="400" height="180" rx="6" fill="#fff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="460" y="200" class="header">▶ 重连协议（双向 lastEventId）</text>
+
+  <rect x="460" y="210" width="360" height="40" rx="3" fill="#dbeafe" stroke="#2563eb"/>
+  <text x="470" y="228" class="label-mono-sm" font-weight="600">client → server</text>
+  <text x="470" y="244" class="label-mono-sm">{ type: "reconnect", lastEventId: 580 }</text>
+
+  <rect x="460" y="258" width="360" height="40" rx="3" fill="#fef3c7" stroke="#a16207"/>
+  <text x="470" y="276" class="label-mono-sm" font-weight="600">server → client (replay)</text>
+  <text x="470" y="292" class="label-mono-sm">event 581, 582, ..., 600（getAfter 结果）</text>
+
+  <rect x="460" y="306" width="360" height="50" rx="3" fill="#d1fae5" stroke="#047857"/>
+  <text x="470" y="323" class="label-mono-sm" font-weight="600">server → client (state)</text>
+  <text x="470" y="338" class="label-mono-sm">{ type: "state_restore",</text>
+  <text x="470" y="351" class="label-mono-sm">  isAgentRunning: true, lastEventId: 600 }</text>
+
+  <!-- Edge case: overflow -->
+  <rect x="40" y="380" width="800" height="100" rx="6" fill="#fef2f2" stroke="#b91c1c" stroke-width="1.5"/>
+  <text x="60" y="402" class="header" fill="#7f1d1d">▶ 边界：超过 500 条事件用户重连</text>
+  <text x="60" y="422" class="label">agent 持续输出 600 条 event，用户在第 100 条断开。等用户重连时 buffer 已经 shift 到 id 101-600。</text>
+  <text x="60" y="440" class="label">client 发 <tspan class="label-mono">lastEventId=100</tspan> → server <tspan class="label-mono">getAfter(100)</tspan> 返回 id 101-600（500 条）→ 但 id 1-100 永远丢了。</text>
+  <text x="60" y="458" class="label" fill="#7f1d1d" font-weight="600">HarWork 态度：这种情况 client 应直接 reload 对话从 SQLite 拉历史，不依赖 EventBuffer 补全。</text>
+  <text x="60" y="473" class="label">Buffer 的承诺是"30 秒内的事件"，不是"全部事件"。</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="498" width="800" height="50" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="517" class="label" font-weight="700">设计哲学：ring buffer 只服务"断线补 30 秒"，不服务"时间穿越"。</text>
+  <text x="55" y="534" class="label">长跑 agent 超过 500 条 event 大概率不需要 replay—— SQLite 是真历史源，buffer 只是 hot path。</text>
+</svg>

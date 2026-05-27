@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-rt d-rt">
+  <title id="t-rt">断线重连完整时间线 · client / server / agent 三道泳道</title>
+  <desc id="d-rt">展示 t=0 wifi 断开到 t=8s 重连成功的完整流程。三条 swimlane：browser（前端 useWebSocket）、server（Session manager grace timer）、agent loop（继续输出事件入 buffer）。重连时机决定结果：&lt;30s 无缝衔接 replay，&gt;30s grace 触发 abort agent。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .lane-client { fill: #dbeafe; stroke: #2563eb; }
+    .lane-server { fill: #fef3c7; stroke: #a16207; }
+    .lane-agent { fill: #d1fae5; stroke: #047857; }
+    .ev { fill: #fff; stroke: #1a2233; stroke-width: 1; }
+    .ev-warn { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .ev-ok { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+  </style>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">断线重连完整时间线 · 三道泳道</text>
+  <text x="440" y="48" text-anchor="middle" class="note">use-websocket.ts (browser) · session/manager.ts (server) · agent loop 继续输出</text>
+
+  <!-- Time axis -->
+  <line x1="180" y1="80" x2="850" y2="80" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="195" y="73" text-anchor="start" class="label-mono-sm">t=0s</text>
+  <text x="285" y="73" text-anchor="middle" class="label-mono-sm">t=1s</text>
+  <text x="385" y="73" text-anchor="middle" class="label-mono-sm">t=3s</text>
+  <text x="500" y="73" text-anchor="middle" class="label-mono-sm">t=7s</text>
+  <text x="610" y="73" text-anchor="middle" class="label-mono-sm">t=8s</text>
+  <text x="845" y="73" text-anchor="end" class="label-mono-sm">…&gt;30s 会 abort</text>
+
+  <!-- Lane: browser -->
+  <rect x="40" y="100" width="800" height="100" rx="4" class="lane-client" fill-opacity="0.3"/>
+  <text x="50" y="118" class="header" fill="#1e40af">📱 Browser (use-websocket.ts)</text>
+
+  <rect x="60" y="130" width="120" height="50" rx="3" class="ev-warn"/>
+  <text x="120" y="148" text-anchor="middle" class="label-sm" font-weight="600">wifi 切换</text>
+  <text x="120" y="163" text-anchor="middle" class="label-mono-sm">ws.onclose</text>
+  <text x="120" y="176" text-anchor="middle" class="label-sm">setStatus('disconnected')</text>
+
+  <rect x="200" y="130" width="80" height="50" rx="3" class="ev"/>
+  <text x="240" y="148" text-anchor="middle" class="label-mono-sm">delay 1s</text>
+  <text x="240" y="163" text-anchor="middle" class="label-sm">attempt #1</text>
+  <text x="240" y="176" text-anchor="middle" class="note">fetch ticket</text>
+
+  <rect x="290" y="130" width="80" height="50" rx="3" class="ev"/>
+  <text x="330" y="148" text-anchor="middle" class="label-mono-sm">delay 2s</text>
+  <text x="330" y="163" text-anchor="middle" class="label-sm">attempt #2</text>
+  <text x="330" y="176" text-anchor="middle" class="note">仍失败</text>
+
+  <rect x="380" y="130" width="120" height="50" rx="3" class="ev"/>
+  <text x="440" y="148" text-anchor="middle" class="label-mono-sm">delay 4s · attempt #3</text>
+  <text x="440" y="163" text-anchor="middle" class="label-sm">wifi 终于好了</text>
+  <text x="440" y="176" text-anchor="middle" class="note">new WebSocket(...)</text>
+
+  <rect x="510" y="130" width="110" height="50" rx="3" class="ev-ok"/>
+  <text x="565" y="148" text-anchor="middle" class="label-mono-sm" font-weight="600">ws.onopen</text>
+  <text x="565" y="163" text-anchor="middle" class="label-sm">flush pendingQueue</text>
+  <text x="565" y="176" text-anchor="middle" class="label-sm">send reconnect</text>
+
+  <rect x="630" y="130" width="200" height="50" rx="3" class="ev-ok"/>
+  <text x="730" y="148" text-anchor="middle" class="label-mono-sm" font-weight="600">replay 接收 + state_restore</text>
+  <text x="730" y="163" text-anchor="middle" class="label-sm">UI 把缺的 event 渲染上来</text>
+  <text x="730" y="176" text-anchor="middle" class="label-sm">setStatus('connected')</text>
+
+  <!-- Lane: server -->
+  <rect x="40" y="210" width="800" height="100" rx="4" class="lane-server" fill-opacity="0.3"/>
+  <text x="50" y="228" class="header" fill="#78350f">🖥️ Server (session/manager.ts)</text>
+
+  <rect x="60" y="240" width="120" height="50" rx="3" class="ev-warn"/>
+  <text x="120" y="258" text-anchor="middle" class="label-mono-sm">ws.on('close')</text>
+  <text x="120" y="273" text-anchor="middle" class="label-sm">removeConnection</text>
+  <text x="120" y="286" text-anchor="middle" class="label-sm" fill="#7f1d1d">graceTimer = setTimeout 30s</text>
+
+  <rect x="200" y="240" width="300" height="50" rx="3" class="ev"/>
+  <text x="350" y="258" text-anchor="middle" class="label-mono-sm">connections.size = 0 · 等待中</text>
+  <text x="350" y="273" text-anchor="middle" class="label-sm">grace timer 还没 fire</text>
+  <text x="350" y="286" text-anchor="middle" class="note">agent 继续跑 · EventBuffer 继续 push</text>
+
+  <rect x="510" y="240" width="110" height="50" rx="3" class="ev-ok"/>
+  <text x="565" y="258" text-anchor="middle" class="label-mono-sm" font-weight="600">addConnection</text>
+  <text x="565" y="273" text-anchor="middle" class="label-sm" fill="#047857">clearTimeout</text>
+  <text x="565" y="286" text-anchor="middle" class="label-sm">graceTimer = null</text>
+
+  <rect x="630" y="240" width="200" height="50" rx="3" class="ev-ok"/>
+  <text x="730" y="258" text-anchor="middle" class="label-mono-sm" font-weight="600">handleReconnect</text>
+  <text x="730" y="273" text-anchor="middle" class="label-sm">getAfter(580) → push missed</text>
+  <text x="730" y="286" text-anchor="middle" class="label-sm">+ state_restore</text>
+
+  <!-- Lane: agent -->
+  <rect x="40" y="320" width="800" height="100" rx="4" class="lane-agent" fill-opacity="0.3"/>
+  <text x="50" y="338" class="header" fill="#065f46">🤖 Agent Loop</text>
+
+  <rect x="60" y="350" width="120" height="50" rx="3" class="ev"/>
+  <text x="120" y="368" text-anchor="middle" class="label-sm">继续跑 LLM</text>
+  <text x="120" y="383" text-anchor="middle" class="label-mono-sm">broadcast(event)</text>
+  <text x="120" y="396" text-anchor="middle" class="label-sm">→ buffer push</text>
+
+  <rect x="200" y="350" width="300" height="50" rx="3" class="ev"/>
+  <text x="350" y="368" text-anchor="middle" class="label-sm">用户感受不到，agent 不知道断了</text>
+  <text x="350" y="383" text-anchor="middle" class="label-mono-sm">事件继续入 EventBuffer (id 580 → 600)</text>
+  <text x="350" y="396" text-anchor="middle" class="note">没有 active connection · for ws of connections 跳过</text>
+
+  <rect x="510" y="350" width="320" height="50" rx="3" class="ev-ok"/>
+  <text x="670" y="368" text-anchor="middle" class="label-sm">仍在跑 · 现在又有 connection 了</text>
+  <text x="670" y="383" text-anchor="middle" class="label-mono-sm">broadcast 同时入 buffer + 发到 client</text>
+  <text x="670" y="396" text-anchor="middle" class="label-sm" fill="#065f46">无缝衔接</text>
+
+  <!-- Alternative ending block -->
+  <rect x="40" y="435" width="800" height="65" rx="4" fill="#fef2f2" stroke="#b91c1c"/>
+  <text x="55" y="455" class="header" fill="#7f1d1d">▶ 替代结局：30 秒过完都没重连上</text>
+  <text x="55" y="473" class="label">setTimeout 回调 fire · 再 check 一次 <tspan class="label-mono">size === 0 &amp;&amp; isAgentRunning</tspan> 仍为 true</text>
+  <text x="55" y="489" class="label">→ <tspan class="label-mono">session.abort()</tspan> · AbortController.abort · pending permissions 全 deny · 新建 controller 准备下次</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="510" width="800" height="40" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="528" class="label" font-weight="700">关键：30 秒窗口里 agent 不知道连接断了，buffer 帮你"记录现场"。</text>
+  <text x="55" y="544" class="label">重连即 replay · 超过 30 秒才 abort · "对人友好" × "对成本残忍" 的交点</text>
+</svg>
