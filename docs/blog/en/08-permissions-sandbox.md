@@ -6,7 +6,7 @@ series: harwork-agent-harness
 series_index: 8
 keywords: [permission system, sandbox, Docker isolation, path guard, bash analyzer, bypass immune, yolo mode, agent security, AI safety, agent harness]
 prev: 07-tool-system
-next: 09-mcp-integration
+next: 09-hooks-lifecycle
 canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/en/08-permissions-sandbox.md
 ---
 
@@ -243,9 +243,9 @@ Most counterintuitive: **yolo mode is more conservative than it sounds.** Functi
 
 ## Next Article
 
-→ Part 09: MCP Integration — giving the LLM access to infinite tools
+→ Part 09: Hook Lifecycle — 8 events that let you safely run code inside the loop
 
-After permissions and sandbox, we step beyond HarWork's 20 native tools and see how to use Model Context Protocol (MCP) to plug the LLM into GitHub, Slack, Figma, Notion, and other external systems. MCP server's stdio protocol, tool capability negotiation, resource subscription — and how HarWork mixes MCP tools with native tools through the same tool executor.
+Permissions and sandbox guard *what the LLM can't do*; the next part flips to the other side: how the **user injects their own code** while the LLM is doing things. The hook system exposes 8 events (PreToolUse / PostToolUse / UserPromptSubmit / Stop / SessionStart / SessionEnd / PreCompact / PostToolUseFailure), each can attach shell commands or HTTP webhooks. Hooks run **inside the user's container in parallel**, and their JSON output can rewrite the LLM's input, append context, or even deny the call. Part 09 unpacks the hook executor's wrappedCommand injection, exit code semantics (0/2/other), and "most-restrictive wins" parallel aggregation.
 
 ---
 

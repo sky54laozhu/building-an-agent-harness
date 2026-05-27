@@ -6,7 +6,7 @@ series: harwork-agent-harness
 series_index: 8
 keywords: [permission system, sandbox, Docker isolation, path guard, bash analyzer, bypass immune, yolo mode, agent security, AI safety, agent harness]
 prev: 07-tool-system
-next: 09-mcp-integration
+next: 09-hooks-lifecycle
 canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/08-permissions-sandbox.md
 ---
 
@@ -243,9 +243,9 @@ strict 模式下 partitionToolCalls 不再合并 parallel batch——因为每�
 
 ## 下一篇
 
-→ 第 09 篇：MCP 集成 —— 让 LLM 用上无限工具
+→ 第 09 篇：Hook 生命周期 —— 8 种事件如何安全跑
 
-权限和沙箱讲完，下一篇我们走出 HarWork 自带的 20 个工具，看怎么用 Model Context Protocol（MCP）让 LLM 接 GitHub、Slack、Figma、Notion 这些外部系统。MCP server 的 stdio 协议、tool capability 协商、resource subscription——以及 HarWork 怎么把 MCP 工具和原生工具混着用在同一个 tool executor 里。
+权限和沙箱守住了"LLM 不能做什么"，下一篇切到另一面：用户怎么在 LLM 做某事时**注入自己的代码**。Hook 系统暴露 8 个事件（PreToolUse / PostToolUse / UserPromptSubmit / Stop / SessionStart / SessionEnd / PreCompact / PostToolUseFailure），每个事件可以挂 shell 命令或 HTTP webhook，hook 在用户容器内并行跑，输出 JSON 还能改写 LLM 的输入、追加上下文、甚至 deny 这次调用。下一篇拆 hook executor 的 wrappedCommand 注入、退出码语义（0/2/其他）、并行聚合的"最严格优先"。
 
 ---
 
