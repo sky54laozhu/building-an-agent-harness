@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-sz d-sz">
+  <title id="t-sz">20 工具行数分布与 Bash isReadOnly 占比</title>
+  <desc id="d-sz">左侧柱状图显示 20 个工具按行数排序，Bash 335 行远超其他工具（次大 task-management 218，平均 89）。右侧饼图显示 Bash 335 行内部组成：60% 是 isReadOnly 静态分析（subcommand 分割、前缀匹配、regex、find/xargs 特殊处理），call() 实际执行只占 15%。</desc>
+  <style>
+    .bar-bash { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1; }
+    .bar-large { fill: #fef3c7; stroke: #a16207; stroke-width: 1; }
+    .bar-medium { fill: #dbeafe; stroke: #1e40af; stroke-width: 1; }
+    .bar-small { fill: #d1fae5; stroke: #047857; stroke-width: 1; }
+    .axis { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .axis-tick { stroke: #5a5a5a; stroke-width: 0.5; }
+    .label { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-axis { fill: #5a5a5a; font-size: 9px; }
+    .header { font-weight: 600; font-size: 13px; fill: #1a2233; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+  </style>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">工具行数分布 —— Bash 是孤狼，60% 代码在静态分析</text>
+  <text x="440" y="48" text-anchor="middle" class="note">tools/*.ts 共 2020 行 · 平均 100 行/工具 · 最小 Glob 35 · 最大 Bash 335</text>
+
+  <!-- LEFT: Bar chart -->
+  <text x="60" y="78" class="header">① 20 工具行数（升序）</text>
+
+  <!-- Axis: x = line count, y = tools list -->
+  <!-- Plot area: x from 60 to 450, y from 90 to 460 -->
+  <line x1="170" y1="90" x2="170" y2="455" class="axis"/>
+  <line x1="170" y1="455" x2="450" y2="455" class="axis"/>
+
+  <!-- X-axis ticks: 0, 100, 200, 300, 400 lines -->
+  <line x1="170" y1="455" x2="170" y2="460" class="axis-tick"/>
+  <text x="170" y="472" text-anchor="middle" class="label-axis">0</text>
+  <line x1="240" y1="455" x2="240" y2="460" class="axis-tick"/>
+  <text x="240" y="472" text-anchor="middle" class="label-axis">100</text>
+  <line x1="310" y1="455" x2="310" y2="460" class="axis-tick"/>
+  <text x="310" y="472" text-anchor="middle" class="label-axis">200</text>
+  <line x1="380" y1="455" x2="380" y2="460" class="axis-tick"/>
+  <text x="380" y="472" text-anchor="middle" class="label-axis">300</text>
+  <line x1="450" y1="455" x2="450" y2="460" class="axis-tick"/>
+  <text x="450" y="472" text-anchor="middle" class="label-axis">400</text>
+  <text x="310" y="490" text-anchor="middle" class="label-axis">行数 (lines)</text>
+
+  <!-- Bars: 20 tools, 17px each, 1px gap -->
+  <!-- glob 35 -->
+  <rect x="170" y="93" width="24.5" height="15" class="bar-small"/>
+  <text x="165" y="105" text-anchor="end" class="label-mono">glob</text>
+  <text x="201" y="105" class="label" font-size="9">35</text>
+
+  <!-- registry 40 -->
+  <rect x="170" y="111" width="28" height="15" class="bar-small"/>
+  <text x="165" y="123" text-anchor="end" class="label-mono">registry</text>
+  <text x="204" y="123" class="label" font-size="9">40</text>
+
+  <!-- read 44 -->
+  <rect x="170" y="129" width="30.8" height="15" class="bar-small"/>
+  <text x="165" y="141" text-anchor="end" class="label-mono">read</text>
+  <text x="207" y="141" class="label" font-size="9">44</text>
+
+  <!-- grep 49 -->
+  <rect x="170" y="147" width="34.3" height="15" class="bar-small"/>
+  <text x="165" y="159" text-anchor="end" class="label-mono">grep</text>
+  <text x="210" y="159" class="label" font-size="9">49</text>
+
+  <!-- write 49 -->
+  <rect x="170" y="165" width="34.3" height="15" class="bar-small"/>
+  <text x="165" y="177" text-anchor="end" class="label-mono">write</text>
+  <text x="210" y="177" class="label" font-size="9">49</text>
+
+  <!-- design-generate 59 -->
+  <rect x="170" y="183" width="41.3" height="15" class="bar-small"/>
+  <text x="165" y="195" text-anchor="end" class="label-mono">design-generate</text>
+  <text x="217" y="195" class="label" font-size="9">59</text>
+
+  <!-- design-render 60 -->
+  <rect x="170" y="201" width="42" height="15" class="bar-small"/>
+  <text x="165" y="213" text-anchor="end" class="label-mono">design-render</text>
+  <text x="218" y="213" class="label" font-size="9">60</text>
+
+  <!-- edit 64 -->
+  <rect x="170" y="219" width="44.8" height="15" class="bar-medium"/>
+  <text x="165" y="231" text-anchor="end" class="label-mono">edit</text>
+  <text x="220" y="231" class="label" font-size="9">64</text>
+
+  <!-- skill 67 -->
+  <rect x="170" y="237" width="46.9" height="15" class="bar-medium"/>
+  <text x="165" y="249" text-anchor="end" class="label-mono">skill</text>
+  <text x="222" y="249" class="label" font-size="9">67</text>
+
+  <!-- design-iterate 72 -->
+  <rect x="170" y="255" width="50.4" height="15" class="bar-medium"/>
+  <text x="165" y="267" text-anchor="end" class="label-mono">design-iterate</text>
+  <text x="226" y="267" class="label" font-size="9">72</text>
+
+  <!-- plan-mode 75 -->
+  <rect x="170" y="273" width="52.5" height="15" class="bar-medium"/>
+  <text x="165" y="285" text-anchor="end" class="label-mono">plan-mode</text>
+  <text x="228" y="285" class="label" font-size="9">75</text>
+
+  <!-- types 103 (interface, not a tool, but counted) -->
+  <rect x="170" y="291" width="72.1" height="15" class="bar-medium"/>
+  <text x="165" y="303" text-anchor="end" class="label-mono">types (iface)</text>
+  <text x="247" y="303" class="label" font-size="9">103</text>
+
+  <!-- agent 107 -->
+  <rect x="170" y="309" width="74.9" height="15" class="bar-medium"/>
+  <text x="165" y="321" text-anchor="end" class="label-mono">agent</text>
+  <text x="250" y="321" class="label" font-size="9">107</text>
+
+  <!-- ask-user-question 107 -->
+  <rect x="170" y="327" width="74.9" height="15" class="bar-medium"/>
+  <text x="165" y="339" text-anchor="end" class="label-mono">ask-user-question</text>
+  <text x="250" y="339" class="label" font-size="9">107</text>
+
+  <!-- design-handoff 118 -->
+  <rect x="170" y="345" width="82.6" height="15" class="bar-medium"/>
+  <text x="165" y="357" text-anchor="end" class="label-mono">design-handoff</text>
+  <text x="258" y="357" class="label" font-size="9">118</text>
+
+  <!-- web-search 131 -->
+  <rect x="170" y="363" width="91.7" height="15" class="bar-medium"/>
+  <text x="165" y="375" text-anchor="end" class="label-mono">web-search</text>
+  <text x="267" y="375" class="label" font-size="9">131</text>
+
+  <!-- notebook-edit 132 -->
+  <rect x="170" y="381" width="92.4" height="15" class="bar-medium"/>
+  <text x="165" y="393" text-anchor="end" class="label-mono">notebook-edit</text>
+  <text x="268" y="393" class="label" font-size="9">132</text>
+
+  <!-- web-fetch 155 -->
+  <rect x="170" y="399" width="108.5" height="15" class="bar-large"/>
+  <text x="165" y="411" text-anchor="end" class="label-mono">web-fetch</text>
+  <text x="284" y="411" class="label" font-size="9">155</text>
+
+  <!-- task-management 218 -->
+  <rect x="170" y="417" width="152.6" height="15" class="bar-large"/>
+  <text x="165" y="429" text-anchor="end" class="label-mono">task-management</text>
+  <text x="328" y="429" class="label" font-size="9">218</text>
+
+  <!-- bash 335 (highlighted) -->
+  <rect x="170" y="435" width="234.5" height="15" class="bar-bash"/>
+  <text x="165" y="447" text-anchor="end" class="label-mono" font-weight="600" fill="#b91c1c">bash</text>
+  <text x="410" y="447" class="label" font-size="10" font-weight="600" fill="#b91c1c">335</text>
+
+  <!-- Annotation: bash outlier -->
+  <text x="280" y="510" text-anchor="middle" class="label" fill="#b91c1c" font-weight="600">↑ Bash 远超次大 task-management（218 行）—— 唯一一个 &gt;3× 平均的工具</text>
+
+  <!-- RIGHT: Bash internals breakdown -->
+  <text x="500" y="78" class="header">② Bash 335 行内部组成（按职能）</text>
+
+  <!-- Pie chart at (640, 220) radius 100 -->
+  <!-- Segments (clockwise from top):
+       60% isReadOnly static analysis (216 lines) — 216/360 deg = 216° (red)
+       15% call() actual exec (50 lines) — 50/335 = ~14.9% = 53.7° (blue)
+       12% checkPermissions + bashAnalyzer call (40 lines) — 43° (orange)
+       8% inputSchema + description + prompt (27 lines) — 29° (green)
+       5% port detection + output truncation (15 lines) — 16° (purple)
+  -->
+  <!-- Use simple arcs. Math: center (640, 220), radius 100. -->
+  <!-- Segment 1: isReadOnly 216°, from 0° (top) to 216° -->
+  <path d="M 640 220 L 640 120 A 100 100 0 1 1 581.2 300.9 Z" fill="#fee2e2" stroke="#b91c1c" stroke-width="1.5"/>
+  <!-- Segment 2: call() 53.7°, from 216° to 269.7° -->
+  <path d="M 640 220 L 581.2 300.9 A 100 100 0 0 1 540.4 209.5 Z" fill="#dbeafe" stroke="#1e40af" stroke-width="1.5"/>
+  <!-- Segment 3: permissions 43°, from 269.7° to 312.7° -->
+  <path d="M 640 220 L 540.4 209.5 A 100 100 0 0 1 572.0 137.4 Z" fill="#fef3c7" stroke="#a16207" stroke-width="1.5"/>
+  <!-- Segment 4: schema 29°, from 312.7° to 341.7° -->
+  <path d="M 640 220 L 572.0 137.4 A 100 100 0 0 1 608.4 122.2 Z" fill="#d1fae5" stroke="#047857" stroke-width="1.5"/>
+  <!-- Segment 5: misc 18.3°, from 341.7° to 360° (top) -->
+  <path d="M 640 220 L 608.4 122.2 A 100 100 0 0 1 640 120 Z" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.5"/>
+
+  <!-- Pie labels with leaders -->
+  <!-- isReadOnly 60% - label inside the big red segment -->
+  <text x="640" y="220" text-anchor="middle" class="label" font-weight="700" fill="#b91c1c" font-size="14">60%</text>
+  <text x="640" y="238" text-anchor="middle" class="label-mono" fill="#7f1d1d">isReadOnly</text>
+  <text x="640" y="252" text-anchor="middle" class="note" fill="#7f1d1d">~216 行 静态分析</text>
+
+  <!-- Legend -->
+  <text x="500" y="350" class="header" font-size="12">分项明细：</text>
+
+  <rect x="500" y="360" width="14" height="14" fill="#fee2e2" stroke="#b91c1c"/>
+  <text x="520" y="372" class="label">60% · <tspan class="label-mono">isReadOnly</tspan> 静态分析（subcmd 分割 + 前缀 + regex + find/xargs）</text>
+
+  <rect x="500" y="380" width="14" height="14" fill="#dbeafe" stroke="#1e40af"/>
+  <text x="520" y="392" class="label">15% · <tspan class="label-mono">call()</tspan> 实际 exec + 输出处理（L242-290）</text>
+
+  <rect x="500" y="400" width="14" height="14" fill="#fef3c7" stroke="#a16207"/>
+  <text x="520" y="412" class="label">12% · <tspan class="label-mono">checkPermissions</tspan> + bash-analyzer 调用</text>
+
+  <rect x="500" y="420" width="14" height="14" fill="#d1fae5" stroke="#047857"/>
+  <text x="520" y="432" class="label">8% · <tspan class="label-mono">inputSchema + description + prompt</tspan></text>
+
+  <rect x="500" y="440" width="14" height="14" fill="#ede9fe" stroke="#6d28d9"/>
+  <text x="520" y="452" class="label">5% · port detection + 输出截断（MAX_OUTPUT_CHARS=64K）</text>
+
+  <text x="500" y="478" class="label" font-weight="600" fill="#1a2233">📌 Bash 的复杂税 = 通用工具的副作用空间无限</text>
+  <text x="500" y="494" class="label">能换成专用工具（Read/Edit/Glob/Grep）的，绝不应该用 Bash</text>
+</svg>

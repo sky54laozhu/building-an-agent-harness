@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-re d-re">
+  <title id="t-re">Read cat -n + Edit unique-match 协同契约</title>
+  <desc id="d-re">Read 工具输出 cat -n 风格行号格式（read.ts:23-25 String.padStart(6) + tab + line），LLM 看完用 Edit 工具的 unique-match 契约（edit.ts:19-31）改文件：old_string 必须恰好出现一次，0 次或 >1 次都报错并提示 LLM 怎么改 next try。Read 行号 + 上下文构成的 old_string 让 LLM 能精确定位、Edit 的 unique-match 强制 LLM 带足够上下文。</desc>
+  <style>
+    .box-read { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .box-edit { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .box-llm { fill: #ede9fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .box-code { fill: #fff; stroke: #5a5a5a; stroke-width: 1; }
+    .box-error { fill: #fef3c7; stroke: #a16207; stroke-width: 1; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .arrow-error { stroke: #a16207; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .step-num { fill: #fff; font-size: 11px; font-weight: 700; }
+  </style>
+
+  <defs>
+    <marker id="re-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="re-arr-err" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a16207"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">Read cat -n + Edit unique-match —— 两个工具的隐性契约</text>
+  <text x="440" y="48" text-anchor="middle" class="note">read.ts:23-25 加行号 · edit.ts:19-31 唯一匹配 · 设计上彼此依赖</text>
+
+  <!-- Step 1: Read tool -->
+  <circle cx="50" cy="100" r="14" fill="#047857"/>
+  <text x="50" y="105" text-anchor="middle" class="step-num">①</text>
+  <rect x="80" y="80" width="370" height="120" rx="6" class="box-read"/>
+  <text x="95" y="100" class="header" fill="#065f46">Read 工具：cat -n 风格输出</text>
+  <text x="95" y="118" class="label-mono-sm">read.ts:23-25</text>
+  <rect x="95" y="125" width="340" height="68" fill="#fff" stroke="#5a5a5a" rx="3"/>
+  <text x="105" y="142" class="label-mono-sm">const formatted = sliced.map((line, i) =&gt;</text>
+  <text x="105" y="156" class="label-mono-sm">  `${String(start + i + 1).padStart(6)}\t${line}`</text>
+  <text x="105" y="170" class="label-mono-sm">).join('\n')</text>
+  <text x="105" y="187" class="note">→ 6 位右对齐行号 + tab + 原始行</text>
+
+  <!-- Arrow 1 → 2 -->
+  <path d="M 265 200 L 265 230" class="arrow" marker-end="url(#re-arr)"/>
+
+  <!-- Step 2: Output format example -->
+  <rect x="80" y="230" width="370" height="100" rx="6" class="box-code"/>
+  <text x="95" y="250" class="header" fill="#1a2233">输出示例（LLM 看到的）</text>
+  <text x="95" y="270" class="label-mono-sm">     1	import { z } from 'zod'</text>
+  <text x="95" y="284" class="label-mono-sm">     2	import type { HarWorkTool } from './types.js'</text>
+  <text x="95" y="298" class="label-mono-sm">     3	</text>
+  <text x="95" y="312" class="label-mono-sm">     4	export const inputSchema = z.object({</text>
+  <text x="95" y="326" class="label-mono-sm">     5	  file_path: z.string().describe('...'),</text>
+
+  <!-- Step 3: LLM constructs Edit args -->
+  <circle cx="50" cy="370" r="14" fill="#6d28d9"/>
+  <text x="50" y="375" text-anchor="middle" class="step-num">②</text>
+  <rect x="80" y="350" width="370" height="80" rx="6" class="box-llm"/>
+  <text x="95" y="370" class="header" fill="#4c1d95">LLM 据此构造 Edit 入参</text>
+  <text x="95" y="388" class="note">行号让 LLM 知道改第几行 → 但 old_string 不能含行号本身</text>
+  <text x="95" y="408" class="label-mono-sm">old_string: "import type { HarWorkTool } from './types.js'"</text>
+  <text x="95" y="422" class="label-mono-sm">new_string: "import type { HarWorkTool, ToolResult } from './types.js'"</text>
+
+  <!-- Right column: Edit tool + contract -->
+
+  <!-- Step 4: Edit tool contract -->
+  <circle cx="500" cy="100" r="14" fill="#b91c1c"/>
+  <text x="500" y="105" text-anchor="middle" class="step-num">③</text>
+  <rect x="530" y="80" width="320" height="120" rx="6" class="box-edit"/>
+  <text x="545" y="100" class="header" fill="#7f1d1d">Edit 工具：unique-match 契约</text>
+  <text x="545" y="118" class="label-mono-sm">edit.ts:19-31</text>
+  <rect x="545" y="125" width="290" height="68" fill="#fff" stroke="#5a5a5a" rx="3"/>
+  <text x="555" y="142" class="label-mono-sm">occurrences = content.split(old_string).length - 1</text>
+  <text x="555" y="158" class="label-mono-sm">if (occurrences === 0) { /* error */ }</text>
+  <text x="555" y="174" class="label-mono-sm">if (occurrences &gt; 1) { /* error */ }</text>
+  <text x="555" y="188" class="label-mono-sm">// only exactly 1 → proceed</text>
+
+  <!-- Arrow 3 (Edit input) ← LLM -->
+  <path d="M 450 390 L 480 390 L 480 270 L 530 270" class="arrow" marker-end="url(#re-arr)" stroke-dasharray="3 2"/>
+  <text x="490" y="262" class="note">LLM 用 Edit</text>
+
+  <!-- Step 5: 两种错误反向引导 -->
+  <text x="530" y="222" class="header" fill="#78350f">④ 错误信息本身就是 prompt</text>
+
+  <rect x="530" y="232" width="320" height="50" rx="4" class="box-error"/>
+  <text x="545" y="250" class="label" font-weight="600" fill="#78350f">occurrences === 0：</text>
+  <text x="545" y="266" class="label-mono-sm">"make sure it matches exactly</text>
+  <text x="545" y="279" class="label-mono-sm">including whitespace and indentation."</text>
+
+  <rect x="530" y="290" width="320" height="50" rx="4" class="box-error"/>
+  <text x="545" y="308" class="label" font-weight="600" fill="#78350f">occurrences &gt; 1：</text>
+  <text x="545" y="324" class="label-mono-sm">"provide more surrounding context</text>
+  <text x="545" y="337" class="label-mono-sm">to make the match unique."</text>
+
+  <!-- Error feedback arrows (back to LLM) -->
+  <path d="M 530 257 L 470 257 L 470 380 L 450 380" class="arrow-error" marker-end="url(#re-arr-err)"/>
+  <path d="M 530 315 L 460 315 L 460 380 L 450 380" class="arrow-error" marker-end="url(#re-arr-err)"/>
+  <text x="465" y="350" class="note" fill="#a16207" font-weight="600">错误 → LLM 修正 next try</text>
+
+  <!-- Contract bar at the bottom -->
+  <rect x="40" y="450" width="800" height="95" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="470" class="label" font-weight="700" fill="#1a2233">隐性契约（两个工具共同遵守才有效）：</text>
+  <text x="55" y="490" class="label"><tspan font-weight="600" fill="#065f46">Read 端</tspan>：给每一行加 6 位右对齐行号 + tab 分隔 → LLM 能数行、能引用"第 N 行"</text>
+  <text x="55" y="508" class="label"><tspan font-weight="600" fill="#7f1d1d">Edit 端</tspan>：old_string 唯一匹配，0/&gt;1 都报错并提示如何修正 → 逼 LLM 把够多的上下文带进 old_string</text>
+  <text x="55" y="526" class="label"><tspan font-weight="600" fill="#4c1d95">LLM 端</tspan>：用 Read 的行号定位（人脑用 line number 思考），用 Edit 的报错反馈迭代精度</text>
+  <text x="55" y="542" class="label" fill="#5a5a5a">▶ 两个工具不是独立设计的，是<tspan font-weight="600">一对契约伙伴</tspan>。新加工具时应 follow 协议，而不是发明新格式</text>
+</svg>

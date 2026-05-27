@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 580" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-9m d-9m">
+  <title id="t-9m">HarWorkTool 9 方法的角色分布</title>
+  <desc id="d-9m">HarWorkTool interface (types.ts:92-103) 的 9 个必填方法 + 1 可选方法各自服务不同消费者：inputSchema/description 给 Vercel AI SDK；prompt 给 system prompt builder；call 给 tool executor；isReadOnly/isConcurrencySafe 给 partitionToolCalls 调度器；isEnabled 给 ToolRegistry；checkPermissions 给 permission layer；maxResultSizeChars 给 output truncator。</desc>
+  <style>
+    .box-sdk { fill: #dbeafe; stroke: #1e40af; stroke-width: 1.5; }
+    .box-prompt { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .box-exec { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .box-sched { fill: #ede9fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .box-reg { fill: #fff7ed; stroke: #c2410c; stroke-width: 1.5; }
+    .box-perm { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .box-center { fill: #fff; stroke: #1a2233; stroke-width: 2; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-mono { fill: #1a1a1a; font-size: 11px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 600; font-size: 12px; }
+    .center-title { font-size: 14px; font-weight: 700; fill: #1a2233; }
+  </style>
+
+  <defs>
+    <marker id="t9-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="580" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">HarWorkTool 9 方法的角色分布 —— 每个方法服务一个消费者</text>
+  <text x="440" y="48" text-anchor="middle" class="note">types.ts:92-103 · 不按"工具属性"分类，按"谁会问这个工具什么"分类</text>
+
+  <!-- Center: HarWorkTool interface -->
+  <rect x="340" y="240" width="200" height="100" rx="6" class="box-center"/>
+  <text x="440" y="265" text-anchor="middle" class="center-title">HarWorkTool&lt;I, O&gt;</text>
+  <text x="440" y="285" text-anchor="middle" class="label-mono-sm">interface</text>
+  <line x1="360" y1="295" x2="520" y2="295" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="440" y="312" text-anchor="middle" class="label">9 必填方法 + 1 可选</text>
+  <text x="440" y="328" text-anchor="middle" class="note">types.ts:92-103</text>
+
+  <!-- Top-left: SDK consumer -->
+  <rect x="40" y="80" width="220" height="100" rx="6" class="box-sdk"/>
+  <text x="55" y="100" class="header" fill="#1e3a8a">① Vercel AI SDK</text>
+  <text x="55" y="118" class="note">每轮组装 tools 参数</text>
+  <line x1="55" y1="125" x2="245" y2="125" stroke="#1e40af" stroke-width="0.5"/>
+  <text x="55" y="142" class="label-mono">inputSchema</text>
+  <text x="160" y="142" class="note">→ JSON Schema</text>
+  <text x="55" y="158" class="label-mono">description()</text>
+  <text x="170" y="158" class="note">→ 一行 tool spec</text>
+  <text x="55" y="174" class="note" font-size="9">registry.ts:21-31 toAISDKTools()</text>
+
+  <!-- Top-right: System prompt builder -->
+  <rect x="620" y="80" width="220" height="100" rx="6" class="box-prompt"/>
+  <text x="635" y="100" class="header" fill="#78350f">② System Prompt Builder</text>
+  <text x="635" y="118" class="note">每轮拼装 # Tool reference 段</text>
+  <line x1="635" y1="125" x2="825" y2="125" stroke="#a16207" stroke-width="0.5"/>
+  <text x="635" y="142" class="label-mono">prompt(options?)</text>
+  <text x="755" y="142" class="note">→ 多行指南</text>
+  <text x="635" y="158" class="note" font-size="9">prompts.ts:209-222</text>
+  <text x="635" y="172" class="note" font-size="9">getToolPrompts() in registry.ts:33-39</text>
+
+  <!-- Middle-left: Tool executor -->
+  <rect x="40" y="220" width="220" height="100" rx="6" class="box-exec"/>
+  <text x="55" y="240" class="header" fill="#065f46">③ Tool Executor</text>
+  <text x="55" y="258" class="note">LLM 决定调用后</text>
+  <line x1="55" y1="265" x2="245" y2="265" stroke="#047857" stroke-width="0.5"/>
+  <text x="55" y="282" class="label-mono">call(args, context)</text>
+  <text x="55" y="300" class="label-mono">→ ToolResult&lt;O&gt;</text>
+  <text x="55" y="314" class="note" font-size="9">tool-executor.ts (第 05 篇)</text>
+
+  <!-- Middle-right: Scheduler -->
+  <rect x="620" y="220" width="220" height="100" rx="6" class="box-sched"/>
+  <text x="635" y="240" class="header" fill="#4c1d95">④ 调度器 (Part 05)</text>
+  <text x="635" y="258" class="note">每批工具调用前</text>
+  <line x1="635" y1="265" x2="825" y2="265" stroke="#6d28d9" stroke-width="0.5"/>
+  <text x="635" y="282" class="label-mono">isReadOnly(input)</text>
+  <text x="635" y="298" class="label-mono">isConcurrencySafe(input)</text>
+  <text x="635" y="314" class="note" font-size="9">partitionToolCalls()</text>
+
+  <!-- Bottom-left: Registry -->
+  <rect x="40" y="360" width="220" height="90" rx="6" class="box-reg"/>
+  <text x="55" y="380" class="header" fill="#9a3412">⑤ ToolRegistry</text>
+  <text x="55" y="398" class="note">工具列表构建时</text>
+  <line x1="55" y1="405" x2="245" y2="405" stroke="#c2410c" stroke-width="0.5"/>
+  <text x="55" y="422" class="label-mono">isEnabled(context)</text>
+  <text x="170" y="422" class="note">→ 跳过 disabled</text>
+  <text x="55" y="438" class="note" font-size="9">registry.ts:24</text>
+
+  <!-- Bottom-right: Permission layer -->
+  <rect x="620" y="360" width="220" height="90" rx="6" class="box-perm"/>
+  <text x="635" y="380" class="header" fill="#7f1d1d">⑥ Permission Layer</text>
+  <text x="635" y="398" class="note">call() 之前</text>
+  <line x1="635" y1="405" x2="825" y2="405" stroke="#b91c1c" stroke-width="0.5"/>
+  <text x="635" y="422" class="label-mono">checkPermissions()</text>
+  <text x="635" y="438" class="note" font-size="9">→ allow / deny / bypassImmune</text>
+
+  <!-- Bottom-center: Output truncator (optional) -->
+  <rect x="290" y="430" width="300" height="55" rx="6" fill="#f6f7f9" stroke="#5a5a5a" stroke-dasharray="3 3"/>
+  <text x="305" y="450" class="header" fill="#5a5a5a">⑦ Output truncator（可选）</text>
+  <text x="305" y="468" class="label-mono">maxResultSizeChars?: number</text>
+  <text x="305" y="480" class="note">仅大输出工具实现（Bash MAX_OUTPUT_CHARS=64K）</text>
+
+  <!-- Connections (arrows from center to each consumer) -->
+  <path d="M 340 270 L 260 130" class="arrow" marker-end="url(#t9-arr)" stroke-dasharray="3 2"/>
+  <path d="M 540 270 L 620 130" class="arrow" marker-end="url(#t9-arr)" stroke-dasharray="3 2"/>
+  <path d="M 340 285 L 260 270" class="arrow" marker-end="url(#t9-arr)"/>
+  <path d="M 540 285 L 620 270" class="arrow" marker-end="url(#t9-arr)"/>
+  <path d="M 380 340 L 260 400" class="arrow" marker-end="url(#t9-arr)" stroke-dasharray="3 2"/>
+  <path d="M 500 340 L 620 400" class="arrow" marker-end="url(#t9-arr)" stroke-dasharray="3 2"/>
+  <path d="M 440 340 L 440 430" class="arrow" marker-end="url(#t9-arr)" stroke-dasharray="2 2" stroke="#5a5a5a"/>
+
+  <!-- Key insight bar -->
+  <rect x="40" y="510" width="800" height="55" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="528" class="label" font-weight="600" fill="#1a2233">关键观察：</text>
+  <text x="55" y="546" class="label">1. 实线 = 每轮都被调；虚线 = 只在变化时被调（schema/prompt 几乎不变，但 isReadOnly 每次都看 input）</text>
+  <text x="55" y="560" class="label">2. <tspan font-weight="600">没有任何方法被两个消费者共享</tspan>—— 9 个方法、6 个独立消费者，零耦合</text>
+</svg>
