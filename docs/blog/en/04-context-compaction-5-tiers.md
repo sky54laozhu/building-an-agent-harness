@@ -91,7 +91,7 @@ return {
 
 Scenario: the LLM made one turn with 4 Reads, 5 Globs, 6 Greps — fed back, the next user message has 15 `tool_result` blocks. This burst pattern is wasteful because the LLM has already decided based on these results — old results are just "evidence."
 
-L2 collapses the whole message into one summary line; combined with L1 (if a single block still > 8KB), it pushes "scanning-type turns" from ~25K tokens down to ~3K.
+L2 collapses the whole message into one summary line; combined with L1 (if a single block still > 8KB), it pulls a typical "scanning turn" from the tens-of-thousands-of-tokens range back down to the low thousands.
 
 ### L3 Auto — Rule-Based Old-History Summary
 
@@ -138,7 +138,7 @@ if (currentTokens >= budget * 0.85 && messages.length > 10) {
 }
 ```
 
-Scenario: the conversation has already been compressed once by L3, but the user keeps asking, new tool results pile up, and usage spikes back to 85%. L3 is now useless (old messages are already compressed) — you need **semantic-level reorganization**. L5 uses an **80-line carefully designed prompt** (`compact-prompt.ts`) to force the LLM to compress the entire history into 9 structured sections: ① Primary Request and Intent ② Key Technical Concepts ③ Files and Code Sections ④ Errors and fixes ⑤ Problem Solving ⑥ All user messages ⑦ Pending Tasks ⑧ Current Work ⑨ Optional Next Step.
+Scenario: the conversation has already been compressed once by L3, but the user keeps asking, new tool results pile up, and usage spikes back to 85%. L3 is now useless (old messages are already compressed) — you need **semantic-level reorganization**. L5 uses a **carefully designed long prompt** (`compact-prompt.ts`, 133 lines total) to force the LLM to compress the entire history into 9 structured sections: ① Primary Request and Intent ② Key Technical Concepts ③ Files and Code Sections ④ Errors and fixes ⑤ Problem Solving ⑥ All user messages ⑦ Pending Tasks ⑧ Current Work ⑨ Optional Next Step.
 
 Why these 9? **Because it's Claude Code's open-source prototype** (HarWork ports it). This structure was battle-tested across tens of thousands of conversations inside Anthropic's product — it preserves semantics for "continuing a coding task" better than any homebrew alternative.
 

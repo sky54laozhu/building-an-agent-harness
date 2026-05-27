@@ -58,7 +58,7 @@
   <text x="838" y="146" class="bar-label" text-anchor="end" fill="#fff">200KB</text>
   <rect x="595" y="155" width="9" height="14" class="bar-comp"/>
   <text x="610" y="166" class="bar-label">3KB（98.5% ↓）</text>
-  <text x="595" y="186" class="bar-label" fill="#5a5a5a">实测：18% 的 tool_result 命中</text>
+  <text x="595" y="186" class="bar-label" fill="#5a5a5a">典型场景：长 Bash 输出、Read 大文件</text>
 
   <line x1="20" y1="200" x2="860" y2="200" stroke="#d0d3d8" stroke-width="1"/>
 
@@ -125,7 +125,7 @@
   <text x="838" y="416" class="bar-label" text-anchor="end" fill="#fff">110K（超 10K）</text>
   <rect x="595" y="425" width="120" height="14" class="bar-comp"/>
   <text x="720" y="436" class="bar-label">55K（有损保命）</text>
-  <text x="595" y="456" class="bar-label" fill="#5a5a5a">实测 &lt; 0.3% turn 触发，但触发即关键</text>
+  <text x="595" y="456" class="bar-label" fill="#5a5a5a">触发概率极低，但触发即关键（无 L4 会 prompt_too_long）</text>
 
   <line x1="20" y1="470" x2="860" y2="470" stroke="#d0d3d8" stroke-width="1"/>
 

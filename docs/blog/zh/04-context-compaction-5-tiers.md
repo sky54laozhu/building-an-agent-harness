@@ -91,7 +91,7 @@ return {
 
 针对场景：LLM 一轮调了 4 个 Read、5 个 Glob、6 个 Grep——结果回灌后 messages 里出现「user 消息里有 15 个 tool_result」。这种连发模式特别浪费 token，因为 LLM 已经基于这些结果做完决策，老结果只是「证据」。
 
-L2 把整条消息折成一行系统摘要，搭配 L1（如果单条还 >8KB），实测把这类「扫描型 turn」的占用从 ~25K token 压到 ~3K。
+L2 把整条消息折成一行系统摘要，搭配 L1（如果单条还 >8KB），可以把一个典型「扫描型 turn」从「上万 token」量级压回「几千 token」量级。
 
 ### L3 Auto — 旧消息规则摘要
 
@@ -142,7 +142,7 @@ if (currentTokens >= budget * 0.85 && messages.length > 10) {
 
 针对场景：对话已经被 L3 压过一次，但用户继续追问、新工具结果继续累积，占用又冲到 85%——这时 L3 已经救不了局（旧消息早压过了），需要**语义层面的重新组织**。
 
-L5 用一个**长达 80 行的精心设计提示词**（`compact-prompt.ts`），让 LLM 把整段历史压成 9 个结构化段落：① Primary Request and Intent ② Key Technical Concepts ③ Files and Code Sections ④ Errors and fixes ⑤ Problem Solving ⑥ All user messages ⑦ Pending Tasks ⑧ Current Work ⑨ Optional Next Step。
+L5 用一段**精心设计的长 prompt**（`compact-prompt.ts`，整体 133 行），让 LLM 把整段历史压成 9 个结构化段落：① Primary Request and Intent ② Key Technical Concepts ③ Files and Code Sections ④ Errors and fixes ⑤ Problem Solving ⑥ All user messages ⑦ Pending Tasks ⑧ Current Work ⑨ Optional Next Step。
 
 为什么是这 9 段？**因为这是 Claude Code 的开源原型**（HarWork 完整复刻并适配）——这套结构经过 Anthropic 团队在自己产品里跑了上万次对话验证，对「续写代码任务」的语义保留最好。
 
