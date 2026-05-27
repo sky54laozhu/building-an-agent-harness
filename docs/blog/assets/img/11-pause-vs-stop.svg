@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ps d-ps">
+  <title id="t-ps">pause vs stop · 内存惯性 vs 冷启动延迟</title>
+  <desc id="d-ps">docker pause 走 cgroup freezer (SIGSTOP)：进程冻在内存里，CPU 调度跳过，unpause 是亚秒 (SIGCONT)。docker stop 走 SIGTERM/SIGKILL：进程退出释放内存，start 要重跑 entrypoint + sshd + code-server，10+ 秒。Agent 系统是 CPU/IO 密集，pause 保留 warm 状态比释放的 RAM 值钱。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 13px; }
+    .pause-box { fill: #fef3c7; stroke: #a16207; stroke-width: 2; }
+    .stop-box { fill: #fee2e2; stroke: #b91c1c; stroke-width: 2; }
+    .row-pause { fill: #fff; stroke: #a16207; stroke-width: 1; }
+    .row-stop { fill: #fff; stroke: #b91c1c; stroke-width: 1; }
+  </style>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">docker pause vs docker stop · 为什么 HarWork 选 pause</text>
+  <text x="440" y="48" text-anchor="middle" class="note">cgroup freezer (SIGSTOP) vs 进程退出 + 重启</text>
+
+  <!-- LEFT: pause -->
+  <rect x="30" y="70" width="395" height="430" rx="6" class="pause-box"/>
+  <text x="50" y="95" class="header" fill="#78350f">▶ docker pause · cgroup freezer</text>
+  <text x="50" y="113" class="note">底层信号: SIGSTOP · 进程冻在内存里</text>
+
+  <rect x="50" y="125" width="355" height="50" rx="4" class="row-pause"/>
+  <text x="65" y="143" class="label" font-weight="600">CPU 调度</text>
+  <text x="65" y="158" class="label-sm">cgroup.freeze = 1 → 全部进程 SIGSTOP</text>
+  <text x="65" y="170" class="label-sm">CPU scheduler 跳过这个 cgroup · 0 cycles</text>
+
+  <rect x="50" y="183" width="355" height="50" rx="4" class="row-pause"/>
+  <text x="65" y="201" class="label" font-weight="600">内存</text>
+  <text x="65" y="216" class="label-sm">page table 保留 · 内核可能 swap cold page</text>
+  <text x="65" y="228" class="label-sm">hot page 留在 RAM，唤醒不需要换入</text>
+
+  <rect x="50" y="241" width="355" height="50" rx="4" class="row-pause"/>
+  <text x="65" y="259" class="label" font-weight="600">网络</text>
+  <text x="65" y="274" class="label-sm">TCP 连接保留 socket 状态</text>
+  <text x="65" y="286" class="label-sm">但收到的包不会被处理 · 看起来"卡顿"</text>
+
+  <rect x="50" y="299" width="355" height="50" rx="4" class="row-pause"/>
+  <text x="65" y="317" class="label" font-weight="600">进程</text>
+  <text x="65" y="332" class="label-sm">PID 保留 · 文件描述符保留</text>
+  <text x="65" y="344" class="label-sm">node JIT cache / dev server 状态都保留</text>
+
+  <rect x="50" y="357" width="355" height="55" rx="4" fill="#fde68a" stroke="#a16207"/>
+  <text x="65" y="375" class="label" font-weight="700" fill="#78350f">▶ 唤醒：SIGCONT 亚秒级</text>
+  <text x="65" y="390" class="label-sm">docker unpause → cgroup.freeze = 0 → SIGCONT</text>
+  <text x="65" y="404" class="label-sm">进程从冻结的指令位置继续执行</text>
+
+  <rect x="50" y="425" width="355" height="60" rx="4" fill="#fff" stroke="#a16207" stroke-width="2"/>
+  <text x="65" y="443" class="label" font-weight="700" fill="#78350f">✓ 适合：高频空闲/恢复</text>
+  <text x="65" y="458" class="label-sm">— Agent 系统的用户行为模式</text>
+  <text x="65" y="472" class="label-sm">— 内存惯性换瞬时唤醒</text>
+
+  <!-- RIGHT: stop -->
+  <rect x="450" y="70" width="395" height="430" rx="6" class="stop-box"/>
+  <text x="470" y="95" class="header" fill="#7f1d1d">▶ docker stop · 进程退出</text>
+  <text x="470" y="113" class="note">底层信号: SIGTERM (10s 后 SIGKILL)</text>
+
+  <rect x="470" y="125" width="355" height="50" rx="4" class="row-stop"/>
+  <text x="485" y="143" class="label" font-weight="600">CPU 调度</text>
+  <text x="485" y="158" class="label-sm">进程退出 · 完全不消耗 CPU</text>
+  <text x="485" y="170" class="label-sm">但启动时要重跑 entrypoint + service init</text>
+
+  <rect x="470" y="183" width="355" height="50" rx="4" class="row-stop"/>
+  <text x="485" y="201" class="label" font-weight="600">内存</text>
+  <text x="485" y="216" class="label-sm">完全释放 · page 全部回收</text>
+  <text x="485" y="228" class="label-sm">下次启动要重新分配 + 从磁盘读 binary</text>
+
+  <rect x="470" y="241" width="355" height="50" rx="4" class="row-stop"/>
+  <text x="485" y="259" class="label" font-weight="600">网络</text>
+  <text x="485" y="274" class="label-sm">所有 TCP 连接 RST · socket 销毁</text>
+  <text x="485" y="286" class="label-sm">client 必须重连</text>
+
+  <rect x="470" y="299" width="355" height="50" rx="4" class="row-stop"/>
+  <text x="485" y="317" class="label" font-weight="600">进程</text>
+  <text x="485" y="332" class="label-sm">PID 全部退出 · 文件描述符关闭</text>
+  <text x="485" y="344" class="label-sm">node JIT cache 清零 · dev server 重建</text>
+
+  <rect x="470" y="357" width="355" height="55" rx="4" fill="#fecaca" stroke="#b91c1c"/>
+  <text x="485" y="375" class="label" font-weight="700" fill="#7f1d1d">▶ 启动：重跑 entrypoint 10+ 秒</text>
+  <text x="485" y="390" class="label-sm">docker start → fork init → 起 sshd → 起 code-server</text>
+  <text x="485" y="404" class="label-sm">node 启动 + JIT 热身 = 用户看得见的延迟</text>
+
+  <rect x="470" y="425" width="355" height="60" rx="4" fill="#fff" stroke="#b91c1c" stroke-width="2"/>
+  <text x="485" y="443" class="label" font-weight="700" fill="#7f1d1d">✓ 适合：长时间不用 / 资源紧张</text>
+  <text x="485" y="458" class="label-sm">— 不适合 agent 系统的"短空闲 → 快恢复"</text>
+  <text x="485" y="472" class="label-sm">— 释放内存换 CPU + 启动延迟</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="510" width="800" height="42" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="528" class="label" font-weight="700">核心权衡：<tspan fill="#78350f">pause 保留 warm state 换内存惯性</tspan> · <tspan fill="#7f1d1d">stop 释放 RAM 换启动延迟</tspan></text>
+  <text x="55" y="545" class="label">Agent 系统是 CPU/IO 密集，warm 状态（JIT/cache/dev server）比释放的 RAM 值钱 → HarWork 选 pause</text>
+</svg>

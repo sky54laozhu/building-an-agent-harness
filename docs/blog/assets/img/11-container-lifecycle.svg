@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-cl d-cl">
+  <title id="t-cl">Per-User 容器生命周期 5 状态机</title>
+  <desc id="d-cl">HarWork 的 Per-User Docker 容器有 5 个状态：not_found / running / paused / stopped / error。状态转移由 provision / pause / unpause / start / stop / remove 触发。pause 使用 cgroup freezer（SIGSTOP），unpause 是 SIGCONT，毫秒级；stop 走 SIGTERM → SIGKILL，启动要重跑 entrypoint。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 13px; }
+    .state-running { fill: #d1fae5; stroke: #047857; stroke-width: 2; }
+    .state-paused { fill: #fef3c7; stroke: #a16207; stroke-width: 2; }
+    .state-stopped { fill: #fee2e2; stroke: #b91c1c; stroke-width: 2; }
+    .state-notfound { fill: #f3f4f6; stroke: #6b7280; stroke-width: 2; stroke-dasharray: 5 3; }
+    .state-error { fill: #fce7f3; stroke: #be185d; stroke-width: 2; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .arrow-pause { stroke: #a16207; stroke-width: 2; fill: none; }
+    .arrow-resume { stroke: #047857; stroke-width: 2; fill: none; }
+    .arrow-stop { stroke: #b91c1c; stroke-width: 1.5; fill: none; stroke-dasharray: 4 3; }
+  </style>
+
+  <defs>
+    <marker id="cl-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="cl-pause" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#a16207"/>
+    </marker>
+    <marker id="cl-resume" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#047857"/>
+    </marker>
+    <marker id="cl-stop" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">Per-User 容器生命周期 · 5 状态机</text>
+  <text x="440" y="48" text-anchor="middle" class="note">命名 harwork-${userId} · volume harwork-data-${userId} 永久持久</text>
+
+  <!-- States -->
+  <!-- not_found -->
+  <rect x="50" y="100" width="160" height="80" rx="6" class="state-notfound"/>
+  <text x="130" y="125" text-anchor="middle" class="header" fill="#374151">① not_found</text>
+  <text x="130" y="143" text-anchor="middle" class="label-sm">用户首次进来</text>
+  <text x="130" y="158" text-anchor="middle" class="label-sm">或被手动 docker rm</text>
+  <text x="130" y="173" text-anchor="middle" class="label-mono-sm">getStatus()</text>
+
+  <!-- running (center top) -->
+  <rect x="350" y="100" width="180" height="80" rx="6" class="state-running"/>
+  <text x="440" y="125" text-anchor="middle" class="header" fill="#065f46">② running</text>
+  <text x="440" y="143" text-anchor="middle" class="label-sm">Cmd: sleep infinity</text>
+  <text x="440" y="158" text-anchor="middle" class="label-sm">2 CPU · 3GB RAM</text>
+  <text x="440" y="173" text-anchor="middle" class="label-mono-sm">State.Running = true</text>
+
+  <!-- paused -->
+  <rect x="650" y="100" width="180" height="80" rx="6" class="state-paused"/>
+  <text x="740" y="125" text-anchor="middle" class="header" fill="#78350f">③ paused</text>
+  <text x="740" y="143" text-anchor="middle" class="label-sm">cgroup freezer (SIGSTOP)</text>
+  <text x="740" y="158" text-anchor="middle" class="label-sm">内存保留 · CPU 跳过</text>
+  <text x="740" y="173" text-anchor="middle" class="label-mono-sm">State.Paused = true</text>
+
+  <!-- stopped (bottom left) -->
+  <rect x="200" y="290" width="180" height="80" rx="6" class="state-stopped"/>
+  <text x="290" y="315" text-anchor="middle" class="header" fill="#7f1d1d">④ stopped</text>
+  <text x="290" y="333" text-anchor="middle" class="label-sm">SIGTERM → SIGKILL</text>
+  <text x="290" y="348" text-anchor="middle" class="label-sm">进程退出 · 内存释放</text>
+  <text x="290" y="363" text-anchor="middle" class="label-mono-sm">volume /workspace 保留</text>
+
+  <!-- error (bottom right) -->
+  <rect x="600" y="290" width="180" height="80" rx="6" class="state-error"/>
+  <text x="690" y="315" text-anchor="middle" class="header" fill="#9d174d">⑤ error</text>
+  <text x="690" y="333" text-anchor="middle" class="label-sm">inspect 抛错</text>
+  <text x="690" y="348" text-anchor="middle" class="label-sm">网络配置变了</text>
+  <text x="690" y="363" text-anchor="middle" class="label-mono-sm">→ 触发 stop + remove</text>
+
+  <!-- Arrows -->
+  <!-- not_found → running (provision) -->
+  <path d="M 210 140 L 350 140" class="arrow" marker-end="url(#cl-arr)"/>
+  <text x="280" y="132" text-anchor="middle" class="label-mono-sm" fill="#1a2233">provision()</text>
+  <text x="280" y="155" text-anchor="middle" class="note">create + start</text>
+
+  <!-- running ↔ paused -->
+  <path d="M 530 130 L 650 130" class="arrow-pause" marker-end="url(#cl-pause)"/>
+  <text x="590" y="122" text-anchor="middle" class="label-mono-sm" fill="#78350f" font-weight="600">pause()</text>
+  <text x="590" y="145" text-anchor="middle" class="note">30min idle</text>
+
+  <path d="M 650 165 L 530 165" class="arrow-resume" marker-end="url(#cl-resume)"/>
+  <text x="590" y="183" text-anchor="middle" class="label-mono-sm" fill="#047857" font-weight="600">unpause()</text>
+  <text x="590" y="200" text-anchor="middle" class="note">ensureRunning()</text>
+
+  <!-- running → stopped -->
+  <path d="M 380 180 L 320 290" class="arrow-stop" marker-end="url(#cl-stop)"/>
+  <text x="320" y="225" text-anchor="middle" class="label-mono-sm" fill="#7f1d1d">stop()</text>
+  <text x="320" y="243" text-anchor="middle" class="note">手动/异常</text>
+
+  <!-- stopped → running -->
+  <path d="M 320 290 L 380 200" class="arrow-resume" marker-end="url(#cl-resume)"/>
+  <text x="370" y="270" class="label-mono-sm" fill="#047857">start()</text>
+  <text x="370" y="285" class="note">10+s 冷启动</text>
+
+  <!-- error → not_found -->
+  <path d="M 600 320 L 210 175" class="arrow-stop" marker-end="url(#cl-stop)"/>
+  <text x="450" y="265" text-anchor="middle" class="note">remove() → 重 provision</text>
+
+  <!-- ensureRunning entry points -->
+  <rect x="40" y="395" width="800" height="55" rx="4" fill="#fff" stroke="#047857" stroke-width="1.5"/>
+  <text x="55" y="415" class="label" font-weight="700" fill="#065f46">▶ 5 个入口都先 ensureContainerRunning</text>
+  <text x="55" y="432" class="label-mono-sm">ws-message-handlers.ts:193,377  ·  preview-proxy.ts:154  ·  ssh-gateway.ts:301</text>
+  <text x="55" y="445" class="label-mono-sm">trigger-executor.ts:274  ·  dev-server.ts:467  ——  paused → unpause / stopped → start</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="465" width="800" height="80" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="485" class="label" font-weight="700">关键差异：pause vs stop</text>
+  <text x="55" y="503" class="label">✓ <tspan font-weight="600" fill="#78350f">pause</tspan>: 进程冻在内存，unpause 毫秒级回到现场 · 内存惯性换瞬时唤醒</text>
+  <text x="55" y="520" class="label">✓ <tspan font-weight="600" fill="#7f1d1d">stop</tspan>: 进程退出，start 要重跑 entrypoint + sshd + code-server · 释放内存换 10+ 秒冷启动</text>
+  <text x="55" y="537" class="label">▶ <tspan font-weight="600" fill="#065f46">HarWork 选 pause</tspan>：agent 系统 CPU/IO 密集，warm 状态 + JIT cache 比释放的 RAM 值钱</text>
+</svg>

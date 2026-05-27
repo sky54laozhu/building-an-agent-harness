@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-it d-it">
+  <title id="t-it">Idle Sweep 时间线 · 60 秒心跳 + 30 分钟阈值 + 双层 guard</title>
+  <desc id="d-it">SessionManager 每 60 秒扫描所有 session。AND 4 条件（WS=0 + agent=0 + container exists + idle≥30min）才进入 pause。pause 前还要进容器 pgrep sshd + ss 检查 code-server，**两层 guard 都过**才真 pause。任何入口（WS / SSH / preview / cron / API）触发 ensureRunning 唤醒。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .timeline { fill: #fff; stroke: #1a2233; stroke-width: 1.5; }
+    .active { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .idle { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .paused { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .gate { fill: #ede9fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .sweep-tick { stroke: #6d28d9; stroke-width: 1; stroke-dasharray: 2 3; }
+  </style>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">Idle Sweep 时间线 · 60s 心跳 + 30min 阈值 + 双层 guard</text>
+  <text x="440" y="48" text-anchor="middle" class="note">session/manager.ts:234-257 · dev-server.ts:538-574</text>
+
+  <!-- Timeline axis -->
+  <line x1="60" y1="120" x2="820" y2="120" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="60" y="138" class="label-mono-sm">t = 0</text>
+  <text x="350" y="138" class="label-mono-sm" text-anchor="middle">t = 30min</text>
+  <text x="600" y="138" class="label-mono-sm" text-anchor="middle">t = 30min:01s</text>
+  <text x="820" y="138" class="label-mono-sm" text-anchor="end">resume on demand</text>
+
+  <!-- Phase 1: Active -->
+  <rect x="60" y="90" width="180" height="22" rx="3" class="active"/>
+  <text x="150" y="106" text-anchor="middle" class="label" font-weight="600" fill="#065f46">用户活跃中</text>
+
+  <!-- Phase 2: Idle (no activity) -->
+  <rect x="240" y="90" width="220" height="22" rx="3" class="idle"/>
+  <text x="350" y="106" text-anchor="middle" class="label" font-weight="600" fill="#78350f">WebSocket 断开 / 无消息</text>
+
+  <!-- Phase 3: Gates -->
+  <rect x="460" y="90" width="160" height="22" rx="3" class="gate"/>
+  <text x="540" y="106" text-anchor="middle" class="label" font-weight="600" fill="#4c1d95">sweep tick 决策</text>
+
+  <!-- Phase 4: Paused -->
+  <rect x="620" y="90" width="200" height="22" rx="3" class="paused"/>
+  <text x="720" y="106" text-anchor="middle" class="label" font-weight="600" fill="#7f1d1d">paused</text>
+
+  <!-- Sweep ticks every 60s -->
+  <line x1="120" y1="115" x2="120" y2="125" class="sweep-tick"/>
+  <line x1="180" y1="115" x2="180" y2="125" class="sweep-tick"/>
+  <line x1="240" y1="115" x2="240" y2="125" class="sweep-tick"/>
+  <line x1="300" y1="115" x2="300" y2="125" class="sweep-tick"/>
+  <line x1="360" y1="115" x2="360" y2="125" class="sweep-tick"/>
+  <line x1="420" y1="115" x2="420" y2="125" class="sweep-tick"/>
+  <line x1="480" y1="115" x2="480" y2="125" class="sweep-tick"/>
+  <line x1="540" y1="115" x2="540" y2="125" class="sweep-tick"/>
+  <text x="540" y="158" text-anchor="middle" class="note" fill="#6d28d9">↑ 每 60s sweep tick</text>
+
+  <!-- Decision block -->
+  <rect x="60" y="180" width="500" height="160" rx="6" fill="#fff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="80" y="200" class="header" fill="#1a2233">SessionManager.startIdleSweep · 4 条件 AND</text>
+
+  <rect x="80" y="215" width="460" height="22" rx="3" class="active"/>
+  <text x="92" y="231" class="label-mono-sm">session.connectionCount === 0</text>
+  <text x="450" y="231" text-anchor="end" class="label-sm" fill="#065f46">✓ 无 WebSocket 连接</text>
+
+  <rect x="80" y="245" width="460" height="22" rx="3" class="active"/>
+  <text x="92" y="261" class="label-mono-sm">!session.isAgentRunning</text>
+  <text x="450" y="261" text-anchor="end" class="label-sm" fill="#065f46">✓ agent 不在跑（不打断）</text>
+
+  <rect x="80" y="275" width="460" height="22" rx="3" class="active"/>
+  <text x="92" y="291" class="label-mono-sm">session.containerId !== null</text>
+  <text x="450" y="291" text-anchor="end" class="label-sm" fill="#065f46">✓ 容器已 provision</text>
+
+  <rect x="80" y="305" width="460" height="22" rx="3" class="active"/>
+  <text x="92" y="321" class="label-mono-sm">now - lastActivityAt &gt; 30 * 60 * 1000</text>
+  <text x="450" y="321" text-anchor="end" class="label-sm" fill="#065f46">✓ 30 分钟无活动</text>
+
+  <!-- Gate 2: container internal -->
+  <rect x="580" y="180" width="240" height="160" rx="6" fill="#fff" stroke="#a16207" stroke-width="1.5"/>
+  <text x="600" y="200" class="header" fill="#78350f">▶ pauseContainerFn 第二道</text>
+  <text x="600" y="216" class="note">dev-server.ts:538-574 进容器查实际</text>
+
+  <rect x="600" y="225" width="200" height="40" rx="3" fill="#fef3c7" stroke="#a16207"/>
+  <text x="610" y="241" class="label-mono-sm">pgrep -c sshd</text>
+  <text x="610" y="256" class="label-sm">if &gt; 0: skip pause</text>
+
+  <rect x="600" y="275" width="200" height="50" rx="3" fill="#fef3c7" stroke="#a16207"/>
+  <text x="610" y="291" class="label-mono-sm">ss -tn ':8443' | wc -l</text>
+  <text x="610" y="306" class="label-sm">code-server 连接数</text>
+  <text x="610" y="320" class="label-sm">if &gt; 0: skip pause</text>
+
+  <!-- Wake side -->
+  <rect x="60" y="370" width="760" height="100" rx="6" fill="#fff" stroke="#047857" stroke-width="1.5"/>
+  <text x="80" y="390" class="header" fill="#065f46">▶ 唤醒入口 · 5 个调用方都先 ensureContainerRunning</text>
+
+  <rect x="80" y="400" width="135" height="22" rx="3" class="active"/>
+  <text x="147" y="416" text-anchor="middle" class="label-mono-sm">WebSocket message</text>
+
+  <rect x="220" y="400" width="135" height="22" rx="3" class="active"/>
+  <text x="287" y="416" text-anchor="middle" class="label-mono-sm">Preview proxy</text>
+
+  <rect x="360" y="400" width="135" height="22" rx="3" class="active"/>
+  <text x="427" y="416" text-anchor="middle" class="label-mono-sm">SSH connect</text>
+
+  <rect x="500" y="400" width="135" height="22" rx="3" class="active"/>
+  <text x="567" y="416" text-anchor="middle" class="label-mono-sm">Cron / trigger</text>
+
+  <rect x="640" y="400" width="160" height="22" rx="3" class="active"/>
+  <text x="720" y="416" text-anchor="middle" class="label-mono-sm">HTTP API</text>
+
+  <text x="440" y="445" text-anchor="middle" class="label" font-weight="600">所有入口 → unpause（亚秒） · 用户从哪条路回来都自动唤醒</text>
+  <text x="440" y="461" text-anchor="middle" class="note">收紧 pause（双层 guard） · 放宽 unpause（任何入口都行）</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="485" width="800" height="60" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="505" class="label" font-weight="700">核心：多信号合议</text>
+  <text x="55" y="522" class="label">SessionManager（WebSocket 视角） + pauseContainerFn（容器内部视角）<tspan font-weight="700" fill="#7f1d1d"> AND 才 pause</tspan></text>
+  <text x="55" y="538" class="label">任何入口（WS/SSH/preview/cron/API）<tspan font-weight="700" fill="#065f46"> OR 都触发 unpause</tspan> —— 严收宽出</text>
+</svg>
