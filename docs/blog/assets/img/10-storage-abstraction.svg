@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-sa d-sa">
+  <title id="t-sa">两层存储抽象：StorageProvider 接口 + DrizzleDbAdapter 实现</title>
+  <desc id="d-sa">HarWork 的 Engine 包不依赖 drizzle-orm 或 @libsql/client，只定义 StorageProvider（业务层）和 DbAdapter（数据层）两个接口；Web 包提供 DrizzleDbAdapter 实现，Engine 通过依赖注入拿到具体后端。这是博客系列里第三次出现"接口在 core、实现在 sub-package"的模式。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .engine-box { fill: #ede9fe; stroke: #6d28d9; stroke-width: 2; }
+    .web-box { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 2; }
+    .interface { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .impl { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .db { fill: #fce7f3; stroke: #be185d; stroke-width: 2; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .inject-arrow { stroke: #047857; stroke-width: 2; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="sa-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="sa-inject" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#047857"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">两层存储抽象 · StorageProvider 接口 + DrizzleDbAdapter 实现</text>
+  <text x="440" y="48" text-anchor="middle" class="note">Engine 包不依赖 drizzle/libsql · 通过依赖注入拿到具体后端</text>
+
+  <!-- Engine package -->
+  <rect x="30" y="75" width="380" height="380" rx="8" class="engine-box"/>
+  <text x="50" y="100" class="header" fill="#4c1d95">packages/engine（业务层）</text>
+  <text x="50" y="118" class="note">不 import drizzle-orm · 不 import @libsql/client</text>
+
+  <rect x="50" y="135" width="340" height="60" rx="4" fill="#fff" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="65" y="155" class="label" font-weight="600">Agent Loop / Tool Executor / Hook Executor</text>
+  <text x="65" y="172" class="label-sm">saveMessage(convId, msg)</text>
+  <text x="65" y="186" class="label-sm">createConversation({ userId, model, ... })</text>
+
+  <rect x="50" y="210" width="340" height="100" rx="4" class="interface"/>
+  <text x="65" y="230" class="label" font-weight="600" fill="#78350f">▶ StorageProvider 接口（业务层）</text>
+  <text x="65" y="246" class="label-mono-sm">engine/src/storage/types.ts:30-63</text>
+  <text x="65" y="262" class="label-mono-sm">saveMessage(...) · getMessages(...)</text>
+  <text x="65" y="276" class="label-mono-sm">createConversation(...) · updateConversationTitle(...)</text>
+  <text x="65" y="290" class="label-mono-sm">saveMemories? · getMemories? · logAudit?</text>
+  <text x="65" y="304" class="note">12 个方法 · 可选方法用 ?</text>
+
+  <rect x="50" y="325" width="340" height="50" rx="4" fill="#fff" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="65" y="345" class="label" font-weight="600">DbStorageProvider（默认实现）</text>
+  <text x="65" y="360" class="label-mono-sm">engine/src/storage/db.ts:163-321</text>
+
+  <rect x="50" y="390" width="340" height="55" rx="4" class="interface"/>
+  <text x="65" y="410" class="label" font-weight="600" fill="#78350f">▶ DbAdapter 接口（数据层）</text>
+  <text x="65" y="426" class="label-mono-sm">engine/src/storage/db.ts:7-161</text>
+  <text x="65" y="440" class="label-mono-sm">insertMessage · getMessagesByConversation · ...</text>
+
+  <!-- Web package -->
+  <rect x="450" y="75" width="400" height="380" rx="8" class="web-box"/>
+  <text x="470" y="100" class="header" fill="#1e3a8a">packages/web（数据层）</text>
+  <text x="470" y="118" class="note">import drizzle-orm · import @libsql/client</text>
+
+  <rect x="470" y="135" width="360" height="70" rx="4" class="impl"/>
+  <text x="485" y="155" class="label" font-weight="600" fill="#065f46">▶ DrizzleDbAdapter（具体实现）</text>
+  <text x="485" y="171" class="label-mono-sm">web/lib/db/adapter.ts:11 (271 LOC)</text>
+  <text x="485" y="185" class="label-mono-sm">implements DbAdapter from @harwork/engine</text>
+  <text x="485" y="199" class="note">16 个方法实现 · async/await · drizzle 查询</text>
+
+  <rect x="470" y="220" width="360" height="55" rx="4" fill="#fff" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="485" y="240" class="label" font-weight="600">Drizzle ORM Client</text>
+  <text x="485" y="256" class="label-mono-sm">web/lib/db/index.ts:22</text>
+  <text x="485" y="268" class="label-mono-sm">drizzle(client, { schema: { ...schema, ...designSchema } })</text>
+
+  <rect x="470" y="290" width="360" height="50" rx="4" fill="#fff" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="485" y="310" class="label" font-weight="600">libsql client</text>
+  <text x="485" y="325" class="label-mono-sm">createClient({ url: `file:${dbPath}` })</text>
+
+  <rect x="470" y="355" width="360" height="65" rx="4" class="db"/>
+  <text x="485" y="375" class="label" font-weight="600" fill="#9d174d">SQLite 文件 · DATABASE_PATH</text>
+  <text x="485" y="391" class="label-mono-sm">data/harwork.db</text>
+  <text x="485" y="405" class="label-sm">30 张表 · 22 主 + 8 design</text>
+
+  <text x="650" y="438" text-anchor="middle" class="label" font-weight="600">migrate.ts (550 LOC) → exit(1) on failure</text>
+
+  <!-- Connecting arrows -->
+  <line x1="220" y1="195" x2="220" y2="210" class="arrow" marker-end="url(#sa-arr)"/>
+  <text x="225" y="208" class="note">实现接口</text>
+
+  <line x1="220" y1="375" x2="220" y2="390" class="arrow" marker-end="url(#sa-arr)"/>
+  <text x="225" y="388" class="note">转发到 DbAdapter</text>
+
+  <!-- Cross-package injection arrow -->
+  <path d="M 470 165 Q 430 168 410 415" class="inject-arrow" marker-end="url(#sa-inject)" stroke-dasharray="6 3"/>
+  <text x="395" y="280" text-anchor="middle" class="note" fill="#047857" font-weight="600" transform="rotate(-90 395 280)">依赖注入 (Web → Engine)</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="475" width="800" height="75" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="495" class="label" font-weight="700">核心设计：接口在 Engine 定义，实现由 Web 注入</text>
+  <text x="55" y="514" class="label">✓ <tspan font-weight="600" fill="#047857">换 PG / Turso / mock 不用改 Engine</tspan> —— 实现 DbAdapter 接口注入即可</text>
+  <text x="55" y="531" class="label">✓ <tspan font-weight="600" fill="#047857">第三次出现这个模式</tspan> —— Tool 接口（Part 07）、Hook 协议（Part 09）、Storage 接口（Part 10）一脉相承</text>
+  <text x="55" y="548" class="label">✗ <tspan font-weight="600" fill="#7f1d1d">朴素错误</tspan>: Engine 直接 import drizzle-orm —— Engine 跟具体 DB 后端绑定，切不动</text>
+</svg>

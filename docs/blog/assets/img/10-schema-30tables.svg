@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-sb d-sb">
+  <title id="t-sb">30 张 SQLite 表的 5 大责任域分组</title>
+  <desc id="d-sb">HarWork 的 SQLite schema 共 30 张表（22 张主 schema + 8 张 design 模块），按用途分 5 组：核心对话、身份认证、配置策略、扩展机制、审计计费，外加 design 协作模块。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .core { fill: #ede9fe; stroke: #6d28d9; stroke-width: 2; }
+    .auth { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 1.5; }
+    .config { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .ext { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .audit { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .design { fill: #fce7f3; stroke: #be185d; stroke-width: 1.5; }
+    .table-cell { fill: #fff; stroke: #5a5a5a; stroke-width: 1; }
+  </style>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">30 张表分 5 大责任域 + Design 模块</text>
+  <text x="440" y="48" text-anchor="middle" class="note">schema.ts (383 LOC, 22 表) + design-*.ts (4 文件, 8 表) · 每组承载一类业务</text>
+
+  <!-- Core conversation -->
+  <rect x="30" y="70" width="270" height="125" rx="6" class="core"/>
+  <text x="45" y="92" class="header" fill="#4c1d95">① 核心对话（3 表）</text>
+  <text x="45" y="108" class="note">用户对话历史 · 消息树 · 长期记忆</text>
+  <rect x="45" y="118" width="78" height="22" rx="3" class="table-cell"/>
+  <text x="84" y="133" text-anchor="middle" class="label-mono-sm">conversations</text>
+  <rect x="130" y="118" width="63" height="22" rx="3" class="table-cell"/>
+  <text x="161" y="133" text-anchor="middle" class="label-mono-sm">messages</text>
+  <rect x="200" y="118" width="63" height="22" rx="3" class="table-cell"/>
+  <text x="232" y="133" text-anchor="middle" class="label-mono-sm">memories</text>
+  <text x="45" y="160" class="label-sm" font-weight="600">关键设计:</text>
+  <text x="45" y="174" class="label-mono-sm">messages.content = JSON.stringify(ContentBlock[])</text>
+  <text x="45" y="188" class="label-mono-sm">conversations.status = 'active' | 'archived' (soft del)</text>
+
+  <!-- Identity & auth -->
+  <rect x="310" y="70" width="280" height="125" rx="6" class="auth"/>
+  <text x="325" y="92" class="header" fill="#1e3a8a">② 身份认证（5 表）</text>
+  <text x="325" y="108" class="note">用户、token、JWT 黑名单、SSH 公钥</text>
+  <rect x="325" y="118" width="48" height="22" rx="3" class="table-cell"/>
+  <text x="349" y="133" text-anchor="middle" class="label-mono-sm">users</text>
+  <rect x="378" y="118" width="78" height="22" rx="3" class="table-cell"/>
+  <text x="417" y="133" text-anchor="middle" class="label-mono-sm">auth_tokens</text>
+  <rect x="461" y="118" width="78" height="22" rx="3" class="table-cell"/>
+  <text x="500" y="133" text-anchor="middle" class="label-mono-sm">setup_tokens</text>
+  <rect x="325" y="146" width="83" height="22" rx="3" class="table-cell"/>
+  <text x="366" y="161" text-anchor="middle" class="label-mono-sm">jwt_blacklist</text>
+  <rect x="413" y="146" width="68" height="22" rx="3" class="table-cell"/>
+  <text x="447" y="161" text-anchor="middle" class="label-mono-sm">ssh_keys</text>
+  <text x="325" y="187" class="label-sm">SSO (dingtalk/feishu/wecom) · JWT revoke</text>
+
+  <!-- Config & policy -->
+  <rect x="600" y="70" width="270" height="125" rx="6" class="config"/>
+  <text x="615" y="92" class="header" fill="#065f46">③ 配置策略（6 表）</text>
+  <text x="615" y="108" class="note">偏好、加密 secret、配额限速</text>
+  <rect x="615" y="118" width="60" height="22" rx="3" class="table-cell"/>
+  <text x="645" y="133" text-anchor="middle" class="label-mono-sm">settings</text>
+  <rect x="680" y="118" width="55" height="22" rx="3" class="table-cell"/>
+  <text x="707" y="133" text-anchor="middle" class="label-mono-sm">secrets</text>
+  <rect x="740" y="118" width="58" height="22" rx="3" class="table-cell"/>
+  <text x="769" y="133" text-anchor="middle" class="label-mono-sm">quotas</text>
+  <rect x="615" y="146" width="78" height="22" rx="3" class="table-cell"/>
+  <text x="654" y="161" text-anchor="middle" class="label-mono-sm">rate_limits</text>
+  <rect x="698" y="146" width="78" height="22" rx="3" class="table-cell"/>
+  <text x="737" y="161" text-anchor="middle" class="label-mono-sm">notification</text>
+  <rect x="615" y="173" width="100" height="18" rx="3" class="table-cell"/>
+  <text x="665" y="186" text-anchor="middle" class="label-mono-sm">platform_settings</text>
+
+  <!-- Extension -->
+  <rect x="30" y="210" width="280" height="115" rx="6" class="ext"/>
+  <text x="45" y="232" class="header" fill="#78350f">④ 扩展机制（4 表）</text>
+  <text x="45" y="248" class="note">Skill 市场 · Hook 配置 · 触发器</text>
+  <rect x="45" y="258" width="50" height="22" rx="3" class="table-cell"/>
+  <text x="70" y="273" text-anchor="middle" class="label-mono-sm">skills</text>
+  <rect x="100" y="258" width="45" height="22" rx="3" class="table-cell"/>
+  <text x="122" y="273" text-anchor="middle" class="label-mono-sm">hooks</text>
+  <rect x="150" y="258" width="55" height="22" rx="3" class="table-cell"/>
+  <text x="178" y="273" text-anchor="middle" class="label-mono-sm">triggers</text>
+  <rect x="210" y="258" width="90" height="22" rx="3" class="table-cell"/>
+  <text x="255" y="273" text-anchor="middle" class="label-mono-sm">trigger_executions</text>
+  <text x="45" y="298" class="label-sm">cron + webhook 触发 · 执行历史落 trigger_executions</text>
+  <text x="45" y="314" class="label-sm">承接 Part 07 + Part 09 的扩展点</text>
+
+  <!-- Audit & billing -->
+  <rect x="320" y="210" width="280" height="115" rx="6" class="audit"/>
+  <text x="335" y="232" class="header" fill="#7f1d1d">⑤ 审计计费（4 表）</text>
+  <text x="335" y="248" class="note">操作日志 · 用量明细 · 端口 · 集成</text>
+  <rect x="335" y="258" width="60" height="22" rx="3" class="table-cell"/>
+  <text x="365" y="273" text-anchor="middle" class="label-mono-sm">audit_log</text>
+  <rect x="400" y="258" width="78" height="22" rx="3" class="table-cell"/>
+  <text x="439" y="273" text-anchor="middle" class="label-mono-sm">usage_events</text>
+  <rect x="483" y="258" width="80" height="22" rx="3" class="table-cell"/>
+  <text x="523" y="273" text-anchor="middle" class="label-mono-sm">exposed_ports</text>
+  <rect x="335" y="286" width="100" height="22" rx="3" class="table-cell"/>
+  <text x="385" y="301" text-anchor="middle" class="label-mono-sm">integration_settings</text>
+  <text x="335" y="320" class="label-sm">audit_log.user_id 故意无 FK（用户删后保日志）</text>
+
+  <!-- Design module -->
+  <rect x="610" y="210" width="260" height="115" rx="6" class="design"/>
+  <text x="625" y="232" class="header" fill="#9d174d">⑥ Design 协作模块（8 表）</text>
+  <text x="625" y="248" class="note">UI 设计模块独立 schema</text>
+  <rect x="625" y="258" width="80" height="22" rx="3" class="table-cell"/>
+  <text x="665" y="273" text-anchor="middle" class="label-mono-sm">designProjects</text>
+  <rect x="710" y="258" width="80" height="22" rx="3" class="table-cell"/>
+  <text x="750" y="273" text-anchor="middle" class="label-mono-sm">designVersions</text>
+  <rect x="625" y="286" width="100" height="22" rx="3" class="table-cell"/>
+  <text x="675" y="301" text-anchor="middle" class="label-mono-sm">designAnnotations</text>
+  <rect x="730" y="286" width="78" height="22" rx="3" class="table-cell"/>
+  <text x="769" y="301" text-anchor="middle" class="label-mono-sm">designSystems</text>
+  <text x="625" y="320" class="label-sm">+ Handoffs / Pages / Shares / Variants</text>
+
+  <!-- Detail: messages table -->
+  <rect x="40" y="345" width="800" height="100" fill="#fff" stroke="#1a2233" stroke-width="1.5" rx="4"/>
+  <text x="55" y="365" class="label" font-weight="700">▶ messages 表的关键设计（schema.ts:59-77）</text>
+  <text x="55" y="385" class="label-mono">id (text PK, nanoid)  ·  conversation_id (FK→conversations, ON DELETE CASCADE)</text>
+  <text x="55" y="403" class="label-mono">uuid · parent_uuid (消息树)  ·  role: 'user' | 'assistant' | 'system' | 'tool'</text>
+  <text x="55" y="421" class="label-mono"><tspan font-weight="700" fill="#7f1d1d">content (text, JSON string of ContentBlock[])</tspan>  ·  is_meta · is_compact_summary</text>
+  <text x="55" y="439" class="note">关键决策：ContentBlock 不拆表，整体 JSON 序列化 —— 1 INSERT 而不是 N JOINs</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="455" width="800" height="95" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="475" class="label" font-weight="700">分表原则：业务领域 ≠ 数据规范化</text>
+  <text x="55" y="494" class="label">✓ <tspan font-weight="600" fill="#047857">按"用途"分组</tspan> —— 同一业务的表挨在一起，看 schema 像看产品架构</text>
+  <text x="55" y="511" class="label">✓ <tspan font-weight="600" fill="#047857">未稳定字段塞 JSON</tspan> —— memories.content / messages.content 都是 JSON，schema 演化无痛</text>
+  <text x="55" y="528" class="label">✓ <tspan font-weight="600" fill="#047857">audit_log 无 FK</tspan> —— 用户删除后日志保留（合规要求）</text>
+  <text x="55" y="545" class="label">✗ <tspan font-weight="600" fill="#7f1d1d">朴素错误</tspan>：ContentBlock 拆 text/tool_use/tool_result 多表 —— N 次 JOIN，写入也是 N 次 INSERT</text>
+</svg>

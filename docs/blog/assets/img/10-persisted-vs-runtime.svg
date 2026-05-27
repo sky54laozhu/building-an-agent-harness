@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-sc d-sc">
+  <title id="t-sc">持久态 vs 内存态：进程重启幸存清单</title>
+  <desc id="d-sc">HarWork 故意把 session 运行时状态（AbortController、pending Promise resolvers、event buffer、permissionMode）留在内存，进程重启即丢；conversation / message / memory / hook 配置等用户态则持久到 SQLite。这种"区分进程态和用户态"的边界让持久化层薄而稳。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 13px; }
+    .persist { fill: #d1fae5; stroke: #047857; stroke-width: 2; }
+    .memory { fill: #fee2e2; stroke: #b91c1c; stroke-width: 2; }
+    .row-persist { fill: #fff; stroke: #047857; stroke-width: 1; }
+    .row-memory { fill: #fff; stroke: #b91c1c; stroke-width: 1; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="sc-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">持久态 vs 内存态 —— Engine 进程重启的幸存清单</text>
+  <text x="440" y="48" text-anchor="middle" class="note">区分"用户态"和"进程态"是 session 持久化的核心边界</text>
+
+  <!-- LEFT: Persisted -->
+  <rect x="30" y="70" width="395" height="430" rx="6" class="persist"/>
+  <text x="50" y="95" class="header" fill="#065f46">✓ 持久态 · 进程重启后保留</text>
+  <text x="50" y="113" class="note">SQLite 表 · users / conversations / messages / memories ...</text>
+
+  <rect x="50" y="125" width="355" height="38" rx="4" class="row-persist"/>
+  <text x="65" y="143" class="label" font-weight="600">conversations 表</text>
+  <text x="65" y="157" class="label-sm">用户对话 · title / model / projectPath / totalTokens</text>
+
+  <rect x="50" y="170" width="355" height="38" rx="4" class="row-persist"/>
+  <text x="65" y="188" class="label" font-weight="600">messages 表</text>
+  <text x="65" y="202" class="label-sm">ContentBlock[] JSON · uuid / parentUuid 树状结构</text>
+
+  <rect x="50" y="215" width="355" height="38" rx="4" class="row-persist"/>
+  <text x="65" y="233" class="label" font-weight="600">memories 表（长期记忆）</text>
+  <text x="65" y="247" class="label-sm">key/value/category/confidence 进 content JSON</text>
+
+  <rect x="50" y="260" width="355" height="38" rx="4" class="row-persist"/>
+  <text x="65" y="278" class="label" font-weight="600">hooks 表（用户配置的 hook）</text>
+  <text x="65" y="292" class="label-sm">event / matcher / command / url / headers</text>
+
+  <rect x="50" y="305" width="355" height="38" rx="4" class="row-persist"/>
+  <text x="65" y="323" class="label" font-weight="600">skills 表（安装的 skill）</text>
+  <text x="65" y="337" class="label-sm">name / promptTemplate / config / enabled</text>
+
+  <rect x="50" y="350" width="355" height="38" rx="4" class="row-persist"/>
+  <text x="65" y="368" class="label" font-weight="600">audit_log + usage_events</text>
+  <text x="65" y="382" class="label-sm">操作审计 · token 用量明细</text>
+
+  <rect x="50" y="395" width="355" height="38" rx="4" class="row-persist"/>
+  <text x="65" y="413" class="label" font-weight="600">conversations.checkpointSha</text>
+  <text x="65" y="427" class="label-sm">git checkpoint SHA · session 间复用工作树状态</text>
+
+  <rect x="50" y="445" width="355" height="45" rx="4" fill="#a7f3d0" stroke="#047857" stroke-width="1"/>
+  <text x="65" y="463" class="label" font-weight="700" fill="#065f46">▶ 价值：用户能继续上次的对话</text>
+  <text x="65" y="478" class="label-sm">重新连上 → getMessages(convId) → UI 恢复</text>
+
+  <!-- RIGHT: In-memory -->
+  <rect x="450" y="70" width="395" height="430" rx="6" class="memory"/>
+  <text x="470" y="95" class="header" fill="#7f1d1d">✗ 内存态 · 进程重启即丢（故意）</text>
+  <text x="470" y="113" class="note">Session 类字段 · session/manager.ts:13-32</text>
+
+  <rect x="470" y="125" width="355" height="38" rx="4" class="row-memory"/>
+  <text x="485" y="143" class="label" font-weight="600">_abortController</text>
+  <text x="485" y="157" class="label-mono-sm">new AbortController() · 不能序列化 (native)</text>
+
+  <rect x="470" y="170" width="355" height="38" rx="4" class="row-memory"/>
+  <text x="485" y="188" class="label" font-weight="600">_pendingPermissions Map</text>
+  <text x="485" y="202" class="label-mono-sm">requestId → resolve callback · 重启失联</text>
+
+  <rect x="470" y="215" width="355" height="38" rx="4" class="row-memory"/>
+  <text x="485" y="233" class="label" font-weight="600">_pendingUserAnswers Map</text>
+  <text x="485" y="247" class="label-mono-sm">AskUserQuestion resolve callback · 重启丢失</text>
+
+  <rect x="470" y="260" width="355" height="38" rx="4" class="row-memory"/>
+  <text x="485" y="278" class="label" font-weight="600">sessionHooks (临时 hook)</text>
+  <text x="485" y="292" class="label-mono-sm">once:true 一次性 hook · session 内有效</text>
+
+  <rect x="470" y="305" width="355" height="38" rx="4" class="row-memory"/>
+  <text x="485" y="323" class="label" font-weight="600">_permissionMode</text>
+  <text x="485" y="337" class="label-mono-sm">'normal'|'strict'|'yolo' · 默认值兜底</text>
+
+  <rect x="470" y="350" width="355" height="38" rx="4" class="row-memory"/>
+  <text x="485" y="368" class="label" font-weight="600">_eventBuffer (500)</text>
+  <text x="485" y="382" class="label-mono-sm">仅供重连 30s 内重放 · 不写盘</text>
+
+  <rect x="470" y="395" width="355" height="38" rx="4" class="row-memory"/>
+  <text x="485" y="413" class="label" font-weight="600">_graceTimer (30s)</text>
+  <text x="485" y="427" class="label-mono-sm">setTimeout handle · GRACE_PERIOD_MS = 30_000</text>
+
+  <rect x="470" y="445" width="355" height="45" rx="4" fill="#fecaca" stroke="#b91c1c" stroke-width="1"/>
+  <text x="485" y="463" class="label" font-weight="700" fill="#7f1d1d">▶ 代价：在飞的 LLM 调用 / 待确认 deny</text>
+  <text x="485" y="478" class="label-sm">用户重发一次即可恢复 · 不引入分布式复杂度</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="510" width="800" height="42" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="528" class="label" font-weight="700">核心边界：<tspan fill="#065f46">用户态必持久</tspan> · <tspan fill="#7f1d1d">进程态故意不持久</tspan> —— 持久化层薄且稳，重启逻辑就是"在飞请求 deny + 用户重发"</text>
+  <text x="55" y="545" class="label">朴素反例：把 AbortController 序列化进 Redis —— 反序列化拿到无用 native handle，根本无法 cancel 远端 fetch / exec</text>
+</svg>
