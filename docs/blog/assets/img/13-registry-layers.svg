@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 580" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-rl d-rl">
+  <title id="t-rl">ModelRegistry 分层架构 · 5 个 provider 共用 2 个 SDK 包</title>
+  <desc id="d-rl">展示 HarWork ModelRegistry 的分层：顶层 5 个 provider（Anthropic / OpenAI / Zhipu / DeepSeek / Qwen）+ 动态 providers 字段；中间 2 个 SDK 包（@ai-sdk/anthropic + @ai-sdk/openai）；底层统一的 LanguageModel 句柄供 agent loop 调用。Zhipu 走 createAnthropic 因为它提供 Anthropic 兼容端点；DeepSeek 经过 deepseekFetch 包装强制关 thinking。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .provider-ant { fill: #fef3c7; stroke: #a16207; }
+    .provider-oai { fill: #d1fae5; stroke: #047857; }
+    .provider-custom { fill: #ede9fe; stroke: #6d28d9; }
+    .sdk-ant { fill: #fde68a; stroke: #78350f; stroke-width: 2; }
+    .sdk-oai { fill: #a7f3d0; stroke: #065f46; stroke-width: 2; }
+    .agent-box { fill: #dbeafe; stroke: #1e40af; stroke-width: 2; }
+    .quirk { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; stroke-dasharray: 3 2; }
+    .arrow { stroke: #1a2233; stroke-width: 1.2; fill: none; }
+    .arrow-warn { stroke: #b91c1c; stroke-width: 1.5; fill: none; stroke-dasharray: 4 2; }
+  </style>
+
+  <defs>
+    <marker id="rl-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="580" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">ModelRegistry · 5 provider × 2 SDK 包</text>
+  <text x="440" y="48" text-anchor="middle" class="note">packages/engine/src/models/registry.ts · 227 行装下整层抽象</text>
+
+  <!-- Layer 1: User-facing modelIds (top) -->
+  <text x="440" y="80" text-anchor="middle" class="header">▶ 第 1 层：HarWork 暴露给前端/数据库的 modelId</text>
+
+  <g transform="translate(40, 95)">
+    <!-- Anthropic -->
+    <rect x="0" y="0" width="155" height="55" rx="4" class="provider-ant"/>
+    <text x="77" y="18" text-anchor="middle" class="label-sm" font-weight="600">Anthropic</text>
+    <text x="77" y="33" text-anchor="middle" class="label-mono-sm">claude-opus-4-...</text>
+    <text x="77" y="46" text-anchor="middle" class="label-mono-sm">claude-sonnet-4 / haiku-4-5</text>
+
+    <!-- OpenAI -->
+    <rect x="165" y="0" width="135" height="55" rx="4" class="provider-oai"/>
+    <text x="232" y="18" text-anchor="middle" class="label-sm" font-weight="600">OpenAI</text>
+    <text x="232" y="33" text-anchor="middle" class="label-mono-sm">gpt-4o</text>
+    <text x="232" y="46" text-anchor="middle" class="label-mono-sm">gpt-4o-mini</text>
+
+    <!-- Zhipu -->
+    <rect x="310" y="0" width="135" height="55" rx="4" class="provider-ant"/>
+    <text x="377" y="18" text-anchor="middle" class="label-sm" font-weight="600">智谱 Zhipu</text>
+    <text x="377" y="33" text-anchor="middle" class="label-mono-sm">zhipu:glm-4.7</text>
+    <text x="377" y="46" text-anchor="middle" class="label-mono-sm">zhipu:glm-5</text>
+
+    <!-- DeepSeek -->
+    <rect x="455" y="0" width="135" height="55" rx="4" class="provider-oai"/>
+    <text x="522" y="18" text-anchor="middle" class="label-sm" font-weight="600">DeepSeek</text>
+    <text x="522" y="33" text-anchor="middle" class="label-mono-sm">deepseek:v4-pro</text>
+    <text x="522" y="46" text-anchor="middle" class="note">+ deepseekFetch quirk</text>
+
+    <!-- Qwen -->
+    <rect x="600" y="0" width="125" height="55" rx="4" class="provider-oai"/>
+    <text x="662" y="18" text-anchor="middle" class="label-sm" font-weight="600">通义 Qwen</text>
+    <text x="662" y="33" text-anchor="middle" class="label-mono-sm">qwen:qwen-plus</text>
+    <text x="662" y="46" text-anchor="middle" class="label-mono-sm">qwen-max / turbo</text>
+
+    <!-- Custom providers -->
+    <rect x="735" y="0" width="65" height="55" rx="4" class="provider-custom"/>
+    <text x="767" y="18" text-anchor="middle" class="label-sm" font-weight="600">自定义</text>
+    <text x="767" y="33" text-anchor="middle" class="label-mono-sm">providers:</text>
+    <text x="767" y="46" text-anchor="middle" class="label-mono-sm">{kimi,...}</text>
+  </g>
+
+  <!-- Arrows: modelId → SDK -->
+  <path d="M 117 152 L 200 200" class="arrow" marker-end="url(#rl-arr)"/>
+  <path d="M 272 152 L 600 200" class="arrow" marker-end="url(#rl-arr)"/>
+  <path d="M 417 152 L 250 200" class="arrow" marker-end="url(#rl-arr)"/>
+  <path d="M 562 152 L 640 200" class="arrow" marker-end="url(#rl-arr)"/>
+  <path d="M 702 152 L 680 200" class="arrow" marker-end="url(#rl-arr)"/>
+  <path d="M 807 152 L 700 200" class="arrow" marker-end="url(#rl-arr)"/>
+
+  <!-- Layer 2: SDK packages (middle) -->
+  <text x="440" y="195" text-anchor="middle" class="header">▶ 第 2 层：2 个 AI SDK 包就能搞定所有 provider</text>
+
+  <g transform="translate(120, 210)">
+    <rect x="0" y="0" width="280" height="80" rx="6" class="sdk-ant"/>
+    <text x="140" y="22" text-anchor="middle" class="label" font-weight="700" fill="#78350f">@ai-sdk/anthropic · createAnthropic()</text>
+    <text x="140" y="40" text-anchor="middle" class="label-sm">用于 Anthropic 协议家族</text>
+    <line x1="20" y1="48" x2="260" y2="48" stroke="#a16207" stroke-dasharray="2 2"/>
+    <text x="140" y="62" text-anchor="middle" class="label-mono-sm">Anthropic 官方</text>
+    <text x="140" y="75" text-anchor="middle" class="label-mono-sm">Zhipu (baseURL = /api/anthropic/v1)</text>
+
+    <rect x="320" y="0" width="320" height="80" rx="6" class="sdk-oai"/>
+    <text x="480" y="22" text-anchor="middle" class="label" font-weight="700" fill="#065f46">@ai-sdk/openai · createOpenAI()</text>
+    <text x="480" y="40" text-anchor="middle" class="label-sm">用于 OpenAI 协议家族（含所有兼容厂）</text>
+    <line x1="340" y1="48" x2="620" y2="48" stroke="#047857" stroke-dasharray="2 2"/>
+    <text x="480" y="62" text-anchor="middle" class="label-mono-sm">OpenAI · DeepSeek · Qwen · 自定义</text>
+    <text x="480" y="75" text-anchor="middle" class="label-mono-sm">DeepSeek 额外注入 fetch 包装关 thinking</text>
+  </g>
+
+  <!-- Quirk box -->
+  <rect x="650" y="210" width="180" height="80" rx="4" class="quirk"/>
+  <text x="740" y="230" text-anchor="middle" class="label-sm" font-weight="700" fill="#7f1d1d">Provider Quirk</text>
+  <text x="740" y="248" text-anchor="middle" class="label-mono-sm" fill="#7f1d1d">deepseekFetch:</text>
+  <text x="740" y="262" text-anchor="middle" class="label-mono-sm" fill="#7f1d1d">body.thinking = </text>
+  <text x="740" y="276" text-anchor="middle" class="label-mono-sm" fill="#7f1d1d">{type:'disabled'}</text>
+
+  <!-- Arrows: SDK → LanguageModel -->
+  <path d="M 260 290 L 380 330" class="arrow" marker-end="url(#rl-arr)"/>
+  <path d="M 560 290 L 460 330" class="arrow" marker-end="url(#rl-arr)"/>
+
+  <!-- Layer 3: Unified LanguageModel handle -->
+  <text x="440" y="325" text-anchor="middle" class="header">▶ 第 3 层：统一句柄 LanguageModel</text>
+
+  <rect x="240" y="340" width="400" height="55" rx="6" fill="#fff" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="362" text-anchor="middle" class="label" font-weight="600">LanguageModel (来自 'ai' 包)</text>
+  <text x="440" y="380" text-anchor="middle" class="note">无状态配置壳 · 每次 getModel() 都 new 一个 · 并发安全</text>
+
+  <!-- Arrow: LanguageModel → streamText -->
+  <path d="M 440 395 L 440 430" class="arrow" marker-end="url(#rl-arr)"/>
+
+  <!-- Layer 4: Agent loop call -->
+  <text x="440" y="425" text-anchor="middle" class="header">▶ 第 4 层：Agent loop 唯一调用入口</text>
+
+  <rect x="120" y="440" width="640" height="55" rx="6" class="agent-box"/>
+  <text x="440" y="462" text-anchor="middle" class="label" font-weight="600" fill="#1e40af">agent/loop.ts:198 — streamText({ model, system, messages, tools, abortSignal, ... })</text>
+  <text x="440" y="480" text-anchor="middle" class="label-sm">不知道是 Claude 还是 DeepSeek · 只在 supportsThinking 时多传 providerOptions.anthropic.thinking</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="510" width="800" height="55" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="530" class="label" font-weight="700">关键洞察：5 provider 但只 2 个 SDK · provider 数 ≠ 协议家族数</text>
+  <text x="55" y="547" class="label">新加一个 OpenAI 兼容 provider = 加一个 if 块 + 一行 pricing；新加一个全新协议家族 = 升级到第三个 SDK 包</text>
+  <text x="55" y="562" class="label-sm" fill="#7f1d1d">DeepSeek quirk 是唯一硬编码的 provider-specific 逻辑——抽象一个 quirk 比写死一个 quirk 更 over-engineering</text>
+</svg>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 580" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-su d-su">
+  <title id="t-su">AI SDK stream 协议统一 · 不同 upstream 协议 → 同一个 fullStream</title>
+  <desc id="d-su">展示 streamText 怎么把 Anthropic 协议（event: message_delta SSE）、OpenAI 协议（data: {choices:[{delta:{content}}]} SSE）、Zhipu Anthropic 兼容、DeepSeek OpenAI 兼容（含 thinking-disabled 注入）统一成 fullStream 的 text-delta / reasoning-delta / tool-call / finish 事件。agent loop 不知道 upstream 是哪一家。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .upstream-ant { fill: #fef3c7; stroke: #a16207; }
+    .upstream-oai { fill: #d1fae5; stroke: #047857; }
+    .sdk-box { fill: #fff; stroke: #1a2233; stroke-width: 1.5; }
+    .unified { fill: #dbeafe; stroke: #1e40af; stroke-width: 2; }
+    .arrow { stroke: #1a2233; stroke-width: 1.2; fill: none; }
+    .arrow-thick { stroke: #1a2233; stroke-width: 2; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="su-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="580" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">streamText 把多协议压平 · agent loop 只见一个 fullStream</text>
+  <text x="440" y="48" text-anchor="middle" class="note">agent/loop.ts:198 一行调用 · upstream 各家原生 SSE 全部归一</text>
+
+  <!-- Top row: 4 upstream protocols -->
+  <text x="50" y="78" class="header">▶ Upstream 各家 SSE 协议（原始）</text>
+
+  <g transform="translate(40, 90)">
+    <!-- Anthropic native -->
+    <rect x="0" y="0" width="195" height="105" rx="4" class="upstream-ant"/>
+    <text x="97" y="18" text-anchor="middle" class="label-sm" font-weight="600">Anthropic 原生</text>
+    <text x="97" y="32" text-anchor="middle" class="label-mono-sm">POST /v1/messages</text>
+    <line x1="10" y1="38" x2="185" y2="38" stroke="#a16207"/>
+    <text x="10" y="52" class="label-mono-sm">event: message_start</text>
+    <text x="10" y="65" class="label-mono-sm">event: content_block_delta</text>
+    <text x="10" y="78" class="label-mono-sm">data: {"delta":{"text":"H"}}</text>
+    <text x="10" y="91" class="label-mono-sm">event: message_delta usage</text>
+
+    <!-- Zhipu = Anthropic-compatible -->
+    <rect x="205" y="0" width="195" height="105" rx="4" class="upstream-ant"/>
+    <text x="302" y="18" text-anchor="middle" class="label-sm" font-weight="600">智谱 GLM (Anthropic 兼容)</text>
+    <text x="302" y="32" text-anchor="middle" class="label-mono-sm">open.bigmodel.cn</text>
+    <line x1="215" y1="38" x2="390" y2="38" stroke="#a16207"/>
+    <text x="215" y="52" class="label-mono-sm">/api/anthropic/v1/messages</text>
+    <text x="215" y="65" class="label-mono-sm">event: content_block_delta</text>
+    <text x="215" y="78" class="label-mono-sm">data: {"delta":{"text":"你"}}</text>
+    <text x="215" y="91" class="label-mono-sm">协议与 Anthropic 一致</text>
+
+    <!-- OpenAI native -->
+    <rect x="410" y="0" width="195" height="105" rx="4" class="upstream-oai"/>
+    <text x="507" y="18" text-anchor="middle" class="label-sm" font-weight="600">OpenAI 原生</text>
+    <text x="507" y="32" text-anchor="middle" class="label-mono-sm">POST /v1/chat/completions</text>
+    <line x1="420" y1="38" x2="595" y2="38" stroke="#047857"/>
+    <text x="420" y="52" class="label-mono-sm">data: {"choices":[{</text>
+    <text x="420" y="65" class="label-mono-sm">  "delta":{"content":"H"}</text>
+    <text x="420" y="78" class="label-mono-sm">}]}</text>
+    <text x="420" y="91" class="label-mono-sm">data: [DONE]</text>
+
+    <!-- DeepSeek -->
+    <rect x="615" y="0" width="195" height="105" rx="4" class="upstream-oai"/>
+    <text x="712" y="18" text-anchor="middle" class="label-sm" font-weight="600">DeepSeek (OpenAI 兼容)</text>
+    <text x="712" y="32" text-anchor="middle" class="label-mono-sm">api.deepseek.com</text>
+    <line x1="625" y1="38" x2="800" y2="38" stroke="#047857"/>
+    <text x="625" y="52" class="label-mono-sm">POST /v1/chat/completions</text>
+    <text x="625" y="65" class="label-mono-sm">+ deepseekFetch 注入:</text>
+    <text x="625" y="78" class="label-mono-sm" fill="#7f1d1d">  body.thinking = </text>
+    <text x="625" y="91" class="label-mono-sm" fill="#7f1d1d">  {type:'disabled'}</text>
+  </g>
+
+  <!-- Arrows to SDK middle layer -->
+  <path d="M 137 195 L 220 240" class="arrow" marker-end="url(#su-arr)"/>
+  <path d="M 342 195 L 240 240" class="arrow" marker-end="url(#su-arr)"/>
+  <path d="M 547 195 L 660 240" class="arrow" marker-end="url(#su-arr)"/>
+  <path d="M 752 195 L 680 240" class="arrow" marker-end="url(#su-arr)"/>
+
+  <!-- Middle: SDK parse layer -->
+  <text x="50" y="235" class="header">▶ SDK 协议解析层</text>
+  <g transform="translate(110, 248)">
+    <rect x="0" y="0" width="280" height="80" rx="6" class="sdk-box"/>
+    <text x="140" y="20" text-anchor="middle" class="label" font-weight="700">@ai-sdk/anthropic</text>
+    <text x="140" y="36" text-anchor="middle" class="label-sm">解析 Anthropic SSE 事件</text>
+    <text x="140" y="52" text-anchor="middle" class="label-mono-sm">content_block_delta → text-delta</text>
+    <text x="140" y="68" text-anchor="middle" class="label-mono-sm">thinking_delta → reasoning-delta</text>
+
+    <rect x="380" y="0" width="280" height="80" rx="6" class="sdk-box"/>
+    <text x="520" y="20" text-anchor="middle" class="label" font-weight="700">@ai-sdk/openai</text>
+    <text x="520" y="36" text-anchor="middle" class="label-sm">解析 OpenAI SSE 事件</text>
+    <text x="520" y="52" text-anchor="middle" class="label-mono-sm">delta.content → text-delta</text>
+    <text x="520" y="68" text-anchor="middle" class="label-mono-sm">delta.tool_calls → tool-call</text>
+  </g>
+
+  <!-- Arrows to unified stream -->
+  <path d="M 250 328 L 380 380" class="arrow-thick" marker-end="url(#su-arr)"/>
+  <path d="M 630 328 L 500 380" class="arrow-thick" marker-end="url(#su-arr)"/>
+
+  <!-- Unified stream -->
+  <text x="50" y="375" class="header">▶ 统一 fullStream（agent loop 唯一接触的接口）</text>
+  <rect x="200" y="388" width="480" height="100" rx="6" class="unified"/>
+  <text x="440" y="408" text-anchor="middle" class="label" font-weight="700" fill="#1e40af">for await (const part of result.fullStream) { ... }</text>
+  <line x1="220" y1="416" x2="660" y2="416" stroke="#1e40af"/>
+  <text x="220" y="432" class="label-mono">part.type === 'text-delta'         → 文本流</text>
+  <text x="220" y="448" class="label-mono">part.type === 'reasoning-delta'    → thinking 流（Anthropic 独有）</text>
+  <text x="220" y="464" class="label-mono">part.type === 'tool-call'          → 工具调用</text>
+  <text x="220" y="480" class="label-mono">result.usage / .toolCalls / .text  → 收尾元数据</text>
+
+  <!-- Bottom takeaway -->
+  <rect x="40" y="505" width="800" height="55" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="525" class="label" font-weight="700">这就是为什么 agent loop 不需要 if-provider 分支：协议统一不在 HarWork，在 AI SDK 层</text>
+  <text x="55" y="542" class="label">HarWork 唯一一处 provider-specific 分支是 supportsThinking → 加 providerOptions.anthropic.thinking budget</text>
+  <text x="55" y="557" class="label-sm" fill="#7f1d1d">协议保留各家特色（thinking budget 是 Anthropic 独有）而非强制统一——这是"统一编排"不是"统一协议"</text>
+</svg>
