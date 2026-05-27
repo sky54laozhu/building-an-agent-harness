@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-rm d-rm">
+  <title id="t-rm">选型反悔矩阵 · 4 项决策 + 5 件做错 + 4 件做对</title>
+  <desc id="d-rm">展示 HarWork 49 天里的关键选型与复盘判断：4 项决策（Drizzle ORM / WebSocket / Next.js App Router / Node.js）回头看的评价；4 件 Day 1-5 做对的（async generator / Adapter / 测试 / CLAUDE.md）；5 件 Day 10+ 做错的（admin 单组件膨胀 / SQLite 写并发 / 无 PR 流程 / OpenAPI 字段 schema 没全 / Sentry 没接）。强调"早期 5 天的架构决策权重 ≈ 后面 44 天工程决策总和"。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .cell-right { fill: #dcfce7; stroke: #15803d; stroke-width: 1.5; }
+    .cell-neutral { fill: #fef9c3; stroke: #a16207; stroke-width: 1.5; }
+    .cell-regret { fill: #fed7aa; stroke: #c2410c; stroke-width: 1.5; }
+    .cell-wrong { fill: #fecaca; stroke: #b91c1c; stroke-width: 1.5; }
+    .row-header { fill: #f0f4ff; stroke: #1d4ed8; stroke-width: 1; }
+  </style>
+
+  <text x="20" y="26" class="header" font-size="14">选型反悔矩阵 · 49 天复盘的浓缩</text>
+  <text x="20" y="44" class="note">绿 = 回头看正确 / 黄 = 中性 / 橙 = 后悔但代价小 / 红 = 真踩坑</text>
+
+  <!-- Section 1: 4 选型回溯 -->
+  <text x="20" y="74" class="header">① 4 项选型决策回溯</text>
+
+  <!-- Header row -->
+  <rect x="20" y="84" width="170" height="32" class="row-header"/>
+  <text x="105" y="104" text-anchor="middle" class="label header">决策维度</text>
+
+  <rect x="190" y="84" width="170" height="32" class="row-header"/>
+  <text x="275" y="104" text-anchor="middle" class="label header">当时选择</text>
+
+  <rect x="360" y="84" width="170" height="32" class="row-header"/>
+  <text x="445" y="104" text-anchor="middle" class="label header">现在评价</text>
+
+  <rect x="530" y="84" width="350" height="32" class="row-header"/>
+  <text x="705" y="104" text-anchor="middle" class="label header">备注</text>
+
+  <!-- Row 1: ORM -->
+  <rect x="20" y="116" width="170" height="36" fill="#fff" stroke="#999"/>
+  <text x="30" y="138" class="label">ORM</text>
+  <rect x="190" y="116" width="170" height="36" fill="#fff" stroke="#999"/>
+  <text x="200" y="138" class="label-mono">Drizzle</text>
+  <rect x="360" y="116" width="170" height="36" class="cell-right"/>
+  <text x="445" y="138" text-anchor="middle" class="label header" fill="#15803d">✅ 正确</text>
+  <rect x="530" y="116" width="350" height="36" fill="#fff" stroke="#999"/>
+  <text x="540" y="138" class="label-sm">类型推导比 Prisma 好，无 codegen 依赖 · schema 改 30+ 次零卡顿</text>
+
+  <!-- Row 2: 实时通道 -->
+  <rect x="20" y="152" width="170" height="36" fill="#fff" stroke="#999"/>
+  <text x="30" y="174" class="label">实时通道</text>
+  <rect x="190" y="152" width="170" height="36" fill="#fff" stroke="#999"/>
+  <text x="200" y="174" class="label-mono">WebSocket</text>
+  <rect x="360" y="152" width="170" height="36" class="cell-right"/>
+  <text x="445" y="174" text-anchor="middle" class="label header" fill="#15803d">✅ 正确</text>
+  <rect x="530" y="152" width="350" height="36" fill="#fff" stroke="#999"/>
+  <text x="540" y="174" class="label-sm">SSE 单向不够，Part 12 30s 宽限 + permission_response 必须双向</text>
+
+  <!-- Row 3: Next.js -->
+  <rect x="20" y="188" width="170" height="36" fill="#fff" stroke="#999"/>
+  <text x="30" y="210" class="label">Next.js 模式</text>
+  <rect x="190" y="188" width="170" height="36" fill="#fff" stroke="#999"/>
+  <text x="200" y="210" class="label-mono">App Router</text>
+  <rect x="360" y="188" width="170" height="36" class="cell-neutral"/>
+  <text x="445" y="210" text-anchor="middle" class="label header" fill="#a16207">⚠️ 中性</text>
+  <rect x="530" y="188" width="350" height="36" fill="#fff" stroke="#999"/>
+  <text x="540" y="210" class="label-sm">早期版本踩 Server Action 坑，但 RSC + Streaming 留下来值</text>
+
+  <!-- Row 4: Runtime -->
+  <rect x="20" y="224" width="170" height="36" fill="#fff" stroke="#999"/>
+  <text x="30" y="246" class="label">运行时</text>
+  <rect x="190" y="224" width="170" height="36" fill="#fff" stroke="#999"/>
+  <text x="200" y="246" class="label-mono">Node.js</text>
+  <rect x="360" y="224" width="170" height="36" class="cell-regret"/>
+  <text x="445" y="246" text-anchor="middle" class="label header" fill="#c2410c">⚠️ 后悔</text>
+  <rect x="530" y="224" width="350" height="36" fill="#fff" stroke="#999"/>
+  <text x="540" y="246" class="label-sm">Bun 性能红利没吃到 · 但没花 2 天 benchmark 验证 = 心理债</text>
+
+  <!-- Section 2: 4 做对 -->
+  <text x="20" y="290" class="header">② Day 1-5 做对的 4 件（架构权重最大）</text>
+
+  <rect x="20" y="300" width="210" height="50" class="cell-right"/>
+  <text x="125" y="320" text-anchor="middle" class="label header" fill="#15803d">async generator Loop</text>
+  <text x="125" y="338" text-anchor="middle" class="label-sm">49 天架构没改过</text>
+
+  <rect x="240" y="300" width="210" height="50" class="cell-right"/>
+  <text x="345" y="320" text-anchor="middle" class="label header" fill="#15803d">Adapter 模式</text>
+  <text x="345" y="338" text-anchor="middle" class="label-sm">DB / Workspace 切换是 1 周不是 1 月</text>
+
+  <rect x="460" y="300" width="210" height="50" class="cell-right"/>
+  <text x="565" y="320" text-anchor="middle" class="label header" fill="#15803d">测试金字塔</text>
+  <text x="565" y="338" text-anchor="middle" class="label-sm">110 测试拦 7 次 Phase 3 破坏</text>
+
+  <rect x="680" y="300" width="200" height="50" class="cell-right"/>
+  <text x="780" y="320" text-anchor="middle" class="label header" fill="#15803d">CLAUDE.md 早立</text>
+  <text x="780" y="338" text-anchor="middle" class="label-sm">AI 协助开发的协作契约</text>
+
+  <!-- Section 3: 5 做错 -->
+  <text x="20" y="380" class="header">③ Day 10+ 做错的 5 件（路径依赖滚雪球）</text>
+
+  <rect x="20" y="390" width="170" height="60" class="cell-wrong"/>
+  <text x="105" y="410" text-anchor="middle" class="label header" fill="#b91c1c">admin 单组件膨胀</text>
+  <text x="105" y="427" text-anchor="middle" class="label-sm">"加 tab + 100 行"</text>
+  <text x="105" y="442" text-anchor="middle" class="note">已拆但留疤</text>
+
+  <rect x="195" y="390" width="170" height="60" class="cell-wrong"/>
+  <text x="280" y="410" text-anchor="middle" class="label header" fill="#b91c1c">SQLite 写并发</text>
+  <text x="280" y="427" text-anchor="middle" class="label-sm">SQLITE_BUSY 零星出现</text>
+  <text x="280" y="442" text-anchor="middle" class="note">应 Day 35 切 PG</text>
+
+  <rect x="370" y="390" width="170" height="60" class="cell-wrong"/>
+  <text x="455" y="410" text-anchor="middle" class="label header" fill="#b91c1c">单分支无 PR</text>
+  <text x="455" y="427" text-anchor="middle" class="label-sm">协作埋坑</text>
+  <text x="455" y="442" text-anchor="middle" class="note">下一周期必须开</text>
+
+  <rect x="545" y="390" width="170" height="60" class="cell-wrong"/>
+  <text x="630" y="410" text-anchor="middle" class="label header" fill="#b91c1c">OpenAPI 没生成</text>
+  <text x="630" y="427" text-anchor="middle" class="label-sm">客户端类型手维护</text>
+  <text x="630" y="442" text-anchor="middle" class="note">字段级 schema 缺失</text>
+
+  <rect x="720" y="390" width="160" height="60" class="cell-wrong"/>
+  <text x="800" y="410" text-anchor="middle" class="label header" fill="#b91c1c">Sentry 没接</text>
+  <text x="800" y="427" text-anchor="middle" class="label-sm">长尾错误难定位</text>
+  <text x="800" y="442" text-anchor="middle" class="note">webhook 不够</text>
+
+  <!-- Conclusion -->
+  <rect x="20" y="475" width="860" height="90" rx="4" fill="#fff7ed" stroke="#ea580c"/>
+  <text x="30" y="495" class="label header" fill="#ea580c">核心规律：项目早期 5 天的架构决策权重 ≈ 后面 44 天工程决策的总和</text>
+  <text x="30" y="515" class="label-sm">做对的 4 件全在 Day 1-5（async generator / Adapter / 测试 / CLAUDE.md）— 后续 44 天没改过</text>
+  <text x="30" y="533" class="label-sm">做错的 5 件全在 Day 10+ 的路径依赖（admin 膨胀 / SQLite 不切 / 无 PR / OpenAPI / Sentry）— 滚雪球难拆</text>
+  <text x="30" y="551" class="label-sm" fill="#ea580c"><tspan class="header">→</tspan> 下一个 49 天：Day 1-5 预算从 10% 提到 25%；架构决策反复推演后再启动 Day 6+ 实现</text>
+</svg>

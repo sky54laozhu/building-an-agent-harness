@@ -6,7 +6,7 @@ series: harwork-agent-harness
 series_index: 17
 keywords: [CI/CD, canary deployment, progressive rollout, GitHub Actions, P95 latency, auto rollback, nginx split_clients, agent harness, harwork, exponential backoff, quality gate, solo founder DevOps]
 prev: 16-optimistic-lock-collab
-next: 18-69-day-retro
+next: 18-49-day-retro
 canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/17-enterprise-cicd.md
 ---
 
@@ -179,9 +179,9 @@ compute_recovery_wait_seconds() {
 
 ## 下一篇
 
-→ Part 18：复盘 —— 69 天独立造 Harness 的得与失
+→ Part 18：复盘 —— 49 天独立造 Harness 的得与失
 
-7 件套发布管线撑住了"个人作品 → 生产可用"的最后一公里。但整个 HarWork 项目本身——从 2026 年 3 月 19 日 commit 1 到当前 5 月 27 日 —— **69 天独立全栈造 AI 平台** 真的值得吗？下一篇是系列收尾的诚实复盘：哪些技术选择回头看是对的（单 WS / 内存 VersionStore / 7 件套发布）、哪些是错的（早期 spec 想给 design-collab 单开 WS、CRDT 评估浪费 1 周）、哪些是没做完的（冲突 UI / 业务级 SLO / Sentry 集成）。**不卖"独立开发者神话"，只交付一份工程化复盘清单**。
+7 件套发布管线撑住了"个人作品 → 生产可用"的最后一公里。但整个 HarWork 项目本身——从 2026-04-08 第一次 commit 到 2026-05-26 系列规划，**49 天 / 287 commits / 60.7K LOC / 110 tests** 独立全栈造 AI 平台 —— 真的值得吗？下一篇是系列收尾的诚实复盘：哪些技术选择回头看是对的（async generator Loop / Adapter 模式 / 单 WS / 7 件套发布）、哪些是错的（管理后台单组件膨胀 / SQLite 写并发瓶颈 / 错误监控只做 webhook 没接 Sentry）、哪些是没做完的（冲突 UI / 业务级 SLO / OpenAPI 字段级 schema）。**不卖"独立开发者神话"，只交付一份工程化复盘清单**。
 
 ---
 

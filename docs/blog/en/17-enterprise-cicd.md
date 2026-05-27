@@ -6,7 +6,7 @@ series: harwork-agent-harness
 series_index: 17
 keywords: [CI/CD, canary deployment, progressive rollout, GitHub Actions, P95 latency, auto rollback, nginx split_clients, agent harness, harwork, exponential backoff, quality gate, solo founder DevOps]
 prev: 16-optimistic-lock-collab
-next: 18-69-day-retro
+next: 18-49-day-retro
 canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/en/17-enterprise-cicd.md
 ---
 
@@ -179,9 +179,9 @@ The most counter-intuitive engineering detail: **soft fallback before hard rollb
 
 ## Next Up
 
-→ Part 18: Retrospective — 69 days solo-building a Harness, what worked and what didn't
+→ Part 18: Retrospective — 49 days solo-building a Harness, what worked and what didn't
 
-The 7-piece release pipeline holds the final mile from "personal project → production-ready." But the HarWork project itself — from commit 1 on 2026-03-19 to now, 2026-05-27 — **69 days solo full-stack building an AI platform** — was it worth it? The final post in the series is an honest retrospective: which tech choices were right in hindsight (single WS / in-memory VersionStore / 7-piece release), which were wrong (early spec wanted a separate WS for design-collab, the 1-week CRDT eval that went nowhere), which are unfinished (conflict UI / business-level SLOs / Sentry integration). **Not selling "indie developer mythology" — just delivering an engineering retrospective checklist.**
+The 7-piece release pipeline holds the final mile from "personal project → production-ready." But the HarWork project itself — from the first commit on 2026-04-08 to the series-plan commit on 2026-05-26, **49 days / 287 commits / 60.7K LOC / 110 tests** solo full-stack building an AI platform — was it worth it? The final post in the series is an honest retrospective: which tech choices were right in hindsight (async generator Loop / Adapter pattern / single WS / 7-piece release), which were wrong (the admin component bloat / SQLite write contention / error monitoring stopped at webhook without Sentry), which are unfinished (conflict UI / business-level SLOs / field-level OpenAPI schema). **Not selling "indie developer mythology" — just delivering an engineering retrospective checklist.**
 
 ---
 

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 480" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-cd d-cd">
+  <title id="t-cd">HarWork 49 天 commits/day 真实分布</title>
+  <desc id="d-cd">数据来自 git log --pretty=format:%ad --date=short | sort | uniq -c，展示 HarWork 项目 2026-04-08 到 2026-05-26 的每日提交分布。峰值是 5-13（38 commits / 设计模块爆炸日）和 4-30（32 commits / Phase 3 收尾日），其余多数日为个位数。曲线证明"按主题井喷"而非"按周匀速"。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .axis { stroke: #1a1a1a; stroke-width: 1.5; fill: none; }
+    .grid { stroke: #d4d4d4; stroke-width: 0.5; fill: none; stroke-dasharray: 2 2; }
+    .bar { fill: #2563eb; }
+    .bar-peak { fill: #b91c1c; }
+    .bar-hi { fill: #ea580c; }
+    .annot-line { stroke: #b91c1c; stroke-width: 1; fill: none; stroke-dasharray: 3 2; }
+  </style>
+
+  <text x="20" y="26" class="header" font-size="14">HarWork commits/day · 真实 git log（2026-04-08 → 2026-05-26）</text>
+  <text x="20" y="44" class="note">数据源：git log --pretty=format:'%ad' --date=short | sort | uniq -c · 共 287 commits / 31 个活跃日 / 49 天跨度</text>
+
+  <!-- Axes -->
+  <line x1="60" y1="80" x2="60" y2="370" class="axis"/>
+  <line x1="60" y1="370" x2="920" y2="370" class="axis"/>
+
+  <!-- Y-axis ticks -->
+  <text x="55" y="374" text-anchor="end" class="label-sm">0</text>
+  <line x1="55" y1="335" x2="60" y2="335" class="axis"/>
+  <text x="55" y="339" text-anchor="end" class="label-sm">10</text>
+  <line x1="55" y1="300" x2="60" y2="300" class="axis"/>
+  <text x="55" y="304" text-anchor="end" class="label-sm">20</text>
+  <line x1="55" y1="265" x2="60" y2="265" class="axis"/>
+  <text x="55" y="269" text-anchor="end" class="label-sm">30</text>
+  <line x1="55" y1="230" x2="60" y2="230" class="axis"/>
+  <text x="55" y="234" text-anchor="end" class="label-sm">40</text>
+  <text x="40" y="84" class="label-sm">commits</text>
+
+  <!-- Grid -->
+  <line x1="60" y1="335" x2="920" y2="335" class="grid"/>
+  <line x1="60" y1="300" x2="920" y2="300" class="grid"/>
+  <line x1="60" y1="265" x2="920" y2="265" class="grid"/>
+  <line x1="60" y1="230" x2="920" y2="230" class="grid"/>
+
+  <!-- Bars: 31 active days. 1 day = ~17px wide. y scale: 370 - (n * 3.5) -->
+  <!-- Data: 4-8:7, 4-9:16, 4-10:7, 4-11:2, 4-12:1, 4-13:1, 4-14:7, 4-16:1, 4-17:7, 4-19:13, 4-20:1, 4-23:4, 4-24:25, 4-25:1, 4-26:2, 4-27:6, 4-28:2, 4-29:2, 4-30:32, 5-1:12, 5-3:7, 5-4:14, 5-5:16, 5-7:2, 5-9:3, 5-10:15, 5-11:2, 5-12:25, 5-13:38, 5-14:14, 5-26:2 -->
+
+  <g>
+    <rect x="80"  y="345.5" width="14" height="24.5" class="bar"/>
+    <rect x="100" y="314"   width="14" height="56"   class="bar"/>
+    <rect x="120" y="345.5" width="14" height="24.5" class="bar"/>
+    <rect x="140" y="363"   width="14" height="7"    class="bar"/>
+    <rect x="160" y="366.5" width="14" height="3.5"  class="bar"/>
+    <rect x="180" y="366.5" width="14" height="3.5"  class="bar"/>
+    <rect x="200" y="345.5" width="14" height="24.5" class="bar"/>
+    <rect x="220" y="366.5" width="14" height="3.5"  class="bar"/>
+    <rect x="240" y="345.5" width="14" height="24.5" class="bar"/>
+    <rect x="260" y="324.5" width="14" height="45.5" class="bar"/>
+    <rect x="280" y="366.5" width="14" height="3.5"  class="bar"/>
+    <rect x="300" y="356"   width="14" height="14"   class="bar"/>
+    <rect x="320" y="282.5" width="14" height="87.5" class="bar-hi"/>
+    <rect x="340" y="366.5" width="14" height="3.5"  class="bar"/>
+    <rect x="360" y="363"   width="14" height="7"    class="bar"/>
+    <rect x="380" y="349"   width="14" height="21"   class="bar"/>
+    <rect x="400" y="363"   width="14" height="7"    class="bar"/>
+    <rect x="420" y="363"   width="14" height="7"    class="bar"/>
+    <rect x="440" y="258"   width="14" height="112"  class="bar-hi"/>
+    <rect x="460" y="328"   width="14" height="42"   class="bar"/>
+    <rect x="480" y="345.5" width="14" height="24.5" class="bar"/>
+    <rect x="500" y="321"   width="14" height="49"   class="bar"/>
+    <rect x="520" y="314"   width="14" height="56"   class="bar"/>
+    <rect x="540" y="363"   width="14" height="7"    class="bar"/>
+    <rect x="560" y="359.5" width="14" height="10.5" class="bar"/>
+    <rect x="580" y="317.5" width="14" height="52.5" class="bar"/>
+    <rect x="600" y="363"   width="14" height="7"    class="bar"/>
+    <rect x="620" y="282.5" width="14" height="87.5" class="bar-hi"/>
+    <rect x="640" y="237"   width="14" height="133"  class="bar-peak"/>
+    <rect x="660" y="321"   width="14" height="49"   class="bar"/>
+    <rect x="900" y="363"   width="14" height="7"    class="bar"/>
+  </g>
+
+  <!-- X axis labels -->
+  <text x="87"  y="385" text-anchor="middle" class="label-sm" transform="rotate(-45 87 385)">04-08</text>
+  <text x="207" y="385" text-anchor="middle" class="label-sm" transform="rotate(-45 207 385)">04-14</text>
+  <text x="327" y="385" text-anchor="middle" class="label-sm" transform="rotate(-45 327 385)">04-24</text>
+  <text x="447" y="385" text-anchor="middle" class="label-sm" transform="rotate(-45 447 385)">04-30</text>
+  <text x="507" y="385" text-anchor="middle" class="label-sm" transform="rotate(-45 507 385)">05-04</text>
+  <text x="627" y="385" text-anchor="middle" class="label-sm" transform="rotate(-45 627 385)">05-12</text>
+  <text x="647" y="385" text-anchor="middle" class="label-sm" transform="rotate(-45 647 385)">05-13</text>
+  <text x="907" y="385" text-anchor="middle" class="label-sm" transform="rotate(-45 907 385)">05-26</text>
+
+  <!-- Peak annotations -->
+  <line x1="647" y1="237" x2="730" y2="180" class="annot-line"/>
+  <rect x="730" y="160" width="180" height="40" rx="4" fill="#fff" stroke="#b91c1c"/>
+  <text x="820" y="178" text-anchor="middle" class="label header" fill="#b91c1c">5-13 · 38 commits（峰值）</text>
+  <text x="820" y="194" text-anchor="middle" class="note">设计模块爆炸日</text>
+
+  <line x1="447" y1="258" x2="540" y2="125" class="annot-line"/>
+  <rect x="540" y="105" width="180" height="40" rx="4" fill="#fff" stroke="#ea580c"/>
+  <text x="630" y="123" text-anchor="middle" class="label header" fill="#ea580c">4-30 · 32 commits</text>
+  <text x="630" y="139" text-anchor="middle" class="note">Phase 3 收尾日</text>
+
+  <line x1="327" y1="282.5" x2="200" y2="135" class="annot-line"/>
+  <rect x="80" y="115" width="220" height="40" rx="4" fill="#fff" stroke="#ea580c"/>
+  <text x="190" y="133" text-anchor="middle" class="label header" fill="#ea580c">4-24 · 25 commits</text>
+  <text x="190" y="149" text-anchor="middle" class="note">Phase 1 收尾 + Phase 3 spec</text>
+
+  <!-- Bottom monthly summary -->
+  <rect x="60" y="400" width="860" height="70" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="70" y="420" class="label header">分布特征 · "按主题井喷"非"按周匀速"</text>
+  <text x="70" y="438" class="label-sm">• 4 月 137 commits / 5 月 150 commits — 5 月偏重设计模块（Part 14-16）</text>
+  <text x="70" y="455" class="label-sm">• 31 活跃日 / 49 总日 = 63% 活跃率 · 其余 18 天写 spec / 推论 / 思考非 commit 活动</text>
+  <text x="500" y="438" class="label-sm">• 单日峰值 38 (5-13)</text>
+  <text x="500" y="455" class="label-sm">• 单日中位数 ≈ 7</text>
+  <text x="720" y="438" class="label-sm">• feat 178 (62%)</text>
+  <text x="720" y="455" class="label-sm">• fix 53 (18%)</text>
+</svg>

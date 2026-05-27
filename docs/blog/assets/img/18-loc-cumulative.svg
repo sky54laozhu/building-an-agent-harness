@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 500" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-lc d-lc">
+  <title id="t-lc">HarWork 代码行数分模块累积 · 60,700 行的构成</title>
+  <desc id="d-lc">展示 HarWork 60,700 行代码的模块分布：web 36,627 (60%) + engine 12,988 (21%) + 其它 ~11,085 (18%)。Web 是大头因为它包括 Next.js App Router 页面、组件、API 路由、客户端逻辑；Engine 是核心 Agent Loop + 工具协议。曲线按时间累积，标注关键里程碑。最大单文件 message-bubble.tsx 694 行（提示当前还存在的复杂度热点）。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .axis { stroke: #1a1a1a; stroke-width: 1.5; fill: none; }
+    .grid { stroke: #d4d4d4; stroke-width: 0.5; fill: none; stroke-dasharray: 2 2; }
+    .area-web { fill: #2563eb; opacity: 0.85; }
+    .area-engine { fill: #15803d; opacity: 0.85; }
+    .area-other { fill: #ea580c; opacity: 0.85; }
+    .milestone { stroke: #b91c1c; stroke-width: 1.2; fill: none; stroke-dasharray: 3 2; }
+  </style>
+
+  <text x="20" y="26" class="header" font-size="14">代码行数累积 · 60,700 行 / 49 天 ≈ 1,240 行/天</text>
+  <text x="20" y="44" class="note">find packages -name '*.ts' -o '*.tsx' | xargs wc -l · 不含 node_modules / .next / dist</text>
+
+  <!-- Axes -->
+  <line x1="70" y1="80" x2="70" y2="380" class="axis"/>
+  <line x1="70" y1="380" x2="900" y2="380" class="axis"/>
+
+  <!-- Y ticks (LOC) -->
+  <text x="65" y="384" text-anchor="end" class="label-sm">0</text>
+  <line x1="65" y1="320" x2="70" y2="320" class="axis"/>
+  <text x="65" y="324" text-anchor="end" class="label-sm">15K</text>
+  <line x1="65" y1="260" x2="70" y2="260" class="axis"/>
+  <text x="65" y="264" text-anchor="end" class="label-sm">30K</text>
+  <line x1="65" y1="200" x2="70" y2="200" class="axis"/>
+  <text x="65" y="204" text-anchor="end" class="label-sm">45K</text>
+  <line x1="65" y1="140" x2="70" y2="140" class="axis"/>
+  <text x="65" y="144" text-anchor="end" class="label-sm">60K</text>
+  <text x="55" y="84" class="label-sm">LOC</text>
+
+  <!-- Grid -->
+  <line x1="70" y1="320" x2="900" y2="320" class="grid"/>
+  <line x1="70" y1="260" x2="900" y2="260" class="grid"/>
+  <line x1="70" y1="200" x2="900" y2="200" class="grid"/>
+  <line x1="70" y1="140" x2="900" y2="140" class="grid"/>
+
+  <!-- X timeline: 4-8 (x=90) to 5-26 (x=880) span 49 days = 16.1px/day -->
+  <!-- Cumulative stacked area: engine (bottom) + web (middle) + other (top) -->
+
+  <!-- Approximation: smoothly stepped accumulation -->
+  <!-- Engine (12988 final): grow from day 2 to day 49 -->
+  <path d="M 90 380
+           L 110 372
+           L 150 360
+           L 200 340
+           L 270 310
+           L 330 290
+           L 400 270
+           L 470 240
+           L 540 230
+           L 620 220
+           L 680 210
+           L 740 208
+           L 800 207
+           L 880 207
+           L 880 380 Z" class="area-engine"/>
+
+  <!-- Web (36627, stacked on engine. End at y = 380 - 36627*(240/60000) = 380 - 146 = 234, on top of engine which is 207) so web top = 207 - 146 = 61. -->
+  <path d="M 90 380
+           L 110 376
+           L 150 365
+           L 200 340
+           L 270 310
+           L 330 280
+           L 400 250
+           L 470 215
+           L 540 195
+           L 620 170
+           L 680 130
+           L 740 105
+           L 800 95
+           L 880 90
+           L 880 207
+           L 800 207
+           L 740 208
+           L 680 210
+           L 620 220
+           L 540 230
+           L 470 240
+           L 400 270
+           L 330 290
+           L 270 310
+           L 200 340
+           L 150 360
+           L 110 372
+           L 90 380 Z" class="area-web"/>
+
+  <!-- Other (~11085, stacked on web. Top = 90 - 11085*(240/60000) = 90 - 44 = 46) -->
+  <path d="M 90 380
+           L 110 376
+           L 150 365
+           L 200 340
+           L 270 310
+           L 330 278
+           L 400 245
+           L 470 210
+           L 540 185
+           L 620 158
+           L 680 115
+           L 740 80
+           L 800 65
+           L 880 56
+           L 880 90
+           L 800 95
+           L 740 105
+           L 680 130
+           L 620 170
+           L 540 195
+           L 470 215
+           L 400 250
+           L 330 280
+           L 270 310
+           L 200 340
+           L 150 365
+           L 110 376
+           L 90 380 Z" class="area-other"/>
+
+  <!-- Milestones -->
+  <line x1="200" y1="80" x2="200" y2="380" class="milestone"/>
+  <text x="200" y="76" text-anchor="middle" class="label-sm" fill="#b91c1c">4-14 Phase 0 完</text>
+
+  <line x1="330" y1="80" x2="330" y2="380" class="milestone"/>
+  <text x="330" y="76" text-anchor="middle" class="label-sm" fill="#b91c1c">4-24 Phase 1</text>
+
+  <line x1="470" y1="80" x2="470" y2="380" class="milestone"/>
+  <text x="470" y="76" text-anchor="middle" class="label-sm" fill="#b91c1c">4-30 Phase 3 完</text>
+
+  <line x1="680" y1="80" x2="680" y2="380" class="milestone"/>
+  <text x="680" y="76" text-anchor="middle" class="label-sm" fill="#b91c1c">5-13 设计模块</text>
+
+  <line x1="880" y1="80" x2="880" y2="380" class="milestone"/>
+  <text x="880" y="76" text-anchor="middle" class="label-sm" fill="#b91c1c">5-26 收尾</text>
+
+  <!-- X axis labels -->
+  <text x="90" y="395" text-anchor="middle" class="label-sm">04-08</text>
+  <text x="200" y="395" text-anchor="middle" class="label-sm">04-14</text>
+  <text x="330" y="395" text-anchor="middle" class="label-sm">04-24</text>
+  <text x="470" y="395" text-anchor="middle" class="label-sm">04-30</text>
+  <text x="540" y="395" text-anchor="middle" class="label-sm">05-04</text>
+  <text x="680" y="395" text-anchor="middle" class="label-sm">05-13</text>
+  <text x="800" y="395" text-anchor="middle" class="label-sm">05-20</text>
+  <text x="880" y="395" text-anchor="middle" class="label-sm">05-26</text>
+
+  <!-- Legend -->
+  <rect x="640" y="100" width="14" height="14" class="area-other"/>
+  <text x="660" y="112" class="label">其它 ~11,085 (18%) — cli / skills-catalog / scripts</text>
+  <rect x="640" y="120" width="14" height="14" class="area-web"/>
+  <text x="660" y="132" class="label">web 36,627 (60%) — Next.js + API routes + components</text>
+  <rect x="640" y="140" width="14" height="14" class="area-engine"/>
+  <text x="660" y="152" class="label">engine 12,988 (21%) — Agent Loop + 工具 + WS</text>
+
+  <!-- Bottom panel: largest files -->
+  <rect x="70" y="415" width="830" height="80" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="80" y="433" class="label header">当前最大单文件（重构债热点 · 当前最大不再是 admin/page.tsx 1233 行，已拆分）</text>
+  <text x="80" y="453" class="label-mono">  694  packages/web/components/chat/message-bubble.tsx</text>
+  <text x="80" y="470" class="label-mono">  688  packages/web/components/files/file-browser.tsx</text>
+  <text x="80" y="487" class="label-mono">  681  packages/web/components/chat/chat-input.tsx</text>
+  <text x="500" y="453" class="label-mono">  640  packages/web/app/(dashboard)/skills/page.tsx</text>
+  <text x="500" y="470" class="label-sm">110 个测试覆盖 — 见博客 Part 18 第二节 "测试金字塔"</text>
+  <text x="500" y="487" class="note">"加 tab 就 + 100 行"的反面教材：Day 1 应拆 sub-component</text>
+</svg>
