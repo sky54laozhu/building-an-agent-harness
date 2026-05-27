@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 540" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ba d-ba">
+  <title id="t-ba">压缩前后的 messages 结构对比</title>
+  <desc id="d-ba">展示 30 轮对话经过 5 层压缩前后 messages 数组结构对比：原始 30 条消息 = 多个 user/assistant/tool_result 交错；压缩后 = 1 条 system summary（L3+L5 合并产生）+ 最近 8 条原样。token 从 85K 降到 12K。</desc>
+  <style>
+    .col-title { fill: #1a1a1a; font-weight: 600; font-size: 14px; text-anchor: middle; }
+    .msg-user { fill: #4f97ff; }
+    .msg-assistant { fill: #0a7c2e; }
+    .msg-tool { fill: #e6a23c; }
+    .msg-system { fill: #b71c1c; }
+    .msg-summary { fill: #7c3aed; }
+    .msg-label { fill: #fff; font-size: 10px; text-anchor: middle; font-weight: 600; }
+    .legend-box { fill: #f6f7f9; stroke: #5a5a5a; }
+    .legend-text { fill: #1a1a1a; font-size: 11px; }
+    .stat { fill: #1a2233; font-weight: 600; font-size: 12px; }
+    .arrow { stroke: #1a2233; stroke-width: 2.5; fill: none; }
+    .note { fill: #5a5a5a; font-size: 11px; }
+  </style>
+
+  <defs>
+    <marker id="ba-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="540" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <text x="440" y="30" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">压缩前后 messages 结构对比 —— 30 轮对话 → 1 摘要 + 8 条最近</text>
+  <text x="440" y="50" text-anchor="middle" class="note">每个色块代表一条消息；高度 ∝ token 体积；色彩按 message 类型</text>
+
+  <!-- Left column: BEFORE -->
+  <text x="220" y="80" class="col-title">压缩前 · 30 条消息 · 85K token</text>
+
+  <!-- Render 30 messages stacked vertically, varying heights -->
+  <!-- Row 1: user (large initial requirement) -->
+  <rect x="80" y="90" width="280" height="22" class="msg-user"/>
+  <text x="220" y="105" class="msg-label">user：「实现 OAuth2 登录」</text>
+
+  <rect x="80" y="114" width="280" height="14" class="msg-assistant"/>
+  <text x="220" y="124" class="msg-label">assistant：分析 + tool_use × 3</text>
+
+  <rect x="80" y="130" width="280" height="32" class="msg-tool"/>
+  <text x="220" y="150" class="msg-label">user：3 个 tool_result（Read/Glob）</text>
+
+  <rect x="80" y="164" width="280" height="18" class="msg-assistant"/>
+  <text x="220" y="176" class="msg-label">assistant：规划 + tool_use × 2</text>
+
+  <rect x="80" y="184" width="280" height="40" class="msg-tool"/>
+  <text x="220" y="208" class="msg-label">user：2 个 tool_result（含大 grep）</text>
+
+  <rect x="80" y="226" width="280" height="14" class="msg-assistant"/>
+  <text x="220" y="236" class="msg-label">assistant：发现问题</text>
+
+  <rect x="80" y="242" width="280" height="20" class="msg-user"/>
+  <text x="220" y="255" class="msg-label">user：「改一下 token 过期策略」</text>
+
+  <!-- compressed dots indicating more messages -->
+  <text x="220" y="280" text-anchor="middle" class="note">⋮ 中间 16 条略 ⋮</text>
+
+  <!-- Recent 8 messages -->
+  <rect x="80" y="296" width="280" height="14" class="msg-assistant"/>
+  <text x="220" y="306" class="msg-label">assistant：修复方案 24</text>
+
+  <rect x="80" y="312" width="280" height="20" class="msg-tool"/>
+  <text x="220" y="325" class="msg-label">user：tool_result（Edit）</text>
+
+  <rect x="80" y="334" width="280" height="14" class="msg-assistant"/>
+  <text x="220" y="344" class="msg-label">assistant：测试</text>
+
+  <rect x="80" y="350" width="280" height="20" class="msg-user"/>
+  <text x="220" y="363" class="msg-label">user：「跑一下 e2e」（最新）</text>
+
+  <rect x="80" y="372" width="280" height="14" class="msg-assistant"/>
+  <text x="220" y="382" class="msg-label">assistant：tool_use（Bash）</text>
+
+  <rect x="80" y="388" width="280" height="20" class="msg-tool"/>
+  <text x="220" y="401" class="msg-label">user：tool_result（e2e 全过）</text>
+
+  <rect x="80" y="410" width="280" height="14" class="msg-assistant"/>
+  <text x="220" y="420" class="msg-label">assistant：报告完成</text>
+
+  <rect x="80" y="426" width="280" height="20" class="msg-user"/>
+  <text x="220" y="439" class="msg-label">user：「再加一个登出按钮」</text>
+
+  <!-- Stats below -->
+  <text x="220" y="468" text-anchor="middle" class="stat">📊 30 条 · 85K token · 占 budget 85%</text>
+  <text x="220" y="485" text-anchor="middle" class="note">window: 100K · 已触发 L5 阈值</text>
+
+  <!-- Right column: AFTER -->
+  <text x="660" y="80" class="col-title">压缩后 · 9 条消息 · 12K token</text>
+
+  <!-- Summary (1 large block) -->
+  <rect x="520" y="90" width="280" height="120" class="msg-summary"/>
+  <text x="660" y="115" class="msg-label" font-size="11">⭐ L5 摘要 (system)</text>
+  <text x="660" y="135" class="msg-label" font-size="9">① Primary Request: OAuth2 + logout</text>
+  <text x="660" y="150" class="msg-label" font-size="9">② Concepts: JWT, refresh token, ...</text>
+  <text x="660" y="165" class="msg-label" font-size="9">③ Files: auth.ts, login/route.tsx, ...</text>
+  <text x="660" y="180" class="msg-label" font-size="9">④ Errors fixed: 3 个 token 过期 bug</text>
+  <text x="660" y="195" class="msg-label" font-size="9">⑤-⑨ Problem · Tasks · Next Step ...</text>
+
+  <text x="660" y="225" text-anchor="middle" class="note" font-style="italic">↑ 由 22 条旧消息压缩生成</text>
+
+  <!-- Recent 8 kept verbatim -->
+  <rect x="520" y="240" width="280" height="14" class="msg-assistant"/>
+  <text x="660" y="250" class="msg-label">assistant：修复方案 24</text>
+
+  <rect x="520" y="256" width="280" height="20" class="msg-tool"/>
+  <text x="660" y="269" class="msg-label">user：tool_result（Edit）</text>
+
+  <rect x="520" y="278" width="280" height="14" class="msg-assistant"/>
+  <text x="660" y="288" class="msg-label">assistant：测试</text>
+
+  <rect x="520" y="294" width="280" height="20" class="msg-user"/>
+  <text x="660" y="307" class="msg-label">user：「跑一下 e2e」</text>
+
+  <rect x="520" y="316" width="280" height="14" class="msg-assistant"/>
+  <text x="660" y="326" class="msg-label">assistant：tool_use（Bash）</text>
+
+  <rect x="520" y="332" width="280" height="20" class="msg-tool"/>
+  <text x="660" y="345" class="msg-label">user：tool_result（e2e 全过）</text>
+
+  <rect x="520" y="354" width="280" height="14" class="msg-assistant"/>
+  <text x="660" y="364" class="msg-label">assistant：报告完成</text>
+
+  <rect x="520" y="370" width="280" height="20" class="msg-user"/>
+  <text x="660" y="383" class="msg-label">user：「再加一个登出按钮」（最新）</text>
+
+  <text x="660" y="468" text-anchor="middle" class="stat">📊 9 条 · 12K token · 占 budget 12%</text>
+  <text x="660" y="485" text-anchor="middle" class="note">最近 8 条原样保留 · 1 条 system 摘要 · 86% ↓</text>
+
+  <!-- Center arrow -->
+  <path d="M 370 270 L 510 270" class="arrow" marker-end="url(#ba-arr)"/>
+  <text x="440" y="262" text-anchor="middle" class="stat">L3 + L5</text>
+  <text x="440" y="285" text-anchor="middle" class="note">compress(messages)</text>
+
+  <!-- Legend at bottom -->
+  <rect x="80" y="500" width="720" height="32" class="legend-box" rx="4"/>
+  <rect x="92" y="508" width="16" height="16" class="msg-user"/>
+  <text x="112" y="521" class="legend-text">user</text>
+
+  <rect x="155" y="508" width="16" height="16" class="msg-assistant"/>
+  <text x="175" y="521" class="legend-text">assistant</text>
+
+  <rect x="240" y="508" width="16" height="16" class="msg-tool"/>
+  <text x="260" y="521" class="legend-text">tool_result</text>
+
+  <rect x="340" y="508" width="16" height="16" class="msg-system"/>
+  <text x="360" y="521" class="legend-text">system</text>
+
+  <rect x="420" y="508" width="16" height="16" class="msg-summary"/>
+  <text x="440" y="521" class="legend-text">L5 摘要（system + isCompactSummary）</text>
+
+  <text x="790" y="521" text-anchor="end" class="legend-text" fill="#5a5a5a">高度 ∝ 消息 token 体积</text>
+</svg>

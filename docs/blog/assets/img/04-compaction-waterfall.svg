@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 620" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-wf d-wf">
+  <title id="t-wf">5 层上下文压缩瀑布图</title>
+  <desc id="d-wf">展示 HarWork 5 层上下文压缩按"便宜先做、贵的最后做"顺序：L1 Micro（截断单条 tool_result &gt; 8KB）→ L2 Snip（折叠 ≥4 个连发 tool_result）→ L3 Auto（tokens ≥ budget × 0.7 时规则摘要旧消息）→ L4 Reactive（已超 budget 时暴力截断）→ L5 LLM-Compact（tokens ≥ budget × 0.85 时调 LLM 语义摘要）。前 4 层零 LLM 调用。</desc>
+  <style>
+    .tier-num { fill: #fff; font-weight: 700; text-anchor: middle; font-size: 14px; }
+    .tier-name { fill: #1a1a1a; font-weight: 600; font-size: 14px; }
+    .tier-trig { fill: #5a5a5a; font-size: 11px; }
+    .tier-act { fill: #1a2233; font-size: 11px; }
+    .cost-no { fill: #0a7c2e; font-weight: 600; font-size: 11px; }
+    .cost-yes { fill: #b71c1c; font-weight: 600; font-size: 11px; }
+    .arrow { stroke: #1a2233; stroke-width: 2; fill: none; }
+    .legend { fill: #5a5a5a; font-size: 11px; }
+    .bar-orig { fill: #b71c1c; }
+    .bar-comp { fill: #0a7c2e; }
+    .bar-label { fill: #1a1a1a; font-size: 10px; }
+  </style>
+
+  <defs>
+    <marker id="wf-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="620" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <text x="440" y="30" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">5 层上下文压缩 —— 便宜的先做，LLM 调用是最后手段</text>
+  <text x="440" y="50" text-anchor="middle" class="legend">绿色 NO = 不调 LLM（O(N) 字符串处理）   红色 YES = 调 LLM（花钱+延迟）</text>
+
+  <!-- Headers -->
+  <rect x="20" y="70" width="60" height="32" fill="#1a2233"/>
+  <text x="50" y="91" class="tier-num">层</text>
+  <rect x="80" y="70" width="180" height="32" fill="#1a2233"/>
+  <text x="170" y="91" class="tier-num">名称 / 触发条件</text>
+  <rect x="260" y="70" width="240" height="32" fill="#1a2233"/>
+  <text x="380" y="91" class="tier-num">动作</text>
+  <rect x="500" y="70" width="80" height="32" fill="#1a2233"/>
+  <text x="540" y="91" class="tier-num">LLM</text>
+  <rect x="580" y="70" width="280" height="32" fill="#1a2233"/>
+  <text x="720" y="91" class="tier-num">压缩前后（典型场景）</text>
+
+  <!-- L1 Micro -->
+  <rect x="20" y="110" width="60" height="80" fill="#4f97ff"/>
+  <text x="50" y="155" class="tier-num">L1</text>
+  <text x="92" y="130" class="tier-name">Micro</text>
+  <text x="92" y="148" class="tier-trig">tool_result &gt; 8KB</text>
+  <text x="92" y="166" class="tier-trig">compression.ts:142</text>
+  <text x="92" y="184" class="tier-trig">幂等、每轮跑</text>
+  <text x="270" y="130" class="tier-act">头 2KB + 尾 1KB</text>
+  <text x="270" y="148" class="tier-act">中间替换为 "[N chars</text>
+  <text x="270" y="166" class="tier-act">truncated]"</text>
+  <text x="270" y="184" class="tier-act">保留头尾的元数据 + 结论</text>
+  <text x="540" y="158" class="cost-no" text-anchor="middle">NO</text>
+
+  <!-- L1 bar: 200KB -> 3KB -->
+  <text x="595" y="128" class="bar-label">cat large.log</text>
+  <rect x="595" y="135" width="240" height="14" class="bar-orig"/>
+  <text x="838" y="146" class="bar-label" text-anchor="end" fill="#fff">200KB</text>
+  <rect x="595" y="155" width="9" height="14" class="bar-comp"/>
+  <text x="610" y="166" class="bar-label">3KB（98.5% ↓）</text>
+  <text x="595" y="186" class="bar-label" fill="#5a5a5a">实测：18% 的 tool_result 命中</text>
+
+  <line x1="20" y1="200" x2="860" y2="200" stroke="#d0d3d8" stroke-width="1"/>
+
+  <!-- L2 Snip -->
+  <rect x="20" y="200" width="60" height="80" fill="#4f97ff"/>
+  <text x="50" y="245" class="tier-num">L2</text>
+  <text x="92" y="220" class="tier-name">Snip</text>
+  <text x="92" y="238" class="tier-trig">单 user 消息中</text>
+  <text x="92" y="256" class="tier-trig">≥ 4 个 tool_result</text>
+  <text x="92" y="274" class="tier-trig">compression.ts:166</text>
+  <text x="270" y="220" class="tier-act">折叠成一条 system 摘要</text>
+  <text x="270" y="238" class="tier-act">每个 tool_result 仅留</text>
+  <text x="270" y="256" class="tier-act">100 字预览</text>
+  <text x="270" y="274" class="tier-act">同时压上一条的 tool_use</text>
+  <text x="540" y="248" class="cost-no" text-anchor="middle">NO</text>
+
+  <!-- L2 bar: 25K -> 3K -->
+  <text x="595" y="218" class="bar-label">一轮 15 个工具的 burst</text>
+  <rect x="595" y="225" width="240" height="14" class="bar-orig"/>
+  <text x="838" y="236" class="bar-label" text-anchor="end" fill="#fff">25K tok</text>
+  <rect x="595" y="245" width="29" height="14" class="bar-comp"/>
+  <text x="630" y="256" class="bar-label">3K tok（88% ↓）</text>
+  <text x="595" y="276" class="bar-label" fill="#5a5a5a">注意：必须同步压 tool_use，否则 API 报对断错</text>
+
+  <line x1="20" y1="290" x2="860" y2="290" stroke="#d0d3d8" stroke-width="1"/>
+
+  <!-- L3 Auto -->
+  <rect x="20" y="290" width="60" height="80" fill="#4f97ff"/>
+  <text x="50" y="335" class="tier-num">L3</text>
+  <text x="92" y="310" class="tier-name">Auto</text>
+  <text x="92" y="328" class="tier-trig">messages ≥ 10 且</text>
+  <text x="92" y="346" class="tier-trig">tokens ≥ budget × 0.7</text>
+  <text x="92" y="364" class="tier-trig">compression.ts:239</text>
+  <text x="270" y="310" class="tier-act">前 (N - 8) 条规则提取骨架</text>
+  <text x="270" y="328" class="tier-act">合并为一条 system 摘要</text>
+  <text x="270" y="346" class="tier-act">最近 8 条保留原样</text>
+  <text x="270" y="364" class="tier-act">每条 user/assistant 取首段</text>
+  <text x="540" y="338" class="cost-no" text-anchor="middle">NO</text>
+
+  <text x="595" y="308" class="bar-label">30 轮历史</text>
+  <rect x="595" y="315" width="180" height="14" class="bar-orig"/>
+  <text x="778" y="326" class="bar-label" text-anchor="end" fill="#fff">70K tok</text>
+  <rect x="595" y="335" width="60" height="14" class="bar-comp"/>
+  <text x="660" y="346" class="bar-label">23K tok（67% ↓）</text>
+  <text x="595" y="366" class="bar-label" fill="#5a5a5a">频繁触发——所以不能调 LLM</text>
+
+  <line x1="20" y1="380" x2="860" y2="380" stroke="#d0d3d8" stroke-width="1"/>
+
+  <!-- L4 Reactive -->
+  <rect x="20" y="380" width="60" height="80" fill="#e6a23c"/>
+  <text x="50" y="425" class="tier-num">L4</text>
+  <text x="92" y="400" class="tier-name">Reactive</text>
+  <text x="92" y="418" class="tier-trig">tokens &gt; budget</text>
+  <text x="92" y="436" class="tier-trig">（已经超了！）</text>
+  <text x="92" y="454" class="tier-trig">compression.ts:310</text>
+  <text x="270" y="400" class="tier-act">暴力清除旧 tool_result</text>
+  <text x="270" y="418" class="tier-act">文本块截到 500 字</text>
+  <text x="270" y="436" class="tier-act">tool_use.input → "[trunc]"</text>
+  <text x="270" y="454" class="tier-act">有损但救命</text>
+  <text x="540" y="428" class="cost-no" text-anchor="middle">NO</text>
+
+  <text x="595" y="398" class="bar-label">已超预算的 turn</text>
+  <rect x="595" y="405" width="240" height="14" class="bar-orig"/>
+  <text x="838" y="416" class="bar-label" text-anchor="end" fill="#fff">110K（超 10K）</text>
+  <rect x="595" y="425" width="120" height="14" class="bar-comp"/>
+  <text x="720" y="436" class="bar-label">55K（有损保命）</text>
+  <text x="595" y="456" class="bar-label" fill="#5a5a5a">实测 &lt; 0.3% turn 触发，但触发即关键</text>
+
+  <line x1="20" y1="470" x2="860" y2="470" stroke="#d0d3d8" stroke-width="1"/>
+
+  <!-- L5 LLM-Compact -->
+  <rect x="20" y="470" width="60" height="100" fill="#b71c1c"/>
+  <text x="50" y="525" class="tier-num">L5</text>
+  <text x="92" y="490" class="tier-name">LLM-Compact</text>
+  <text x="92" y="508" class="tier-trig">messages &gt; 10 且</text>
+  <text x="92" y="526" class="tier-trig">tokens ≥ budget × 0.85</text>
+  <text x="92" y="544" class="tier-trig">llm-compact.ts:43</text>
+  <text x="92" y="562" class="tier-trig">loop.ts:115 触发</text>
+  <text x="270" y="490" class="tier-act">调 LLM 用 9 段提示词</text>
+  <text x="270" y="508" class="tier-act">生成结构化语义摘要</text>
+  <text x="270" y="526" class="tier-act">① Intent ② Concepts</text>
+  <text x="270" y="544" class="tier-act">③ Files ... ⑨ Next Step</text>
+  <text x="270" y="562" class="tier-act">PreCompact hook 可否决</text>
+  <text x="540" y="528" class="cost-yes" text-anchor="middle">YES</text>
+
+  <text x="595" y="488" class="bar-label">L3 压完仍 85%</text>
+  <rect x="595" y="495" width="220" height="14" class="bar-orig"/>
+  <text x="818" y="506" class="bar-label" text-anchor="end" fill="#fff">85K tok</text>
+  <rect x="595" y="515" width="35" height="14" class="bar-comp"/>
+  <text x="635" y="526" class="bar-label">12K tok（86% ↓）</text>
+  <text x="595" y="546" class="bar-label" fill="#5a5a5a">代价：调一次 LLM ≈ 几千 token + 1-2s</text>
+  <text x="595" y="562" class="bar-label" fill="#5a5a5a">→ yield context_compressed 事件给前端</text>
+
+  <!-- Bottom outer border -->
+  <rect x="20" y="70" width="840" height="500" fill="none" stroke="#1a2233" stroke-width="1.5"/>
+
+  <!-- Bottom note -->
+  <text x="440" y="595" text-anchor="middle" class="legend">设计哲学：每层独立、阈值递增、L1-L4 不花钱兜底 → 只有最严重时才让 L5「砸钱」。这是 5 层互相覆盖的真正价值。</text>
+</svg>

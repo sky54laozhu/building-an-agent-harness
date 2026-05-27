@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 460" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ax d-ax">
+  <title id="t-ax">5 层压缩触发阈值数轴</title>
+  <desc id="d-ax">把 5 层压缩的触发条件画在 token-占用百分比数轴上：L1/L2 不看百分比（看单条体积或连发数）；L3 在 70%；L5 在 85%；L4 在 100% 之后兜底。在 85% ~ 100% 区间是 L3+L5 同时活跃的"双保险带"。</desc>
+  <style>
+    .axis { stroke: #1a2233; stroke-width: 2; }
+    .tick { stroke: #1a2233; stroke-width: 1.5; }
+    .tick-label { fill: #1a2233; font-size: 12px; text-anchor: middle; }
+    .zone-safe { fill: #e8f5ec; }
+    .zone-warn { fill: #fef5e6; }
+    .zone-danger { fill: #fde8e8; }
+    .zone-over { fill: #fbcaca; }
+    .zone-label { font-size: 11px; font-weight: 600; text-anchor: middle; }
+    .tier-flag { font-size: 12px; font-weight: 600; }
+    .legend { fill: #5a5a5a; font-size: 11px; }
+    .arrow-down { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="ax-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="460" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <text x="440" y="30" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">5 层压缩触发阈值 —— 不是同时触发，而是按 token 占用阶梯推进</text>
+  <text x="440" y="50" text-anchor="middle" class="legend">x 轴 = 当前 token / context window 预算占比；L1/L2 不在 x 轴上（按单条体积或连发数触发）</text>
+
+  <!-- Zones (background colored bands) -->
+  <!-- safe 0-70% -->
+  <rect x="100" y="120" width="392" height="160" class="zone-safe"/>
+  <!-- warn 70-85% -->
+  <rect x="492" y="120" width="84" height="160" class="zone-warn"/>
+  <!-- danger 85-100% -->
+  <rect x="576" y="120" width="84" height="160" class="zone-danger"/>
+  <!-- over >100% -->
+  <rect x="660" y="120" width="160" height="160" class="zone-over"/>
+
+  <!-- Zone labels -->
+  <text x="296" y="138" class="zone-label" fill="#0a7c2e">安全区 — 不触发任何百分比压缩</text>
+  <text x="534" y="138" class="zone-label" fill="#8c6d1f">L3 警戒带</text>
+  <text x="618" y="138" class="zone-label" fill="#b71c1c">L3 + L5 双保险</text>
+  <text x="740" y="138" class="zone-label" fill="#b71c1c">L4 兜底</text>
+
+  <!-- Main axis -->
+  <line x1="100" y1="280" x2="820" y2="280" class="axis" marker-end="url(#ax-arr)"/>
+
+  <!-- Ticks -->
+  <line x1="100" y1="275" x2="100" y2="285" class="tick"/>
+  <text x="100" y="300" class="tick-label">0%</text>
+
+  <line x1="296" y1="275" x2="296" y2="285" class="tick"/>
+  <text x="296" y="300" class="tick-label">35%</text>
+
+  <line x1="492" y1="275" x2="492" y2="285" class="tick"/>
+  <text x="492" y="300" class="tick-label">70%</text>
+  <text x="492" y="318" class="tick-label" font-weight="600" fill="#8c6d1f">L3 触发</text>
+
+  <line x1="576" y1="275" x2="576" y2="285" class="tick"/>
+  <text x="576" y="300" class="tick-label">85%</text>
+  <text x="576" y="318" class="tick-label" font-weight="600" fill="#b71c1c">L5 触发</text>
+
+  <line x1="660" y1="275" x2="660" y2="285" class="tick"/>
+  <text x="660" y="300" class="tick-label">100%</text>
+  <text x="660" y="318" class="tick-label" font-weight="600" fill="#b71c1c">L4 触发</text>
+
+  <line x1="740" y1="275" x2="740" y2="285" class="tick"/>
+  <text x="740" y="300" class="tick-label">120%</text>
+
+  <!-- Title above axis -->
+  <text x="100" y="265" class="legend" font-weight="600">tokens / budget →</text>
+
+  <!-- Tier flags above zones with arrows pointing down -->
+  <!-- L3 flag at 70% -->
+  <rect x="445" y="170" width="94" height="40" rx="4" fill="#e6a23c" stroke="#8c6d1f"/>
+  <text x="492" y="187" class="tier-flag" text-anchor="middle" fill="#fff">L3 Auto</text>
+  <text x="492" y="202" class="tier-flag" text-anchor="middle" fill="#fff" font-size="10">规则摘要</text>
+  <path d="M 492 210 L 492 270" class="arrow-down" marker-end="url(#ax-arr)"/>
+
+  <!-- L5 flag at 85% -->
+  <rect x="535" y="225" width="82" height="40" rx="4" fill="#b71c1c" stroke="#7a0a0a"/>
+  <text x="576" y="242" class="tier-flag" text-anchor="middle" fill="#fff">L5 Compact</text>
+  <text x="576" y="257" class="tier-flag" text-anchor="middle" fill="#fff" font-size="10">调 LLM</text>
+  <path d="M 576 265 L 576 270" class="arrow-down"/>
+
+  <!-- L4 flag at 100% -->
+  <rect x="620" y="170" width="80" height="40" rx="4" fill="#b71c1c" stroke="#7a0a0a"/>
+  <text x="660" y="187" class="tier-flag" text-anchor="middle" fill="#fff">L4 Reactive</text>
+  <text x="660" y="202" class="tier-flag" text-anchor="middle" fill="#fff" font-size="10">暴力截断</text>
+  <path d="M 660 210 L 660 270" class="arrow-down" marker-end="url(#ax-arr)"/>
+
+  <!-- L1/L2 side notes (not on axis) -->
+  <rect x="100" y="345" width="350" height="90" rx="6" fill="#f6f7f9" stroke="#5a5a5a"/>
+  <text x="112" y="364" class="legend" font-weight="600" fill="#1a1a1a">L1 / L2 不在 x 轴上 ——</text>
+  <text x="112" y="382" class="legend">L1 Micro：单个 tool_result &gt; 8KB 即触发，与窗口占比无关</text>
+  <text x="112" y="400" class="legend">L2 Snip：一条 user 消息中有 ≥4 个 tool_result 即触发</text>
+  <text x="112" y="418" class="legend">→ 它们每轮都跑，处理"局部异常体积"，与 L3-L5 正交</text>
+
+  <rect x="470" y="345" width="350" height="90" rx="6" fill="#f6f7f9" stroke="#5a5a5a"/>
+  <text x="482" y="364" class="legend" font-weight="600" fill="#1a1a1a">为什么 L3 在 0.7，L5 在 0.85？</text>
+  <text x="482" y="382" class="legend">• L3 是廉价的（规则提取），早一点没关系</text>
+  <text x="482" y="400" class="legend">• L5 是贵的（调 LLM），晚一点能少花钱</text>
+  <text x="482" y="418" class="legend">• 0.85 ~ 1.0 区间 = L3 已压过但仍涨，L5 接管</text>
+
+  <!-- Connect zone -->
+  <line x1="492" y1="120" x2="492" y2="280" stroke="#8c6d1f" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="576" y1="120" x2="576" y2="280" stroke="#b71c1c" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="660" y1="120" x2="660" y2="280" stroke="#b71c1c" stroke-width="1" stroke-dasharray="3 3"/>
+</svg>
