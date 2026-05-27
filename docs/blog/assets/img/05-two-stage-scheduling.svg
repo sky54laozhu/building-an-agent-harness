@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 580" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ts d-ts">
+  <title id="t-ts">两段式调度流程图</title>
+  <desc id="d-ts">展示 HarWork 工具调用编排的两段式调度：Stage 1 每个工具实现 isReadOnly + isConcurrencySafe 两个 per-call 布尔方法自报家门；Stage 2 编排器 partitionToolCalls 按调用顺序扫描，把连续的（read-only 且 concurrencySafe）攒成 parallel batch，其余各自成为 serial batch。Read/Glob 自报 true/true，Bash/Write/Edit 自报 false。</desc>
+  <style>
+    .box-stage { fill: #eef2ff; stroke: #4f46e5; stroke-width: 1.5; }
+    .box-tool { fill: #fff; stroke: #5a5a5a; stroke-width: 1; }
+    .box-bool-true { fill: #d1fae5; stroke: #047857; }
+    .box-bool-false { fill: #fee2e2; stroke: #b91c1c; }
+    .box-batch-parallel { fill: #dbeafe; stroke: #1e40af; stroke-width: 1.5; }
+    .box-batch-serial { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .title-stage { fill: #312e81; font-weight: 700; font-size: 14px; }
+    .title-h { fill: #1a2233; font-weight: 600; font-size: 13px; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .arrow { stroke: #1a2233; stroke-width: 2; fill: none; }
+    .arrow-light { stroke: #5a5a5a; stroke-width: 1; fill: none; stroke-dasharray: 3 2; }
+    .note { fill: #5a5a5a; font-size: 11px; font-style: italic; }
+  </style>
+
+  <defs>
+    <marker id="ts-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="580" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">两段式调度 —— 工具自报家门 + 编排器分批执行</text>
+  <text x="440" y="48" text-anchor="middle" class="note">tool-executor.ts:40-75 partitionToolCalls</text>
+
+  <!-- Input: LLM emits tool calls -->
+  <rect x="40" y="70" width="800" height="34" fill="#fff" stroke="#1a2233" stroke-width="1"/>
+  <text x="60" y="92" class="label-mono" fill="#1a2233" font-weight="600">LLM 输出本轮 6 个工具调用：</text>
+  <text x="260" y="92" class="label-mono">[Read("a.ts"), Read("b.ts"), Glob("**/*.ts"), Edit("c.ts"), Read("d.ts"), Bash("npm test")]</text>
+
+  <path d="M 440 105 L 440 125" class="arrow" marker-end="url(#ts-arr)"/>
+
+  <!-- Stage 1 box -->
+  <rect x="40" y="130" width="800" height="170" class="box-stage" rx="6"/>
+  <text x="60" y="152" class="title-stage">Stage 1 — 工具自报家门（tools/types.ts:98-99）</text>
+  <text x="60" y="170" class="note">每个工具实现 2 个 per-call 布尔方法，编排器读这两位决定能否并入 parallel batch</text>
+
+  <!-- Tool table -->
+  <g transform="translate(60, 185)">
+    <!-- header -->
+    <rect x="0" y="0" width="120" height="22" fill="#1a2233"/>
+    <text x="60" y="15" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">工具</text>
+    <rect x="120" y="0" width="200" height="22" fill="#1a2233"/>
+    <text x="220" y="15" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">isReadOnly(input)</text>
+    <rect x="320" y="0" width="200" height="22" fill="#1a2233"/>
+    <text x="420" y="15" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">isConcurrencySafe(input)</text>
+    <rect x="520" y="0" width="240" height="22" fill="#1a2233"/>
+    <text x="640" y="15" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">说明</text>
+
+    <!-- Read -->
+    <rect x="0" y="22" width="120" height="22" class="box-tool"/>
+    <text x="60" y="38" text-anchor="middle" class="label-mono">Read</text>
+    <rect x="120" y="22" width="200" height="22" class="box-bool-true"/>
+    <text x="220" y="38" text-anchor="middle" class="label-mono">true</text>
+    <rect x="320" y="22" width="200" height="22" class="box-bool-true"/>
+    <text x="420" y="38" text-anchor="middle" class="label-mono">true</text>
+    <rect x="520" y="22" width="240" height="22" class="box-tool"/>
+    <text x="530" y="38" class="label">纯函数文件读取</text>
+
+    <!-- Glob/Grep -->
+    <rect x="0" y="44" width="120" height="22" class="box-tool"/>
+    <text x="60" y="60" text-anchor="middle" class="label-mono">Glob / Grep</text>
+    <rect x="120" y="44" width="200" height="22" class="box-bool-true"/>
+    <text x="220" y="60" text-anchor="middle" class="label-mono">true</text>
+    <rect x="320" y="44" width="200" height="22" class="box-bool-true"/>
+    <text x="420" y="60" text-anchor="middle" class="label-mono">true</text>
+    <rect x="520" y="44" width="240" height="22" class="box-tool"/>
+    <text x="530" y="60" class="label">查询操作</text>
+
+    <!-- Write -->
+    <rect x="0" y="66" width="120" height="22" class="box-tool"/>
+    <text x="60" y="82" text-anchor="middle" class="label-mono">Write</text>
+    <rect x="120" y="66" width="200" height="22" class="box-bool-false"/>
+    <text x="220" y="82" text-anchor="middle" class="label-mono">false</text>
+    <rect x="320" y="66" width="200" height="22" class="box-bool-false"/>
+    <text x="420" y="82" text-anchor="middle" class="label-mono">false</text>
+    <rect x="520" y="66" width="240" height="22" class="box-tool"/>
+    <text x="530" y="82" class="label">同名写入会丢数据</text>
+
+    <!-- Edit -->
+    <rect x="0" y="88" width="120" height="22" class="box-tool"/>
+    <text x="60" y="104" text-anchor="middle" class="label-mono">Edit</text>
+    <rect x="120" y="88" width="200" height="22" class="box-bool-false"/>
+    <text x="220" y="104" text-anchor="middle" class="label-mono">false</text>
+    <rect x="320" y="88" width="200" height="22" class="box-bool-false"/>
+    <text x="420" y="104" text-anchor="middle" class="label-mono">false</text>
+    <rect x="520" y="88" width="240" height="22" class="box-tool"/>
+    <text x="530" y="104" class="label">行级编辑同样有竞态</text>
+  </g>
+
+  <!-- Bash row (highlighted) -->
+  <g transform="translate(60, 295)">
+    <rect x="0" y="0" width="120" height="22" class="box-tool" fill="#fef3c7"/>
+    <text x="60" y="15" text-anchor="middle" class="label-mono" font-weight="600">Bash</text>
+    <rect x="120" y="0" width="200" height="22" fill="#fef3c7" stroke="#a16207"/>
+    <text x="220" y="15" text-anchor="middle" class="label-mono">看命令（cat → true, rm → false）</text>
+    <rect x="320" y="0" width="200" height="22" class="box-bool-false"/>
+    <text x="420" y="15" text-anchor="middle" class="label-mono" font-weight="600">永远 false</text>
+    <rect x="520" y="0" width="240" height="22" fill="#fef3c7"/>
+    <text x="530" y="15" class="label" font-size="10">只读 ≠ 并发安全（子进程竞争）</text>
+  </g>
+
+  <path d="M 440 326 L 440 346" class="arrow" marker-end="url(#ts-arr)"/>
+
+  <!-- Stage 2 box -->
+  <rect x="40" y="350" width="800" height="200" class="box-stage" rx="6"/>
+  <text x="60" y="372" class="title-stage">Stage 2 — 编排器分批（tool-executor.ts:48-67）</text>
+  <text x="60" y="390" class="note">按调用顺序扫描，相邻的 (readOnly &amp;&amp; concurrencySafe) 合并成 parallel batch；其余各自 serial。不重排！</text>
+
+  <text x="60" y="410" class="title-h">输出 batches:</text>
+
+  <!-- Batch 1 parallel -->
+  <rect x="60" y="420" width="180" height="56" class="box-batch-parallel" rx="4"/>
+  <text x="150" y="438" text-anchor="middle" class="label" font-weight="600">Batch 1 — parallel</text>
+  <text x="150" y="456" text-anchor="middle" class="label-mono">[Read("a"), Read("b"), Glob]</text>
+  <text x="150" y="470" text-anchor="middle" class="note" font-size="10">Promise.all</text>
+
+  <!-- Batch 2 serial -->
+  <rect x="252" y="420" width="120" height="56" class="box-batch-serial" rx="4"/>
+  <text x="312" y="438" text-anchor="middle" class="label" font-weight="600">Batch 2 — serial</text>
+  <text x="312" y="456" text-anchor="middle" class="label-mono">[Edit("c")]</text>
+  <text x="312" y="470" text-anchor="middle" class="note" font-size="10">需权限</text>
+
+  <!-- Batch 3 parallel (size 1) -->
+  <rect x="384" y="420" width="120" height="56" class="box-batch-parallel" rx="4"/>
+  <text x="444" y="438" text-anchor="middle" class="label" font-weight="600">Batch 3 — parallel</text>
+  <text x="444" y="456" text-anchor="middle" class="label-mono">[Read("d")]</text>
+  <text x="444" y="470" text-anchor="middle" class="note" font-size="10">size=1</text>
+
+  <!-- Batch 4 serial -->
+  <rect x="516" y="420" width="180" height="56" class="box-batch-serial" rx="4"/>
+  <text x="606" y="438" text-anchor="middle" class="label" font-weight="600">Batch 4 — serial</text>
+  <text x="606" y="456" text-anchor="middle" class="label-mono">[Bash("npm test")]</text>
+  <text x="606" y="470" text-anchor="middle" class="note" font-size="10">concurrencySafe=false</text>
+
+  <text x="60" y="500" class="label" font-weight="600">执行顺序：</text>
+  <text x="130" y="500" class="label-mono">Batch1 ─→ Batch2 ─→ Batch3 ─→ Batch4</text>
+  <text x="60" y="520" class="note">⚠️ 不能优化成 parallel[Read,Read,Read,Glob] → serial[Edit] → serial[Bash] —— 跨越 Edit 重排会破坏 LLM 的"顺序假象"</text>
+  <text x="60" y="540" class="note">⚠️ strict 模式下 canParallel 第一条件失败 → 4 个 batch 全部 serial（用于权限审计）</text>
+</svg>

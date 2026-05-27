@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 600" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-sa d-sa">
+  <title id="t-sa">Bash sibling abort 时序图</title>
+  <desc id="d-sa">展示 parallel batch 内 3 个工具调用（Bash build, Bash test, Read file）的时序：t0 三者并发启动；t1 Bash(build) 抛错；编排器检查到 isError &amp;&amp; toolName==='Bash'，调 siblingAbort.abort('sibling_error')；t2 在 Promise.race 中尚未 settle 的 Bash(test) 与 Read(file) 的 abortPromise 分支立刻 resolve 为 'aborted'，结果记为 cancelled。强调只有 Bash 错才触发 abort，但触发后所有未完成的兄弟都被取消（不论类型）。</desc>
+  <style>
+    .lane-label { fill: #1a2233; font-weight: 700; font-size: 12px; }
+    .timeline { stroke: #5a5a5a; stroke-width: 1; stroke-dasharray: 2 2; }
+    .t-marker { fill: #1a2233; font-weight: 600; font-size: 11px; }
+    .task-running { fill: #dbeafe; stroke: #1e40af; stroke-width: 1.5; }
+    .task-error { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .task-cancelled { fill: #f3f4f6; stroke: #5a5a5a; stroke-width: 1.5; stroke-dasharray: 4 2; }
+    .task-done { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .signal { stroke: #b91c1c; stroke-width: 2; fill: none; }
+    .signal-label { fill: #b91c1c; font-size: 10px; font-weight: 600; font-family: 'SF Mono', Consolas, monospace; }
+    .race-box { fill: none; stroke: #4f46e5; stroke-width: 1.5; stroke-dasharray: 3 2; rx: 4; }
+    .race-label { fill: #4f46e5; font-size: 10px; font-weight: 600; }
+    .note { fill: #5a5a5a; font-size: 11px; font-style: italic; }
+    .label-mono { fill: #1a1a1a; font-size: 11px; font-family: 'SF Mono', Consolas, monospace; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+  </style>
+
+  <defs>
+    <marker id="sa-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+    <marker id="sa-arr-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="600" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">Bash sibling abort 时序 —— 一个 Bash 错倒下全队</text>
+  <text x="440" y="48" text-anchor="middle" class="note">parallel batch 含 [Bash(make build), Bash(npm test), Read(file)] · tool-executor.ts:249-321</text>
+
+  <!-- Time axis -->
+  <line x1="180" y1="80" x2="820" y2="80" stroke="#1a2233" stroke-width="1.5" marker-end="url(#sa-arr-blue)"/>
+  <text x="830" y="84" class="t-marker">time</text>
+
+  <!-- Time markers -->
+  <line x1="220" y1="75" x2="220" y2="500" class="timeline"/>
+  <text x="220" y="70" text-anchor="middle" class="t-marker">t0</text>
+  <text x="220" y="520" text-anchor="middle" class="note" font-size="10">batch 启动</text>
+
+  <line x1="430" y1="75" x2="430" y2="500" class="timeline"/>
+  <text x="430" y="70" text-anchor="middle" class="t-marker">t1</text>
+  <text x="430" y="520" text-anchor="middle" class="note" font-size="10">Bash(build) 抛错</text>
+
+  <line x1="560" y1="75" x2="560" y2="500" class="timeline"/>
+  <text x="560" y="70" text-anchor="middle" class="t-marker">t1 + ε</text>
+  <text x="560" y="520" text-anchor="middle" class="note" font-size="10">signal 传播</text>
+
+  <line x1="700" y1="75" x2="700" y2="500" class="timeline"/>
+  <text x="700" y="70" text-anchor="middle" class="t-marker">t2</text>
+  <text x="700" y="520" text-anchor="middle" class="note" font-size="10">Promise.all 返回</text>
+
+  <!-- Lane 1: Bash build -->
+  <text x="20" y="120" class="lane-label">Bash</text>
+  <text x="20" y="135" class="label-mono" font-size="10">make build</text>
+  <line x1="170" y1="130" x2="820" y2="130" stroke="#5a5a5a" stroke-width="0.5"/>
+
+  <rect x="220" y="110" width="210" height="40" class="task-running" rx="3"/>
+  <text x="325" y="125" text-anchor="middle" class="label-mono">runToolCall(make build)</text>
+  <text x="325" y="142" text-anchor="middle" class="note" font-size="10">编译中…</text>
+
+  <rect x="430" y="110" width="20" height="40" class="task-error" rx="3"/>
+  <text x="440" y="135" text-anchor="middle" class="label-mono" font-size="11" font-weight="600" fill="#b91c1c">✗</text>
+
+  <rect x="450" y="110" width="250" height="40" fill="#fef3c7" stroke="#a16207" stroke-width="1.5" rx="3"/>
+  <text x="575" y="125" text-anchor="middle" class="label-mono" font-size="10">result.isError === true</text>
+  <text x="575" y="142" text-anchor="middle" class="label-mono" font-size="10" fill="#b91c1c" font-weight="600">siblingAbort.abort('sibling_error')</text>
+
+  <!-- Lane 2: Bash test -->
+  <text x="20" y="200" class="lane-label">Bash</text>
+  <text x="20" y="215" class="label-mono" font-size="10">npm test</text>
+  <line x1="170" y1="210" x2="820" y2="210" stroke="#5a5a5a" stroke-width="0.5"/>
+
+  <rect x="220" y="190" width="340" height="40" class="task-running" rx="3"/>
+  <text x="390" y="205" text-anchor="middle" class="label-mono">runToolCall(npm test) — 子进程跑测试</text>
+  <text x="390" y="222" text-anchor="middle" class="note" font-size="10">Promise.race(toolPromise, abortPromise) pending</text>
+
+  <rect x="560" y="190" width="140" height="40" class="task-cancelled" rx="3"/>
+  <text x="630" y="206" text-anchor="middle" class="label-mono" font-size="10">abortPromise resolves</text>
+  <text x="630" y="222" text-anchor="middle" class="label-mono" font-size="10" font-weight="600">→ 'aborted'</text>
+
+  <!-- Lane 3: Read file -->
+  <text x="20" y="280" class="lane-label">Read</text>
+  <text x="20" y="295" class="label-mono" font-size="10">somefile.ts</text>
+  <line x1="170" y1="290" x2="820" y2="290" stroke="#5a5a5a" stroke-width="0.5"/>
+
+  <rect x="220" y="270" width="340" height="40" class="task-running" rx="3"/>
+  <text x="390" y="285" text-anchor="middle" class="label-mono">runToolCall(Read) — 读文件中</text>
+  <text x="390" y="302" text-anchor="middle" class="note" font-size="10">Promise.race(toolPromise, abortPromise) pending</text>
+
+  <rect x="560" y="270" width="140" height="40" class="task-cancelled" rx="3"/>
+  <text x="630" y="286" text-anchor="middle" class="label-mono" font-size="10">abortPromise resolves</text>
+  <text x="630" y="302" text-anchor="middle" class="label-mono" font-size="10" font-weight="600">→ 'aborted'</text>
+
+  <!-- Signal propagation arrows -->
+  <path d="M 560 152 L 560 192" class="signal" marker-end="url(#sa-arr)"/>
+  <path d="M 560 152 L 560 272" class="signal" marker-end="url(#sa-arr)"/>
+  <text x="565" y="180" class="signal-label">signal</text>
+
+  <!-- Race box annotation -->
+  <rect x="200" y="335" width="540" height="80" class="race-box"/>
+  <text x="210" y="352" class="race-label">编排器 per-call 的 Promise.race 模式（tool-executor.ts:291-301）</text>
+  <text x="210" y="370" class="label-mono" font-size="10">const raceResult = await Promise.race([</text>
+  <text x="210" y="384" class="label-mono" font-size="10">  toolPromise.then(r => ({ kind: 'done', ...r })),</text>
+  <text x="210" y="398" class="label-mono" font-size="10">  abortPromise.then(() => ({ kind: 'aborted' })),  // ← siblingAbort.signal 触发就走这条</text>
+  <text x="210" y="412" class="label-mono" font-size="10">])</text>
+
+  <!-- Final results panel -->
+  <rect x="40" y="440" width="800" height="70" fill="#f6f7f9" stroke="#5a5a5a" rx="4"/>
+  <text x="55" y="460" class="label" font-weight="600" fill="#1a2233">batch 最终结果（按调用顺序返回给 LLM）：</text>
+  <text x="55" y="478" class="label-mono">[0] Bash(make build): <tspan fill="#b91c1c" font-weight="600">isError=true</tspan> — 真实错误（编译失败）</text>
+  <text x="55" y="494" class="label-mono">[1] Bash(npm test):   <tspan fill="#a16207" font-weight="600">cancelled</tspan>   — 'Cancelled due to sibling Bash failure'</text>
+  <text x="55" y="510" class="label-mono">[2] Read(file):       <tspan fill="#a16207" font-weight="600">cancelled</tspan>   — 同上（race 已 settle 为 aborted）</text>
+
+  <!-- Key insight box -->
+  <rect x="40" y="540" width="800" height="50" fill="#fff" stroke="#4f46e5" stroke-width="1.5" rx="4"/>
+  <text x="55" y="560" class="label" fill="#312e81" font-weight="600">关键设计点：</text>
+  <text x="130" y="560" class="label">「<tspan font-weight="600">谁 trigger」与「谁被 affect」不对称</tspan>——</text>
+  <text x="55" y="578" class="label">只有 Bash 错才会调 siblingAbort.abort()（其他工具错不触发），但 abort 一旦触发，<tspan font-weight="600">所有 race 未 settle 的兄弟（包括 Read）都会被取消</tspan>。</text>
+</svg>

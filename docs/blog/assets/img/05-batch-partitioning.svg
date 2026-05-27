@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 540" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-bp d-bp">
+  <title id="t-bp">Batch 划分实例 —— 4 种不同的 LLM 输出对应的 batch 结果</title>
+  <desc id="d-bp">展示 4 种 LLM 输出序列经过 partitionToolCalls 得到的 batch 结果。例 A：全 Read → 1 个 parallel batch；例 B：Read+Edit+Read → 3 个 batch（不能跨 Edit 合并）；例 C：3 Edit → 3 个 serial batch；例 D：Read+Bash+Read → 3 个 batch（Bash 即使 cat 也 concurrencySafe=false）。每例标注总时间对比"全串行"和"实际"。</desc>
+  <style>
+    .case-title { fill: #1a2233; font-weight: 700; font-size: 13px; }
+    .tool-read { fill: #d1fae5; stroke: #047857; stroke-width: 1; }
+    .tool-glob { fill: #d1fae5; stroke: #047857; stroke-width: 1; }
+    .tool-edit { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1; }
+    .tool-write { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1; }
+    .tool-bash { fill: #fef3c7; stroke: #a16207; stroke-width: 1; }
+    .tool-label { fill: #1a1a1a; font-size: 11px; text-anchor: middle; font-family: 'SF Mono', Consolas, monospace; }
+    .batch-parallel { fill: none; stroke: #1e40af; stroke-width: 2; stroke-dasharray: 4 2; rx: 4; }
+    .batch-serial { fill: none; stroke: #a16207; stroke-width: 2; stroke-dasharray: 4 2; rx: 4; }
+    .batch-label { font-size: 10px; font-weight: 600; }
+    .legend-text { fill: #5a5a5a; font-size: 11px; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .timing { fill: #1a1a1a; font-size: 11px; font-weight: 600; }
+  </style>
+
+  <defs>
+    <marker id="bp-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="540" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">Batch 划分实例 —— 4 种 LLM 输出 → partitionToolCalls 结果</text>
+  <text x="440" y="48" text-anchor="middle" class="legend-text">蓝框 = parallel batch（Promise.all）  ·  橙框 = serial batch（一次一个）  ·  顺序保持，不重排</text>
+
+  <!-- Case A: All Read -->
+  <text x="40" y="78" class="case-title">例 A — 全 Read：1 个 parallel batch，3× 加速</text>
+  <rect x="40" y="88" width="280" height="50" class="batch-parallel" rx="4"/>
+  <text x="50" y="102" class="batch-label" fill="#1e40af">parallel</text>
+  <rect x="55" y="108" width="80" height="22" class="tool-read"/>
+  <text x="95" y="123" class="tool-label">Read(a)</text>
+  <rect x="143" y="108" width="80" height="22" class="tool-read"/>
+  <text x="183" y="123" class="tool-label">Read(b)</text>
+  <rect x="231" y="108" width="80" height="22" class="tool-read"/>
+  <text x="271" y="123" class="tool-label">Read(c)</text>
+  <text x="350" y="105" class="timing">全串行：3T</text>
+  <text x="350" y="121" class="timing" fill="#0a7c2e">实际：T  (3× ↑)</text>
+  <text x="350" y="137" class="legend-text">3 个文件并发读，I/O 相互独立</text>
+
+  <!-- Case B: Read+Edit+Read -->
+  <text x="40" y="170" class="case-title">例 B — Read · Edit · Read：3 个 batch，Edit 是分隔符</text>
+  <rect x="40" y="180" width="100" height="50" class="batch-parallel" rx="4"/>
+  <text x="50" y="194" class="batch-label" fill="#1e40af">parallel</text>
+  <rect x="55" y="200" width="80" height="22" class="tool-read"/>
+  <text x="95" y="215" class="tool-label">Read(a)</text>
+
+  <rect x="150" y="180" width="100" height="50" class="batch-serial" rx="4"/>
+  <text x="160" y="194" class="batch-label" fill="#a16207">serial</text>
+  <rect x="165" y="200" width="80" height="22" class="tool-edit"/>
+  <text x="205" y="215" class="tool-label">Edit(b)</text>
+
+  <rect x="260" y="180" width="100" height="50" class="batch-parallel" rx="4"/>
+  <text x="270" y="194" class="batch-label" fill="#1e40af">parallel</text>
+  <rect x="275" y="200" width="80" height="22" class="tool-read"/>
+  <text x="315" y="215" class="tool-label">Read(c)</text>
+  <text x="390" y="197" class="timing">全串行：3T</text>
+  <text x="390" y="213" class="timing" fill="#a16207">实际：3T  （无加速）</text>
+  <text x="390" y="229" class="legend-text">不能优化成 parallel[Read,Read]+serial[Edit] —— 破坏顺序</text>
+
+  <!-- Case C: 3 Edit -->
+  <text x="40" y="262" class="case-title">例 C — 3 Edit：3 个 serial batch，每个独立要权限</text>
+  <rect x="40" y="272" width="100" height="50" class="batch-serial" rx="4"/>
+  <text x="50" y="286" class="batch-label" fill="#a16207">serial</text>
+  <rect x="55" y="292" width="80" height="22" class="tool-edit"/>
+  <text x="95" y="307" class="tool-label">Edit(a)</text>
+
+  <rect x="150" y="272" width="100" height="50" class="batch-serial" rx="4"/>
+  <text x="160" y="286" class="batch-label" fill="#a16207">serial</text>
+  <rect x="165" y="292" width="80" height="22" class="tool-edit"/>
+  <text x="205" y="307" class="tool-label">Edit(b)</text>
+
+  <rect x="260" y="272" width="100" height="50" class="batch-serial" rx="4"/>
+  <text x="270" y="286" class="batch-label" fill="#a16207">serial</text>
+  <rect x="275" y="292" width="80" height="22" class="tool-edit"/>
+  <text x="315" y="307" class="tool-label">Edit(c)</text>
+  <text x="390" y="289" class="timing">全串行：3T</text>
+  <text x="390" y="305" class="timing" fill="#a16207">实际：3T  （无加速）</text>
+  <text x="390" y="321" class="legend-text">每个 Edit 走 permission flow，串行才能弹权限框</text>
+
+  <!-- Case D: Read+Bash+Read with Bash as cat -->
+  <text x="40" y="354" class="case-title">例 D — Read · Bash(cat) · Read：Bash 即使只读，仍单独 serial</text>
+  <rect x="40" y="364" width="100" height="50" class="batch-parallel" rx="4"/>
+  <text x="50" y="378" class="batch-label" fill="#1e40af">parallel</text>
+  <rect x="55" y="384" width="80" height="22" class="tool-read"/>
+  <text x="95" y="399" class="tool-label">Read(a)</text>
+
+  <rect x="150" y="364" width="100" height="50" class="batch-serial" rx="4"/>
+  <text x="160" y="378" class="batch-label" fill="#a16207">serial</text>
+  <rect x="165" y="384" width="80" height="22" class="tool-bash"/>
+  <text x="205" y="399" class="tool-label">Bash(cat)</text>
+
+  <rect x="260" y="364" width="100" height="50" class="batch-parallel" rx="4"/>
+  <text x="270" y="378" class="batch-label" fill="#1e40af">parallel</text>
+  <rect x="275" y="384" width="80" height="22" class="tool-read"/>
+  <text x="315" y="399" class="tool-label">Read(c)</text>
+  <text x="390" y="381" class="timing">全串行：3T</text>
+  <text x="390" y="397" class="timing" fill="#a16207">实际：3T  （Bash 永远 false）</text>
+  <text x="390" y="413" class="legend-text">isReadOnly(cat)=true 但 isConcurrencySafe()=false → 必 serial</text>
+
+  <!-- Legend -->
+  <rect x="40" y="438" width="800" height="80" fill="#f6f7f9" stroke="#5a5a5a" rx="4"/>
+  <text x="55" y="458" class="legend-text" font-weight="600" fill="#1a2233">关键观察：</text>
+  <text x="55" y="476" class="legend-text">1. 编排器 <tspan font-weight="600">不会重排</tspan> —— LLM 的输出顺序就是执行顺序，跨非并发工具的合并会破坏顺序假象</text>
+  <text x="55" y="492" class="legend-text">2. <tspan font-weight="600">size=1 的 parallel batch 仍走 Promise.all 路径</tspan> —— 不影响结果，但保留与 batch &gt;1 相同的"sibling abort"逻辑</text>
+  <text x="55" y="508" class="legend-text">3. 加速比上限 = <tspan font-weight="600">最长连续 readonly+concurrencySafe 子串的长度</tspan> —— 通常出现在初始仓库扫描（多 Read+Grep）</text>
+</svg>
