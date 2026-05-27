@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ia d-ia">
+  <title id="t-ia">iframe sandbox + 注入 overlay 架构 · postMessage 双向协议</title>
+  <desc id="d-ia">展示 HarWork design canvas 的运行时分层：父页面（HarWork Next.js 应用）通过 srcDoc 把 AI 产物 HTML + 注入的 overlay 脚本一起塞进 sandbox="allow-scripts" 的 iframe；iframe 里只有 script 能力，无 same-origin、无 forms、无 popups；父子页通过命名空间为 'harwork-design' 的 postMessage 双向通信，父→子 5 种消息（enableOverlay/disableOverlay/previewStyle/resetPreview/highlightElement），子→父 4 种消息（elementHovered/elementSelected/scrollUpdate/overlayReady）。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .parent-box { fill: #f0f9ff; stroke: #0369a1; stroke-width: 1.5; }
+    .iframe-box { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; stroke-dasharray: 4 2; }
+    .artifact-box { fill: #fff; stroke: #d97706; stroke-width: 1; }
+    .overlay-box { fill: #e0f2fe; stroke: #0284c7; stroke-width: 1.5; }
+    .msg-down { stroke: #047857; stroke-width: 1.5; fill: none; }
+    .msg-up { stroke: #dc2626; stroke-width: 1.5; fill: none; }
+    .barrier { stroke: #991b1b; stroke-width: 2; stroke-dasharray: 6 3; fill: none; }
+  </style>
+  <defs>
+    <marker id="arrow-down" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#047857"/>
+    </marker>
+    <marker id="arrow-up" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="28" class="header" font-size="14">iframe sandbox + 注入 overlay · postMessage 双向</text>
+
+  <!-- Parent page -->
+  <rect x="30" y="60" width="380" height="440" rx="6" class="parent-box"/>
+  <text x="220" y="82" text-anchor="middle" class="header">父页（HarWork Next.js 应用）</text>
+  <text x="220" y="98" text-anchor="middle" class="note">window.origin = "https://harwork.example.com"</text>
+
+  <rect x="50" y="120" width="340" height="60" rx="4" fill="#fff" stroke="#0369a1"/>
+  <text x="60" y="138" class="label header">DesignCanvas 组件</text>
+  <text x="60" y="155" class="label-mono">design-canvas.tsx:27-92</text>
+  <text x="60" y="170" class="label-sm">useMemo(injectOverlay(srcdoc)) → srcDoc 注入</text>
+
+  <rect x="50" y="195" width="340" height="60" rx="4" fill="#fff" stroke="#0369a1"/>
+  <text x="60" y="213" class="label header">handleMessage 监听</text>
+  <text x="60" y="230" class="label-mono">design-canvas.tsx:49-60</text>
+  <text x="60" y="245" class="label-sm">过滤 source !== 'harwork-design' 的消息</text>
+
+  <rect x="50" y="270" width="340" height="60" rx="4" fill="#fff" stroke="#0369a1"/>
+  <text x="60" y="288" class="label header">DesignAnnotationLayer 标注 UI</text>
+  <text x="60" y="305" class="label-mono">design-annotation-layer.tsx:32-122</text>
+  <text x="60" y="320" class="label-sm">收到 elementSelected → 弹出标注输入框</text>
+
+  <rect x="50" y="345" width="340" height="60" rx="4" fill="#fff" stroke="#0369a1"/>
+  <text x="60" y="363" class="label header">POST /api/design/projects/:id/annotations</text>
+  <text x="60" y="380" class="label-mono">annotations/route.ts:12-80</text>
+  <text x="60" y="395" class="label-sm">写入 design_annotations 表（projectId+versionId+selector）</text>
+
+  <text x="220" y="430" text-anchor="middle" class="label-sm">↓ 下一轮 agent 调用 design 工具时</text>
+  <text x="220" y="448" text-anchor="middle" class="label-mono-sm">GET annotations?status=pending → 序列化进 prompt</text>
+  <text x="220" y="470" text-anchor="middle" class="note">agent 拿到结构化标注 = 精确指代不靠视觉理解</text>
+
+  <!-- Sandbox barrier -->
+  <line x1="420" y1="60" x2="420" y2="500" class="barrier"/>
+  <text x="427" y="76" class="label-sm" fill="#991b1b" font-weight="700">sandbox</text>
+  <text x="427" y="90" class="label-sm" fill="#991b1b" font-weight="700">边界</text>
+
+  <!-- iframe -->
+  <rect x="450" y="60" width="400" height="440" rx="6" class="iframe-box"/>
+  <text x="650" y="82" text-anchor="middle" class="header">iframe sandbox="allow-scripts"</text>
+  <text x="650" y="98" text-anchor="middle" class="note">window.origin = "null" · 无 same-origin · 无 forms</text>
+
+  <rect x="470" y="120" width="360" height="135" rx="4" class="artifact-box"/>
+  <text x="480" y="138" class="label header">AI 生成的 HTML 产物</text>
+  <text x="480" y="156" class="label-mono-sm">&lt;html&gt;</text>
+  <text x="480" y="172" class="label-mono-sm">  &lt;body&gt;</text>
+  <text x="480" y="188" class="label-mono-sm">    &lt;div class="hero"&gt;...&lt;/div&gt;</text>
+  <text x="480" y="204" class="label-mono-sm">    &lt;button class="cta"&gt;下载&lt;/button&gt;</text>
+  <text x="480" y="220" class="label-mono-sm">    &lt;!-- injectOverlay 在这之前插 script --&gt;</text>
+  <text x="480" y="236" class="label-mono-sm">  &lt;/body&gt;</text>
+  <text x="480" y="252" class="label-mono-sm">&lt;/html&gt;</text>
+
+  <rect x="470" y="270" width="360" height="135" rx="4" class="overlay-box"/>
+  <text x="480" y="288" class="label header">OVERLAY_SCRIPT（HarWork 注入）</text>
+  <text x="480" y="305" class="label-mono">overlay-script.ts:1-145 · 144 行</text>
+  <text x="480" y="322" class="label-sm">• onMouseOver → 高亮 hover 元素</text>
+  <text x="480" y="338" class="label-sm">• onClick → getSelectorPath() → send('elementSelected')</text>
+  <text x="480" y="354" class="label-sm">• 监听 enableOverlay / previewStyle / highlightElement</text>
+  <text x="480" y="370" class="label-sm">• 启动时发 send('overlayReady', {})</text>
+  <text x="480" y="390" class="note">命名空间字段：{ source: 'harwork-design', ... }</text>
+
+  <text x="650" y="430" text-anchor="middle" class="label-sm">为什么脚本是字符串字面量而非 .js 文件？</text>
+  <text x="650" y="446" text-anchor="middle" class="label-mono-sm">srcdoc 的 origin=null → &lt;script src&gt; 解析为 null/...</text>
+  <text x="650" y="462" text-anchor="middle" class="label-mono-sm">浏览器拒绝加载 → 必须嵌进 srcdoc 字符串</text>
+
+  <!-- Arrows: parent → iframe -->
+  <path d="M 390 150 C 430 150, 440 150, 470 150" class="msg-down" marker-end="url(#arrow-down)"/>
+  <text x="396" y="143" class="label-mono-sm" fill="#047857">srcDoc 注入</text>
+
+  <path d="M 390 305 C 420 305, 440 320, 470 320" class="msg-down" marker-end="url(#arrow-down)"/>
+  <text x="396" y="298" class="label-mono-sm" fill="#047857">enableOverlay</text>
+
+  <!-- Arrows: iframe → parent -->
+  <path d="M 470 225 C 440 225, 430 215, 390 215" class="msg-up" marker-end="url(#arrow-up)"/>
+  <text x="396" y="208" class="label-mono-sm" fill="#dc2626">elementSelected</text>
+
+  <text x="20" y="535" class="note">绿箭头：父→子（enable/disable/preview/reset/highlight 共 5 类）  红箭头：子→父（hover/select/scroll/ready 共 4 类）</text>
+</svg>

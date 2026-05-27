@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 540" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ss d-ss">
+  <title id="t-ss">CSS 选择器路径序列化 · getSelectorPath 算法</title>
+  <desc id="d-ss">展示 overlay-script.ts:9-28 的 getSelectorPath 算法：从被点元素往上爬到 body，每层生成 tag + .class 或 tag:nth-child(N) 形式，遇到 id 直接短路返回 #id；过滤 __hw 前缀的高亮 class；同 tag 兄弟超过 1 个时加 :nth-child(N)。最终路径形如 body > div.container > div.hero > button.cta:nth-child(2)。算法的本质押注：AI 重新生成时 class 名和位置是稳的，所以 selector 在多版本间能复用挂标注。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .dom-node { fill: #fef9c3; stroke: #a16207; stroke-width: 1; }
+    .clicked-node { fill: #fbbf24; stroke: #92400e; stroke-width: 2; }
+    .id-node { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .skipped { fill: #f3f4f6; stroke: #9ca3af; stroke-width: 1; stroke-dasharray: 3 2; }
+    .arrow { stroke: #4b5563; stroke-width: 1; fill: none; }
+    .selector-line { stroke: #dc2626; stroke-width: 1.5; fill: none; stroke-dasharray: 4 2; }
+  </style>
+  <defs>
+    <marker id="ar-gray" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#4b5563"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="28" class="header" font-size="14">getSelectorPath · 从被点元素爬到 body</text>
+
+  <!-- DOM tree (left) -->
+  <text x="40" y="56" class="header">DOM 树（AI 生成的 HTML）</text>
+
+  <rect x="40" y="70" width="160" height="36" rx="4" class="dom-node"/>
+  <text x="120" y="93" text-anchor="middle" class="label-mono">&lt;body&gt;</text>
+
+  <rect x="40" y="125" width="160" height="36" rx="4" class="dom-node"/>
+  <text x="120" y="148" text-anchor="middle" class="label-mono">&lt;div class="container"&gt;</text>
+
+  <rect x="40" y="180" width="160" height="36" rx="4" class="dom-node"/>
+  <text x="120" y="203" text-anchor="middle" class="label-mono">&lt;div class="hero"&gt;</text>
+
+  <rect x="40" y="235" width="160" height="36" rx="4" class="id-node"/>
+  <text x="120" y="252" text-anchor="middle" class="label-mono-sm">&lt;section id="cta-wrap"&gt;</text>
+  <text x="120" y="264" text-anchor="middle" class="note">遇 id 短路</text>
+
+  <rect x="40" y="290" width="160" height="36" rx="4" class="dom-node"/>
+  <text x="120" y="313" text-anchor="middle" class="label-mono-sm">&lt;button class="cta"&gt;</text>
+
+  <rect x="40" y="345" width="160" height="36" rx="4" class="dom-node"/>
+  <text x="120" y="362" text-anchor="middle" class="label-mono-sm">&lt;button class="cta"&gt;</text>
+  <text x="120" y="375" text-anchor="middle" class="note">第 2 个同 tag 兄弟</text>
+
+  <rect x="40" y="400" width="160" height="36" rx="4" class="clicked-node"/>
+  <text x="120" y="417" text-anchor="middle" class="label-mono-sm">&lt;button class="cta"&gt;</text>
+  <text x="120" y="430" text-anchor="middle" class="note" fill="#92400e">← 用户点这个</text>
+
+  <!-- Arrows down -->
+  <line x1="120" y1="106" x2="120" y2="123" class="arrow" marker-end="url(#ar-gray)"/>
+  <line x1="120" y1="161" x2="120" y2="178" class="arrow" marker-end="url(#ar-gray)"/>
+  <line x1="120" y1="216" x2="120" y2="233" class="arrow" marker-end="url(#ar-gray)"/>
+  <line x1="120" y1="271" x2="120" y2="288" class="arrow" marker-end="url(#ar-gray)"/>
+  <line x1="100" y1="326" x2="100" y2="343" class="arrow"/>
+  <line x1="140" y1="326" x2="140" y2="398" class="arrow"/>
+
+  <!-- Algorithm steps (middle) -->
+  <text x="240" y="56" class="header">爬升 + 序列化（while 循环）</text>
+
+  <rect x="240" y="400" width="200" height="36" rx="4" fill="#fff" stroke="#dc2626"/>
+  <text x="250" y="417" class="label-mono-sm">tag=button, cls=cta</text>
+  <text x="250" y="430" class="label-mono-sm">同 tag 兄弟=2 → :nth-child(2)</text>
+
+  <rect x="240" y="345" width="200" height="36" rx="4" fill="#fff" stroke="#9ca3af"/>
+  <text x="250" y="362" class="label-mono-sm">兄弟节点 不进 selector</text>
+  <text x="250" y="375" class="note">（只有被点元素的祖先链）</text>
+
+  <rect x="240" y="235" width="200" height="36" rx="4" fill="#fff" stroke="#047857"/>
+  <text x="250" y="252" class="label-mono-sm">if (el.id) → '#cta-wrap' break</text>
+  <text x="250" y="264" class="note">遇 id 立刻短路</text>
+
+  <rect x="240" y="180" width="200" height="36" rx="4" class="skipped"/>
+  <text x="250" y="197" class="label-mono-sm">不再向上爬</text>
+  <text x="250" y="209" class="note">（被 id 短路）</text>
+
+  <rect x="240" y="125" width="200" height="36" rx="4" class="skipped"/>
+  <text x="250" y="142" class="label-mono-sm">不再向上爬</text>
+
+  <rect x="240" y="70" width="200" height="36" rx="4" class="skipped"/>
+  <text x="250" y="87" class="label-mono-sm">不再向上爬</text>
+
+  <line x1="200" y1="418" x2="240" y2="418" class="arrow" marker-end="url(#ar-gray)"/>
+  <line x1="200" y1="253" x2="240" y2="253" class="arrow" marker-end="url(#ar-gray)"/>
+
+  <!-- Output (right) -->
+  <text x="480" y="56" class="header">parts.unshift() 拼接产物</text>
+
+  <rect x="480" y="80" width="370" height="80" rx="4" fill="#f0f9ff" stroke="#0369a1"/>
+  <text x="490" y="100" class="label-mono">parts.unshift('button.cta:nth-child(2)')</text>
+  <text x="490" y="118" class="label-mono">parts.unshift('#cta-wrap')  ← 短路点</text>
+  <text x="490" y="138" class="label-mono">parts.join(' &gt; ')</text>
+
+  <rect x="480" y="180" width="370" height="56" rx="4" fill="#fef3c7" stroke="#a16207"/>
+  <text x="490" y="201" class="label header">最终 selector</text>
+  <text x="490" y="222" class="label-mono">#cta-wrap &gt; button.cta:nth-child(2)</text>
+
+  <text x="480" y="270" class="header">3 条核心规则（overlay-script.ts:9-28）</text>
+
+  <rect x="480" y="285" width="370" height="48" rx="4" fill="#fff" stroke="#0369a1"/>
+  <text x="490" y="302" class="label-mono-sm">1. el.id ≠ null → 立即 '#' + id 短路（line 14）</text>
+  <text x="490" y="318" class="note">id 在 AI 重新生成时通常稳，比 nth-child 链稳</text>
+
+  <rect x="480" y="338" width="370" height="48" rx="4" fill="#fff" stroke="#0369a1"/>
+  <text x="490" y="355" class="label-mono-sm">2. classList.filter(!c.startsWith('__hw'))（line 15）</text>
+  <text x="490" y="371" class="note">过滤 overlay 自己注入的高亮 class，否则路径有残留</text>
+
+  <rect x="480" y="391" width="370" height="48" rx="4" fill="#fff" stroke="#0369a1"/>
+  <text x="490" y="408" class="label-mono-sm">3. 同 tag 兄弟 &gt; 1 时加 :nth-child(N)（line 19-22）</text>
+  <text x="490" y="424" class="note">只有 1 个就不加 → AI 改了 class 名至少 tag+位置还在</text>
+
+  <text x="480" y="465" class="note">本质押注：AI 重新生成时 class 名和位置是稳的，</text>
+  <text x="480" y="481" class="note">90% selector 在新版仍能 querySelector 命中。</text>
+  <text x="480" y="497" class="note">10% 失配 → status=pending 让 agent 自己看着办。</text>
+</svg>
