@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-hl d-hl">
+  <title id="t-hl">8 个 hook 事件在 agent loop 上的触发点</title>
+  <desc id="d-hl">HarWork 的 8 种 hook 事件（SessionStart / UserPromptSubmit / PreToolUse / PostToolUse / PostToolUseFailure / Stop / PreCompact / SessionEnd）在 agent loop 中的精确触发位置，每个事件对应 packages/engine/src/ 中的具体调用点和典型用途。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .loop-box { fill: #f3f4f6; stroke: #1a2233; stroke-width: 1.5; }
+    .tool-iter { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 1.5; }
+    .session { fill: #ede9fe; stroke: #6d28d9; stroke-width: 2; }
+    .prompt { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .compact { fill: #fce7f3; stroke: #be185d; stroke-width: 1.5; }
+    .stop { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .hook-event { fill: #fef2f2; stroke: #b91c1c; stroke-width: 1.5; }
+    .hook-event-text { fill: #7f1d1d; font-weight: 600; font-size: 10.5px; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .hook-arrow { stroke: #b91c1c; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="hl-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="hl-harr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">8 个 hook 事件在 agent loop 上的触发点</text>
+  <text x="440" y="48" text-anchor="middle" class="note">每个事件标注调用点和典型用途 · hook 触发后并行 Promise.all 执行</text>
+
+  <!-- Session lifecycle box -->
+  <rect x="30" y="80" width="820" height="430" rx="8" class="loop-box"/>
+  <text x="50" y="103" class="header">Agent Session 生命周期（ws-server.ts + ws-message-handlers.ts + agent/loop.ts）</text>
+
+  <!-- SessionStart -->
+  <rect x="50" y="120" width="170" height="44" rx="4" class="session"/>
+  <text x="135" y="140" text-anchor="middle" class="label" font-weight="600" fill="#4c1d95">① Session 启动</text>
+  <text x="135" y="156" text-anchor="middle" class="label-mono-sm">ws-server.ts:170</text>
+
+  <rect x="240" y="120" width="160" height="44" rx="4" class="hook-event"/>
+  <text x="320" y="140" text-anchor="middle" class="hook-event-text">SessionStart</text>
+  <text x="320" y="156" text-anchor="middle" class="note">注入 README / 加载配置</text>
+
+  <!-- arrow -->
+  <line x1="220" y1="142" x2="240" y2="142" class="arrow" marker-end="url(#hl-arr)"/>
+
+  <!-- UserPromptSubmit -->
+  <rect x="50" y="184" width="170" height="44" rx="4" class="prompt"/>
+  <text x="135" y="204" text-anchor="middle" class="label" font-weight="600" fill="#78350f">② 用户发消息</text>
+  <text x="135" y="220" text-anchor="middle" class="label-mono-sm">ws-message-handlers.ts</text>
+
+  <rect x="240" y="184" width="160" height="44" rx="4" class="hook-event"/>
+  <text x="320" y="204" text-anchor="middle" class="hook-event-text">UserPromptSubmit</text>
+  <text x="320" y="220" text-anchor="middle" class="note">注入上下文 / deny 危险问题</text>
+
+  <line x1="220" y1="206" x2="240" y2="206" class="arrow" marker-end="url(#hl-arr)"/>
+
+  <!-- Tool iteration -->
+  <rect x="50" y="248" width="780" height="170" rx="6" class="tool-iter"/>
+  <text x="70" y="270" class="header" fill="#1e3a8a">③ 工具调用循环（agent/tool-executor.ts，每次工具调用执行）</text>
+
+  <!-- PreToolUse -->
+  <rect x="70" y="288" width="160" height="44" rx="4" class="hook-event"/>
+  <text x="150" y="308" text-anchor="middle" class="hook-event-text">PreToolUse</text>
+  <text x="150" y="324" text-anchor="middle" class="note">改写参数 / 自定义权限</text>
+
+  <text x="245" y="313" class="label-mono-sm">tool-executor.ts:546</text>
+
+  <line x1="230" y1="310" x2="380" y2="310" class="arrow" marker-end="url(#hl-arr)"/>
+  <rect x="380" y="288" width="180" height="44" rx="4" fill="#fff" stroke="#1d4ed8" stroke-width="1"/>
+  <text x="470" y="308" text-anchor="middle" class="label" font-weight="600" fill="#1e3a8a">runToolCall(call, tool)</text>
+  <text x="470" y="324" text-anchor="middle" class="note">在用户容器内 exec</text>
+
+  <line x1="560" y1="310" x2="640" y2="310" class="arrow" marker-end="url(#hl-arr)"/>
+
+  <rect x="640" y="288" width="170" height="44" rx="4" class="hook-event"/>
+  <text x="725" y="308" text-anchor="middle" class="hook-event-text">PostToolUse</text>
+  <text x="725" y="324" text-anchor="middle" class="note">prettier / lint / 上报</text>
+
+  <text x="640" y="350" class="label-mono-sm" fill="#7f1d1d">tool-executor.ts:646</text>
+
+  <!-- PostToolUseFailure (alternative branch) -->
+  <line x1="560" y1="332" x2="640" y2="380" class="arrow" stroke-dasharray="3 2" marker-end="url(#hl-arr)"/>
+  <text x="585" y="362" class="note" transform="rotate(28 585 362)">tool 失败时</text>
+
+  <rect x="640" y="368" width="170" height="44" rx="4" class="hook-event"/>
+  <text x="725" y="388" text-anchor="middle" class="hook-event-text">PostToolUseFailure</text>
+  <text x="725" y="404" text-anchor="middle" class="note">错误上报到 Sentry</text>
+
+  <!-- Stop -->
+  <rect x="50" y="430" width="170" height="44" rx="4" class="stop"/>
+  <text x="135" y="450" text-anchor="middle" class="label" font-weight="600" fill="#065f46">④ LLM 主回合结束</text>
+  <text x="135" y="466" text-anchor="middle" class="label-mono-sm">agent/loop.ts:334</text>
+
+  <rect x="240" y="430" width="160" height="44" rx="4" class="hook-event"/>
+  <text x="320" y="450" text-anchor="middle" class="hook-event-text">Stop</text>
+  <text x="320" y="466" text-anchor="middle" class="note">回合结束 hook</text>
+
+  <line x1="220" y1="452" x2="240" y2="452" class="arrow" marker-end="url(#hl-arr)"/>
+
+  <!-- PreCompact (separate trigger, on the right) -->
+  <rect x="420" y="430" width="170" height="44" rx="4" class="compact"/>
+  <text x="505" y="450" text-anchor="middle" class="label" font-weight="600" fill="#9d174d">⑤ 上下文压缩</text>
+  <text x="505" y="466" text-anchor="middle" class="label-mono-sm">agent/loop.ts:129</text>
+
+  <rect x="610" y="430" width="180" height="44" rx="4" class="hook-event"/>
+  <text x="700" y="450" text-anchor="middle" class="hook-event-text">PreCompact</text>
+  <text x="700" y="466" text-anchor="middle" class="note">归档完整对话</text>
+
+  <line x1="590" y1="452" x2="610" y2="452" class="arrow" marker-end="url(#hl-arr)"/>
+
+  <!-- SessionEnd -->
+  <rect x="50" y="488" width="170" height="20" rx="4" class="session"/>
+  <text x="135" y="503" text-anchor="middle" class="label" font-weight="600" fill="#4c1d95">⑥ Session 结束（ws-server.ts:259）</text>
+
+  <rect x="240" y="488" width="160" height="20" rx="4" class="hook-event"/>
+  <text x="320" y="503" text-anchor="middle" class="hook-event-text">SessionEnd</text>
+
+  <rect x="420" y="488" width="370" height="20" rx="4" fill="#fff" stroke="#1a2233" stroke-width="1"/>
+  <text x="430" y="503" class="note">清理资源 · Slack 通知 · 持久化 · 容器停止</text>
+
+  <line x1="220" y1="498" x2="240" y2="498" class="arrow" marker-end="url(#hl-arr)"/>
+</svg>

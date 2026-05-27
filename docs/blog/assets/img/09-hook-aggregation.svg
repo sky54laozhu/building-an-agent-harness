@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-ha d-ha">
+  <title id="t-ha">退出码 + JSON 协议双信道 + 聚合规则</title>
+  <desc id="d-ha">HarWork hook 系统的两条信号通道：退出码 (0/2/其他) 和 stdout JSON (decision/hookSpecificOutput.permissionDecision/updatedInput/additionalContext)。多 hook 并行执行后按"最严格优先"聚合 permissionBehavior、第一个 updatedInput 赢、additionalContexts 全保留但 capped。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .exit-success { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .exit-block { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .exit-other { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .json-box { fill: #ede9fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .agg-box { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 1.5; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+  </style>
+
+  <defs>
+    <marker id="ha-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">退出码 + JSON 双信道 + 聚合规则</text>
+  <text x="440" y="48" text-anchor="middle" class="note">executor.ts:227-243（信道）· executor.ts:376-409（聚合）</text>
+
+  <!-- Channel A: Exit Code -->
+  <rect x="30" y="75" width="400" height="200" rx="6" fill="#fff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="50" y="98" class="header">信道 A：退出码（exit code）</text>
+  <text x="50" y="114" class="note">executor.ts:227-243 · Claude Code 约定</text>
+
+  <rect x="50" y="128" width="360" height="38" rx="4" class="exit-success"/>
+  <text x="65" y="146" class="label" font-weight="600" fill="#065f46">exit 0 → success</text>
+  <text x="65" y="160" class="note">hook 正常结束，主流程继续</text>
+
+  <rect x="50" y="172" width="360" height="38" rx="4" class="exit-block"/>
+  <text x="65" y="190" class="label" font-weight="600" fill="#7f1d1d">exit 2 → blocking</text>
+  <text x="65" y="204" class="note">显式阻断，stderr 作为 blockingError 写回 LLM</text>
+
+  <rect x="50" y="216" width="360" height="50" rx="4" class="exit-other"/>
+  <text x="65" y="234" class="label" font-weight="600" fill="#78350f">exit 1 / 其他 → non_blocking_error</text>
+  <text x="65" y="248" class="note">hook 自己挂了（语法错误 / 找不到命令 / segfault）</text>
+  <text x="65" y="262" class="note" font-weight="600">不阻断主流程 —— 关键设计：hook 故障 ≠ 阻断</text>
+
+  <!-- Channel B: JSON Output -->
+  <rect x="450" y="75" width="400" height="200" rx="6" fill="#fff" stroke="#1a2233" stroke-width="1.5"/>
+  <text x="470" y="98" class="header">信道 B：stdout JSON（HookJSONOutput）</text>
+  <text x="470" y="114" class="note">types.ts:183-197 · 以 { 开头的 stdout 被解析</text>
+
+  <rect x="470" y="128" width="360" height="138" rx="4" class="json-box"/>
+  <text x="485" y="146" class="label-mono-sm">{</text>
+  <text x="485" y="160" class="label-mono-sm">  "continue": false,        <tspan class="note">// → preventContinuation</tspan></text>
+  <text x="485" y="174" class="label-mono-sm">  "decision": "block",      <tspan class="note">// → permissionBehavior: deny</tspan></text>
+  <text x="485" y="188" class="label-mono-sm">  "reason": "...",          <tspan class="note">// 失败原因</tspan></text>
+  <text x="485" y="202" class="label-mono-sm">  "hookSpecificOutput": {</text>
+  <text x="485" y="216" class="label-mono-sm">    "permissionDecision": "deny" | "ask" | "allow",</text>
+  <text x="485" y="230" class="label-mono-sm">    "additionalContext": "...",  <tspan class="note">// 给 LLM 塞话</tspan></text>
+  <text x="485" y="244" class="label-mono-sm">    "updatedInput": { ... }      <tspan class="note">// 改 LLM 输入</tspan></text>
+  <text x="485" y="258" class="label-mono-sm">  }}</text>
+
+  <!-- Multi-hook box -->
+  <text x="440" y="297" text-anchor="middle" fill="#1a2233" font-size="14" font-weight="600">同一事件 N 个 hook · Promise.all 并行 · 聚合规则</text>
+
+  <!-- 3 hooks parallel -->
+  <rect x="50" y="310" width="160" height="55" rx="4" fill="#fff" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="60" y="328" class="label" font-weight="600">Hook A</text>
+  <text x="60" y="343" class="label-mono-sm">permission: "allow"</text>
+  <text x="60" y="357" class="label-mono-sm">updatedInput: {...}</text>
+
+  <rect x="220" y="310" width="160" height="55" rx="4" fill="#fff" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="230" y="328" class="label" font-weight="600">Hook B</text>
+  <text x="230" y="343" class="label-mono-sm">permission: "deny"</text>
+  <text x="230" y="357" class="label-mono-sm">context: "monorepo"</text>
+
+  <rect x="390" y="310" width="160" height="55" rx="4" fill="#fff" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="400" y="328" class="label" font-weight="600">Hook C</text>
+  <text x="400" y="343" class="label-mono-sm">permission: "ask"</text>
+  <text x="400" y="357" class="label-mono-sm">context: "use pnpm"</text>
+
+  <!-- Arrows merging -->
+  <line x1="130" y1="365" x2="430" y2="395" class="arrow" marker-end="url(#ha-arr)"/>
+  <line x1="300" y1="365" x2="430" y2="395" class="arrow" marker-end="url(#ha-arr)"/>
+  <line x1="470" y1="365" x2="430" y2="395" class="arrow" marker-end="url(#ha-arr)"/>
+
+  <!-- Aggregated result -->
+  <rect x="50" y="400" width="780" height="65" rx="4" class="agg-box"/>
+  <text x="65" y="420" class="header" fill="#1e3a8a">▶ AggregatedHookResult</text>
+  <text x="65" y="438" class="label"><tspan font-weight="700" fill="#7f1d1d">permissionBehavior: "deny"</tspan>  <tspan class="note">// deny > ask > allow，最严格优先（B 的 deny 胜过 A 的 allow 和 C 的 ask）</tspan></text>
+  <text x="65" y="455" class="label"><tspan font-weight="700">updatedInput: {...}（来自 A）</tspan>  <tspan class="note">// 第一个有 updatedInput 的 hook 赢，避免冲突合并</tspan></text>
+
+  <!-- additionalContext aggregation -->
+  <rect x="600" y="310" width="230" height="55" rx="4" fill="#fff" stroke="#5a5a5a" stroke-width="1"/>
+  <text x="610" y="328" class="label" font-weight="600">additionalContexts</text>
+  <text x="610" y="343" class="label-mono-sm">["monorepo", "use pnpm"]</text>
+  <text x="610" y="357" class="note">列表保留 · capped: 8 / 32KB</text>
+
+  <!-- Three aggregation rules detail -->
+  <rect x="40" y="475" width="800" height="80" fill="#fff" stroke="#1a2233" stroke-width="1" rx="4"/>
+  <text x="55" y="494" class="label" font-weight="700">三条聚合规则对应三种语义：</text>
+  <text x="55" y="513" class="label"><tspan font-weight="600" fill="#7f1d1d">① permissionBehavior：最严格优先 deny &gt; ask &gt; allow</tspan> —— 谁都能否决，防止用户写 allow hook 放行危险操作</text>
+  <text x="55" y="530" class="label"><tspan font-weight="600" fill="#1e3a8a">② updatedInput：第一个赢</tspan> —— 不合并多个 hook 的输入改写，避免冲突推测；改 input 用一个 hook 就够</text>
+  <text x="55" y="547" class="label"><tspan font-weight="600" fill="#4c1d95">③ additionalContext：全保留但 capped</tspan> —— 8 items × 32KB 上限（防 prompt injection 撑爆 LLM context）</text>
+</svg>
