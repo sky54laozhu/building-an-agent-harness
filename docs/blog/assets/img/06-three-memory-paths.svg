@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 580" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-3p d-3p">
+  <title id="t-3p">三条记忆路径全景</title>
+  <desc id="d-3p">HarWork 长期记忆的三条独立路径：1) CLAUDE.md 指令（用户手写、git tracked、claudemd.ts 144行）；2) 文件 memory（模型用 Write 工具写、.claude/memory/、memory-files.ts 128行）；3) DB memory（LLM 抽取、StorageProvider、memory.ts 122行）。三条在 loop.ts:47-70 各自加载，通过 prompts.ts 注入不同标题的 system prompt section。三条独立 try/catch，互不阻塞。</desc>
+  <style>
+    .lane-path1 { fill: #dbeafe; stroke: #1e40af; stroke-width: 1.5; }
+    .lane-path2 { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .lane-path3 { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .box-tool { fill: #fff; stroke: #5a5a5a; stroke-width: 1; }
+    .title-lane { font-weight: 700; font-size: 13px; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-mono { fill: #1a1a1a; font-size: 11px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .note { fill: #5a5a5a; font-size: 11px; font-style: italic; }
+    .header { fill: #1a2233; font-size: 11px; font-weight: 600; }
+  </style>
+
+  <defs>
+    <marker id="m-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="580" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">HarWork 三条记忆路径 —— 写入方 / 存储 / 注入 system prompt</text>
+  <text x="440" y="48" text-anchor="middle" class="note">loop.ts:47-70 三条独立加载 · prompts.ts:182-188 拼装 system prompt</text>
+
+  <!-- Column headers -->
+  <text x="180" y="80" text-anchor="middle" class="header">写入方</text>
+  <text x="380" y="80" text-anchor="middle" class="header">存储位置</text>
+  <text x="600" y="80" text-anchor="middle" class="header">system prompt 标题</text>
+  <text x="790" y="80" text-anchor="middle" class="header">源码</text>
+  <line x1="40" y1="88" x2="840" y2="88" stroke="#1a2233" stroke-width="1"/>
+
+  <!-- Path 1: CLAUDE.md -->
+  <rect x="40" y="100" width="800" height="120" rx="6" class="lane-path1"/>
+  <text x="50" y="120" class="title-lane" fill="#1e3a8a">路径 1 — CLAUDE.md 指令</text>
+  <text x="50" y="138" class="note">「用户告诉 AI 该怎么做事」· 强 override 优先级 · 团队共享</text>
+
+  <rect x="100" y="150" width="160" height="56" rx="4" class="box-tool"/>
+  <text x="180" y="170" text-anchor="middle" class="label" font-weight="600">用户手写</text>
+  <text x="180" y="186" text-anchor="middle" class="note" font-size="10">vim / VS Code / GitHub</text>
+  <text x="180" y="200" text-anchor="middle" class="note" font-size="10">commit 进 git</text>
+
+  <rect x="290" y="150" width="200" height="56" rx="4" class="box-tool"/>
+  <text x="390" y="167" text-anchor="middle" class="label-mono-sm">~/.claude/CLAUDE.md</text>
+  <text x="390" y="180" text-anchor="middle" class="label-mono-sm">/workspace/CLAUDE.md</text>
+  <text x="390" y="193" text-anchor="middle" class="label-mono-sm">.claude/CLAUDE.md / rules/</text>
+  <text x="390" y="205" text-anchor="middle" class="label-mono-sm">CLAUDE.local.md</text>
+
+  <rect x="520" y="150" width="160" height="56" rx="4" class="box-tool"/>
+  <text x="600" y="172" text-anchor="middle" class="label-mono" font-weight="600">## Project</text>
+  <text x="600" y="188" text-anchor="middle" class="label-mono" font-weight="600">instructions</text>
+  <text x="600" y="202" text-anchor="middle" class="note" font-size="9">强制 override 前言</text>
+
+  <rect x="710" y="150" width="120" height="56" rx="4" class="box-tool"/>
+  <text x="770" y="170" text-anchor="middle" class="label-mono-sm">claudemd.ts</text>
+  <text x="770" y="184" text-anchor="middle" class="note" font-size="10">144 行</text>
+  <text x="770" y="200" text-anchor="middle" class="note" font-size="10">6 文件位置</text>
+
+  <path d="M 260 178 L 290 178" class="arrow" marker-end="url(#m-arr)"/>
+  <path d="M 490 178 L 520 178" class="arrow" marker-end="url(#m-arr)"/>
+  <path d="M 680 178 L 710 178" class="arrow" marker-end="url(#m-arr)"/>
+
+  <!-- Path 2: File memory -->
+  <rect x="40" y="232" width="800" height="120" rx="6" class="lane-path2"/>
+  <text x="50" y="252" class="title-lane" fill="#065f46">路径 2 — 文件 memory（auto memory）</text>
+  <text x="50" y="270" class="note">「模型察觉值得记 → 自己调 Write 工具落盘」· 跨会话学习 · 个人私有</text>
+
+  <rect x="100" y="282" width="160" height="56" rx="4" class="box-tool"/>
+  <text x="180" y="302" text-anchor="middle" class="label" font-weight="600">模型本身</text>
+  <text x="180" y="318" text-anchor="middle" class="label-mono-sm">Write 工具</text>
+  <text x="180" y="333" text-anchor="middle" class="note" font-size="10">prompts.ts:191-206 指示</text>
+
+  <rect x="290" y="282" width="200" height="56" rx="4" class="box-tool"/>
+  <text x="390" y="300" text-anchor="middle" class="label-mono-sm">.claude/memory/*.md</text>
+  <text x="390" y="315" text-anchor="middle" class="label-mono-sm">.claude/MEMORY.md (索引)</text>
+  <text x="390" y="332" text-anchor="middle" class="note" font-size="9">frontmatter: name/desc/type</text>
+
+  <rect x="520" y="282" width="160" height="56" rx="4" class="box-tool"/>
+  <text x="600" y="304" text-anchor="middle" class="label-mono" font-weight="600">## Saved</text>
+  <text x="600" y="320" text-anchor="middle" class="label-mono" font-weight="600">Memories</text>
+  <text x="600" y="335" text-anchor="middle" class="note" font-size="9">索引 + 详情</text>
+
+  <rect x="710" y="282" width="120" height="56" rx="4" class="box-tool"/>
+  <text x="770" y="302" text-anchor="middle" class="label-mono-sm">memory-files.ts</text>
+  <text x="770" y="316" text-anchor="middle" class="note" font-size="10">128 行</text>
+  <text x="770" y="332" text-anchor="middle" class="note" font-size="10">read-only 模块</text>
+
+  <path d="M 260 310 L 290 310" class="arrow" marker-end="url(#m-arr)"/>
+  <path d="M 490 310 L 520 310" class="arrow" marker-end="url(#m-arr)"/>
+  <path d="M 680 310 L 710 310" class="arrow" marker-end="url(#m-arr)"/>
+
+  <!-- Path 3: DB memory -->
+  <rect x="40" y="364" width="800" height="120" rx="6" class="lane-path3"/>
+  <text x="50" y="384" class="title-lane" fill="#78350f">路径 3 — DB memory（可选 · LLM 抽取）</text>
+  <text x="50" y="402" class="note">「LLM 看末尾 4K 字符，自己抽取 JSON」· 受 confidence 限制 · 次要信号</text>
+
+  <rect x="100" y="414" width="160" height="56" rx="4" class="box-tool"/>
+  <text x="180" y="432" text-anchor="middle" class="label" font-weight="600">模型 LLM</text>
+  <text x="180" y="448" text-anchor="middle" class="label-mono-sm">generateText</text>
+  <text x="180" y="464" text-anchor="middle" class="note" font-size="9">EXTRACTION_PROMPT</text>
+
+  <rect x="290" y="414" width="200" height="56" rx="4" class="box-tool"/>
+  <text x="390" y="432" text-anchor="middle" class="label-mono-sm">StorageProvider</text>
+  <text x="390" y="447" text-anchor="middle" class="label-mono-sm">.saveMemories()</text>
+  <text x="390" y="463" text-anchor="middle" class="note" font-size="9">SQLite / 自定义 DB</text>
+
+  <rect x="520" y="414" width="160" height="56" rx="4" class="box-tool"/>
+  <text x="600" y="438" text-anchor="middle" class="label-mono" font-weight="600">## Memory</text>
+  <text x="600" y="456" text-anchor="middle" class="note" font-size="9">[category] value 列表</text>
+
+  <rect x="710" y="414" width="120" height="56" rx="4" class="box-tool"/>
+  <text x="770" y="434" text-anchor="middle" class="label-mono-sm">memory.ts</text>
+  <text x="770" y="448" text-anchor="middle" class="note" font-size="10">122 行</text>
+  <text x="770" y="464" text-anchor="middle" class="note" font-size="10">cap 20 / 4K 字符</text>
+
+  <path d="M 260 442 L 290 442" class="arrow" marker-end="url(#m-arr)"/>
+  <path d="M 490 442 L 520 442" class="arrow" marker-end="url(#m-arr)"/>
+  <path d="M 680 442 L 710 442" class="arrow" marker-end="url(#m-arr)"/>
+
+  <!-- Legend -->
+  <rect x="40" y="500" width="800" height="60" fill="#f6f7f9" stroke="#5a5a5a" rx="4"/>
+  <text x="55" y="520" class="label" font-weight="600" fill="#1a2233">关键观察：</text>
+  <text x="55" y="538" class="label">1. 三条都是 try/catch 包裹（<tspan font-family="'SF Mono', Consolas, monospace">loop.ts:46-71</tspan>），任意一条 throw → console.warn 或 skip，<tspan font-weight="600">不会阻塞用户问答</tspan></text>
+  <text x="55" y="554" class="label">2. 路径 2 的「4 类型」（user/feedback/project/reference）与路径 3 的「4 category」（fact/preference/context/correction）<tspan font-weight="600">完全不重合</tspan> —— 真坑</text>
+</svg>

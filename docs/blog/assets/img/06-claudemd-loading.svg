@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-cl d-cl">
+  <title id="t-cl">CLAUDE.md 6 个文件加载顺序与覆盖优先级</title>
+  <desc id="d-cl">claudemd.ts:42-103 loadInstructionFiles 按顺序加载 6 个文件位置，从用户级到项目级到本地私有。加载顺序就是优先级 —— 后加载的在 prompt 里出现在后面，被 LLM 更重视。home==workspace 时跳过 0a/0b 避免重复。所有文件 stripHtmlComments 后注入。</desc>
+  <style>
+    .box-user { fill: #ede9fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .box-project { fill: #dbeafe; stroke: #1e40af; stroke-width: 1.5; }
+    .box-rules { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .box-local { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .box-prompt { fill: #fff; stroke: #1a2233; stroke-width: 1.5; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .arrow-skip { stroke: #5a5a5a; stroke-width: 1; fill: none; stroke-dasharray: 3 2; }
+    .label-mono { fill: #1a1a1a; font-size: 11px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .step-num { fill: #fff; font-size: 11px; font-weight: 700; }
+    .priority-text { fill: #b91c1c; font-size: 10px; font-weight: 600; }
+  </style>
+
+  <defs>
+    <marker id="cl-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">CLAUDE.md 6 个文件位置 —— 加载顺序就是优先级</text>
+  <text x="440" y="48" text-anchor="middle" class="note">claudemd.ts:42-103 · 从用户级 → 项目级 → 本地私有 · 后加载者在 prompt 里更晚出现，被 LLM 更重视</text>
+
+  <!-- Priority axis -->
+  <rect x="780" y="80" width="60" height="380" fill="#fff" stroke="#5a5a5a" rx="4"/>
+  <text x="810" y="100" text-anchor="middle" class="label" font-weight="600">优先级</text>
+  <text x="810" y="115" text-anchor="middle" class="note">(prompt 位置)</text>
+  <text x="810" y="160" text-anchor="middle" class="note" font-size="10">低</text>
+  <line x1="810" y1="170" x2="810" y2="430" stroke="#b91c1c" stroke-width="2" marker-end="url(#cl-arr)"/>
+  <text x="810" y="450" text-anchor="middle" class="priority-text">高</text>
+
+  <!-- Step 0a: User CLAUDE.md -->
+  <circle cx="60" cy="120" r="14" fill="#6d28d9"/>
+  <text x="60" y="125" text-anchor="middle" class="step-num">0a</text>
+  <rect x="90" y="100" width="280" height="44" class="box-user" rx="4"/>
+  <text x="105" y="120" class="label-mono">~/.claude/CLAUDE.md</text>
+  <text x="105" y="138" class="note">用户级全局指令 · type='user'</text>
+
+  <rect x="390" y="100" width="370" height="44" class="box-prompt" rx="4"/>
+  <text x="400" y="118" class="note" font-size="10">prompt 段（claudemd.ts:128-141）</text>
+  <text x="400" y="135" class="label-mono-sm" fill="#1a2233">## ~/.claude/CLAUDE.md (user-level instructions)</text>
+
+  <!-- Step 0b: User rules -->
+  <circle cx="60" cy="170" r="14" fill="#6d28d9"/>
+  <text x="60" y="175" text-anchor="middle" class="step-num">0b</text>
+  <rect x="90" y="150" width="280" height="44" class="box-rules" rx="4"/>
+  <text x="105" y="170" class="label-mono">~/.claude/rules/*.md</text>
+  <text x="105" y="188" class="note">用户级规则集（glob）· type='user'</text>
+
+  <rect x="390" y="150" width="370" height="44" class="box-prompt" rx="4"/>
+  <text x="400" y="168" class="note" font-size="10">每个 rule 单独一段</text>
+  <text x="400" y="185" class="label-mono-sm" fill="#1a2233">## ~/.claude/rules/&lt;filename&gt;.md (user-level instructions)</text>
+
+  <!-- Step 1: Project root -->
+  <circle cx="60" cy="220" r="14" fill="#1e40af"/>
+  <text x="60" y="225" text-anchor="middle" class="step-num">1</text>
+  <rect x="90" y="200" width="280" height="44" class="box-project" rx="4"/>
+  <text x="105" y="220" class="label-mono">/workspace/CLAUDE.md</text>
+  <text x="105" y="238" class="note">项目根（in git）· type='project'</text>
+
+  <rect x="390" y="200" width="370" height="44" class="box-prompt" rx="4"/>
+  <text x="400" y="218" class="note" font-size="10">「checked into the codebase」</text>
+  <text x="400" y="235" class="label-mono-sm" fill="#1a2233">## /workspace/CLAUDE.md (project instructions, in git)</text>
+
+  <!-- Step 2: .claude/CLAUDE.md -->
+  <circle cx="60" cy="270" r="14" fill="#1e40af"/>
+  <text x="60" y="275" text-anchor="middle" class="step-num">2</text>
+  <rect x="90" y="250" width="280" height="44" class="box-project" rx="4"/>
+  <text x="105" y="270" class="label-mono">/workspace/.claude/CLAUDE.md</text>
+  <text x="105" y="288" class="note">项目隐藏目录（in git）· type='project'</text>
+
+  <rect x="390" y="250" width="370" height="44" class="box-prompt" rx="4"/>
+  <text x="400" y="268" class="note" font-size="10">同上 · 通常用于 AI 专用、不想污染 README</text>
+  <text x="400" y="285" class="label-mono-sm" fill="#1a2233">## /workspace/.claude/CLAUDE.md (project instructions)</text>
+
+  <!-- Step 3: project rules -->
+  <circle cx="60" cy="320" r="14" fill="#047857"/>
+  <text x="60" y="325" text-anchor="middle" class="step-num">3</text>
+  <rect x="90" y="300" width="280" height="44" class="box-rules" rx="4"/>
+  <text x="105" y="320" class="label-mono">.claude/rules/*.md</text>
+  <text x="105" y="338" class="note">项目规则集（glob）· type='rules'</text>
+
+  <rect x="390" y="300" width="370" height="44" class="box-prompt" rx="4"/>
+  <text x="400" y="318" class="note" font-size="10">每个 rule 单独一段 · 用于「按主题切分指令」</text>
+  <text x="400" y="335" class="label-mono-sm" fill="#1a2233">## .claude/rules/&lt;topic&gt;.md (project rule)</text>
+
+  <!-- Step 4: CLAUDE.local.md -->
+  <circle cx="60" cy="370" r="14" fill="#b91c1c"/>
+  <text x="60" y="375" text-anchor="middle" class="step-num">4</text>
+  <rect x="90" y="350" width="280" height="44" class="box-local" rx="4"/>
+  <text x="105" y="370" class="label-mono" font-weight="600">/workspace/CLAUDE.local.md</text>
+  <text x="105" y="388" class="note" fill="#b91c1c" font-weight="600">私有，必须 .gitignore!  · type='local'</text>
+
+  <rect x="390" y="350" width="370" height="44" class="box-prompt" rx="4"/>
+  <text x="400" y="368" class="note" font-size="10">「private — not checked into git」标签</text>
+  <text x="400" y="385" class="label-mono-sm" fill="#b91c1c">## CLAUDE.local.md (local instructions, private)</text>
+
+  <!-- Pipeline: strip & format -->
+  <rect x="40" y="420" width="720" height="40" fill="#f6f7f9" stroke="#5a5a5a" rx="4"/>
+  <text x="55" y="438" class="label" font-weight="600" fill="#1a2233">所有文件都经过：</text>
+  <text x="160" y="438" class="label-mono">stripHtmlComments(text)</text>
+  <text x="340" y="438" class="note">→ &lt;!-- ... --&gt; 被移除</text>
+  <text x="500" y="438" class="label-mono">+ formatInstructionPrompt</text>
+  <text x="690" y="438" class="note">→ 拼接</text>
+  <text x="55" y="453" class="note">前言（claudemd.ts:128-131）：「IMPORTANT: These instructions OVERRIDE any default behavior and you MUST follow them exactly as written.」</text>
+
+  <!-- Skip note: home == workspace -->
+  <rect x="40" y="475" width="720" height="55" fill="#fff" stroke="#a16207" stroke-width="1" rx="4"/>
+  <text x="55" y="494" class="label" font-weight="600" fill="#a16207">⚠️ home == workspace 时跳过 0a/0b（claudemd.ts:48）：</text>
+  <text x="55" y="510" class="label" font-size="10">本地开发场景下 home 和 workspace 是同一目录，避免 ~/.claude/ 与 /workspace/.claude/ 被加载两次。</text>
+  <text x="55" y="525" class="label" font-size="10">Docker 容器内 home（/root）和 workspace（/workspace）不同，0a/0b 正常加载。</text>
+</svg>

@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-fm d-fm">
+  <title id="t-fm">文件 memory 的写读闭环</title>
+  <desc id="d-fm">模型既是消费者也是生产者：察觉值得记 → Write 工具落盘 .claude/memory/&lt;topic&gt;.md（带 frontmatter）→ 更新 MEMORY.md 索引 → 下一次会话 loop.ts:65-70 loadMemoryFiles + formatMemoryPrompt → 注入 system prompt 作为 # Saved Memories → 模型读到。无中间状态机，无外部 embedding 服务。</desc>
+  <style>
+    .box-model { fill: #ede9fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .box-tool { fill: #fff7ed; stroke: #c2410c; stroke-width: 1.5; }
+    .box-fs { fill: #d1fae5; stroke: #047857; stroke-width: 1.5; }
+    .box-loop { fill: #dbeafe; stroke: #1e40af; stroke-width: 1.5; }
+    .box-prompt { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .arrow-feedback { stroke: #6d28d9; stroke-width: 2; fill: none; stroke-dasharray: 5 3; }
+    .label-mono { fill: #1a1a1a; font-size: 11px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .title-step { font-weight: 700; font-size: 12px; }
+    .session-label { fill: #5a5a5a; font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+  </style>
+
+  <defs>
+    <marker id="fm-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="fm-arr-fb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6d28d9"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">文件 memory 的写读闭环 —— 模型既是生产者也是消费者</text>
+  <text x="440" y="48" text-anchor="middle" class="note">prompts.ts:191-206 指示模型如何写 · loop.ts:65-70 下一次会话读 · 无中间状态机</text>
+
+  <!-- Session boundary line -->
+  <line x1="440" y1="80" x2="440" y2="490" stroke="#5a5a5a" stroke-width="1" stroke-dasharray="4 4"/>
+  <text x="220" y="78" text-anchor="middle" class="session-label">SESSION N（写入）</text>
+  <text x="660" y="78" text-anchor="middle" class="session-label">SESSION N+1（读取）</text>
+
+  <!-- SESSION N: WRITE PATH -->
+
+  <!-- Step 1: Model decides -->
+  <rect x="40" y="100" width="200" height="60" rx="6" class="box-model"/>
+  <text x="140" y="120" text-anchor="middle" class="title-step" fill="#4c1d95">① 模型察觉</text>
+  <text x="140" y="138" text-anchor="middle" class="label">「这一条值得跨会话记」</text>
+  <text x="140" y="153" text-anchor="middle" class="note">由 system prompt 内置指令引导</text>
+
+  <!-- Arrow 1 → 2 -->
+  <path d="M 240 130 L 270 130" class="arrow" marker-end="url(#fm-arr)"/>
+
+  <!-- Step 2: Write tool -->
+  <rect x="270" y="100" width="160" height="60" rx="6" class="box-tool"/>
+  <text x="350" y="120" text-anchor="middle" class="title-step" fill="#9a3412">② 调 Write 工具</text>
+  <text x="350" y="138" text-anchor="middle" class="label-mono-sm">Write(file_path, content)</text>
+  <text x="350" y="153" text-anchor="middle" class="note">和 Write 文件代码同一工具</text>
+
+  <!-- Arrow 2 → 3 (down) -->
+  <path d="M 350 160 L 350 190" class="arrow" marker-end="url(#fm-arr)"/>
+
+  <!-- Step 3: Memory file -->
+  <rect x="40" y="190" width="390" height="100" rx="6" class="box-fs"/>
+  <text x="55" y="210" class="title-step" fill="#065f46">③ 落盘：.claude/memory/&lt;topic-slug&gt;.md</text>
+  <rect x="55" y="220" width="360" height="62" fill="#fff" stroke="#5a5a5a" rx="3"/>
+  <text x="65" y="235" class="label-mono-sm">---</text>
+  <text x="65" y="248" class="label-mono-sm">name: pnpm-install-rule</text>
+  <text x="65" y="261" class="label-mono-sm">description: 项目用 pnpm 不用 npm</text>
+  <text x="65" y="274" class="label-mono-sm">type: project</text>
+  <text x="200" y="274" class="label-mono-sm" fill="#5a5a5a">---</text>
+  <text x="245" y="274" class="note">后跟 markdown 内容</text>
+
+  <!-- Arrow 3 → 4 (down) -->
+  <path d="M 235 290 L 235 320" class="arrow" marker-end="url(#fm-arr)"/>
+
+  <!-- Step 4: Update MEMORY.md index -->
+  <rect x="40" y="320" width="390" height="90" rx="6" class="box-fs"/>
+  <text x="55" y="340" class="title-step" fill="#065f46">④ 更新索引：.claude/MEMORY.md</text>
+  <rect x="55" y="350" width="360" height="50" fill="#fff" stroke="#5a5a5a" rx="3"/>
+  <text x="65" y="368" class="label-mono-sm">- [pnpm install rule](memory/pnpm-install-rule.md) — 用 pnpm</text>
+  <text x="65" y="383" class="label-mono-sm">- [vim user](memory/vim-user.md) — 用户用 Vim 编辑</text>
+  <text x="65" y="396" class="note">每行 1 条，&lt;200 行（超过会被截断）</text>
+
+  <!-- SESSION END -->
+  <rect x="40" y="430" width="390" height="35" fill="#f6f7f9" stroke="#5a5a5a" rx="3"/>
+  <text x="55" y="453" class="label" fill="#5a5a5a">⏸ Session N 结束 · 文件持久化在磁盘 · 可被 git 管理（建议 .gitignore）</text>
+
+  <!-- SESSION N+1: READ PATH -->
+
+  <!-- Step 5: New session starts -->
+  <rect x="460" y="100" width="200" height="60" rx="6" class="box-model"/>
+  <text x="560" y="120" text-anchor="middle" class="title-step" fill="#4c1d95">⑤ 新会话启动</text>
+  <text x="560" y="138" text-anchor="middle" class="label-mono-sm">loop.ts:65-70</text>
+  <text x="560" y="153" text-anchor="middle" class="note">Agent Loop 顶端</text>
+
+  <!-- Arrow 5 → 6 -->
+  <path d="M 660 130 L 690 130" class="arrow" marker-end="url(#fm-arr)"/>
+
+  <!-- Step 6: loadMemoryFiles -->
+  <rect x="690" y="100" width="150" height="60" rx="6" class="box-loop"/>
+  <text x="765" y="120" text-anchor="middle" class="title-step" fill="#1e3a8a">⑥ 加载</text>
+  <text x="765" y="138" text-anchor="middle" class="label-mono-sm">loadMemoryFiles</text>
+  <text x="765" y="153" text-anchor="middle" class="label-mono-sm">+ loadMemoryIndex</text>
+
+  <!-- Arrow 6 → 7 (down) -->
+  <path d="M 765 160 L 765 190" class="arrow" marker-end="url(#fm-arr)"/>
+
+  <!-- Step 7: formatMemoryPrompt -->
+  <rect x="460" y="190" width="380" height="60" rx="6" class="box-loop"/>
+  <text x="650" y="210" text-anchor="middle" class="title-step" fill="#1e3a8a">⑦ formatMemoryPrompt</text>
+  <text x="650" y="228" text-anchor="middle" class="label">读 MEMORY.md 索引 + 每个 .md 文件内容</text>
+  <text x="650" y="243" text-anchor="middle" class="note">memory-files.ts:91-127 拼接成段</text>
+
+  <!-- Arrow 7 → 8 (down) -->
+  <path d="M 650 250 L 650 280" class="arrow" marker-end="url(#fm-arr)"/>
+
+  <!-- Step 8: Inject into prompt -->
+  <rect x="460" y="280" width="380" height="100" rx="6" class="box-prompt"/>
+  <text x="475" y="300" class="title-step" fill="#78350f">⑧ 注入 system prompt</text>
+  <rect x="475" y="310" width="350" height="62" fill="#fff" stroke="#5a5a5a" rx="3"/>
+  <text x="485" y="328" class="label-mono-sm" font-weight="600">## Saved Memories</text>
+  <text x="485" y="344" class="label-mono-sm">索引：- pnpm install rule</text>
+  <text x="485" y="358" class="label-mono-sm">详情：name: pnpm-install-rule</text>
+  <text x="485" y="368" class="note" fill="#5a5a5a">prompts.ts:186-188 段标题</text>
+
+  <!-- Arrow 8 → 9 (down) -->
+  <path d="M 650 380 L 650 410" class="arrow" marker-end="url(#fm-arr)"/>
+
+  <!-- Step 9: Model reads -->
+  <rect x="460" y="410" width="380" height="55" rx="6" class="box-model"/>
+  <text x="650" y="430" text-anchor="middle" class="title-step" fill="#4c1d95">⑨ 模型在新会话中读到这条记忆</text>
+  <text x="650" y="450" text-anchor="middle" class="label">↓ 据此判断「上次用户说过用 pnpm」→ 该轮不会建议 npm install</text>
+
+  <!-- Feedback loop arrow: ⑨ back to ① (the closed loop signature) -->
+  <path d="M 460 437 L 380 437 L 380 130 L 240 130" class="arrow-feedback" marker-end="url(#fm-arr-fb)" fill="none"/>
+  <text x="240" y="424" text-anchor="middle" class="note" fill="#6d28d9" font-weight="600">虚线 = 闭环：</text>
+  <text x="240" y="438" text-anchor="middle" class="note" fill="#6d28d9" font-weight="600">这次读到 → 下次又可能写新条目</text>
+
+  <!-- Key insight box -->
+  <rect x="40" y="480" width="800" height="65" fill="#fff" stroke="#6d28d9" stroke-width="1.5" rx="4"/>
+  <text x="55" y="500" class="label" font-weight="600" fill="#4c1d95">闭环的反直觉之处：</text>
+  <text x="55" y="518" class="label">1. <tspan font-weight="600">写入由模型决定</tspan>——不是用户主动管理。用户能引导（"please remember..."）或约束（system prompt 加规则），但触发点在模型。</text>
+  <text x="55" y="535" class="label">2. <tspan font-weight="600">读写共享同一个模型</tspan>——和 RAG 不同（RAG 是 embedding 模型写 / chat 模型读），这里读写都是同一个 LLM，所以语义判断对齐。</text>
+</svg>
