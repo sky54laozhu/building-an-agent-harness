@@ -225,7 +225,7 @@ for (const [, resolve] of this._pendingUserAnswers) {
 }
 ```
 
-Agent 跑到"问用户要授权"那一步停下来等 [第 06 篇](06-permissions.md) 的 permission UI——这时连接断了 grace 过完 abort 触发，等待的 promise 不能就这么悬着，全部 resolve 成 'deny'，让 agent 走"拒绝"分支正常退出。**Abort 不只是发 signal，还要清理所有"等用户"的状态**。
+Agent 跑到"问用户要授权"那一步停下来等 [第 08 篇](08-permissions-sandbox.md) 的 permission UI——这时连接断了 grace 过完 abort 触发，等待的 promise 不能就这么悬着，全部 resolve 成 'deny'，让 agent 走"拒绝"分支正常退出。**Abort 不只是发 signal，还要清理所有"等用户"的状态**。
 
 **4. 客户端 pendingQueue 缓存断线期间的 send（`use-websocket.ts:75-78, 157-163`）**
 

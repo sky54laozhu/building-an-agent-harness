@@ -225,7 +225,7 @@ for (const [, resolve] of this._pendingUserAnswers) {
 }
 ```
 
-Agent paused at the "ask user for permission" step waiting for the [Part 06](06-permissions.md) permission UI — connection drops, grace expires, abort fires. The waiting promises can't just hang; resolve them all to 'deny' so the agent can take its "rejected" branch and exit cleanly. **Abort isn't only firing the signal — it must also clear every "waiting on user" state.**
+Agent paused at the "ask user for permission" step waiting for the [Part 08](08-permissions-sandbox.md) permission UI — connection drops, grace expires, abort fires. The waiting promises can't just hang; resolve them all to 'deny' so the agent can take its "rejected" branch and exit cleanly. **Abort isn't only firing the signal — it must also clear every "waiting on user" state.**
 
 **4. Client pendingQueue buffers sends during disconnect (`use-websocket.ts:75-78, 157-163`)**
 
