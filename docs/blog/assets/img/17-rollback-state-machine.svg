@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-rb d-rb">
+  <title id="t-rb">阶梯失败回退状态机 · 软回退 → 硬回滚</title>
+  <desc id="d-rb">展示 HarWork canary 阶梯失败时的状态机：阶梯 N 质量门限失败 → 软回退到上一级阶梯 N-1（apply_canary_split_percent previous_canary_step）→ 等待指数退避（15s→45s→135s→180s cap）→ 重试阶梯 N。MAX_RETRIES（默认 1）次后仍失败 → trap 'rollback_on_failure $?' EXIT 触发硬回滚（镜像 swap 到 previous_image_tag）。强调"软在前、硬在后"的设计哲学。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .state-active { fill: #fef9c3; stroke: #a16207; stroke-width: 2; }
+    .state-fail { fill: #fed7aa; stroke: #c2410c; stroke-width: 2; stroke-dasharray: 4 2; }
+    .state-fallback { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 2; }
+    .state-wait { fill: #ddd6fe; stroke: #6d28d9; stroke-width: 2; }
+    .state-retry { fill: #dcfce7; stroke: #15803d; stroke-width: 2; }
+    .state-rollback { fill: #fecaca; stroke: #b91c1c; stroke-width: 2.5; }
+    .state-ok { fill: #bbf7d0; stroke: #15803d; stroke-width: 2; }
+    .arrow { stroke: #1a1a1a; stroke-width: 1.5; fill: none; }
+    .arrow-ok { stroke: #15803d; stroke-width: 1.8; fill: none; }
+    .arrow-fail { stroke: #c2410c; stroke-width: 1.8; fill: none; stroke-dasharray: 5 3; }
+    .arrow-hard { stroke: #b91c1c; stroke-width: 2.2; fill: none; }
+    .arrow-loop { stroke: #6d28d9; stroke-width: 1.5; fill: none; }
+  </style>
+  <defs>
+    <marker id="ar-blk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a"/>
+    </marker>
+    <marker id="ar-grn" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#15803d"/>
+    </marker>
+    <marker id="ar-org" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#c2410c"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+    <marker id="ar-pur" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#6d28d9"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="26" class="header" font-size="14">阶梯失败回退状态机 · 软回退 → 硬回滚</text>
+  <text x="20" y="44" class="note">release.yml:946-965 compute_recovery_wait_seconds · :1141-1180 阶梯重试 · :692-728 rollback_on_failure</text>
+
+  <!-- State 1: ramp step N active -->
+  <rect x="40" y="80" width="180" height="80" rx="8" class="state-active"/>
+  <text x="130" y="102" text-anchor="middle" class="label header" fill="#a16207">① 阶梯 N (e.g. 25%)</text>
+  <text x="130" y="120" text-anchor="middle" class="label-mono-sm">apply_canary_split_percent 25</text>
+  <text x="130" y="136" text-anchor="middle" class="label-sm">run_canary_step_validation</text>
+  <text x="130" y="152" text-anchor="middle" class="note">smoke + stable gate + canary gate</text>
+
+  <!-- State 2: gate fail -->
+  <rect x="280" y="80" width="180" height="80" rx="8" class="state-fail"/>
+  <text x="370" y="102" text-anchor="middle" class="label header" fill="#c2410c">② 质量门限失败</text>
+  <text x="370" y="120" text-anchor="middle" class="label-sm">failure% &gt; 20 ∨</text>
+  <text x="370" y="136" text-anchor="middle" class="label-sm">avg &gt; 1500ms ∨</text>
+  <text x="370" y="152" text-anchor="middle" class="label-sm" fill="#6d28d9">P95 &gt; 2500ms</text>
+
+  <!-- State 3: soft fallback -->
+  <rect x="520" y="80" width="180" height="80" rx="8" class="state-fallback"/>
+  <text x="610" y="102" text-anchor="middle" class="label header" fill="#1d4ed8">③ 软回退到 N-1</text>
+  <text x="610" y="120" text-anchor="middle" class="label-mono-sm">apply_canary_split_percent</text>
+  <text x="610" y="134" text-anchor="middle" class="label-mono-sm">  $previous_canary_step</text>
+  <text x="610" y="152" text-anchor="middle" class="note">25% → 退回 10% (流量切流)</text>
+
+  <!-- State 4: backoff wait -->
+  <rect x="520" y="200" width="180" height="100" rx="8" class="state-wait"/>
+  <text x="610" y="222" text-anchor="middle" class="label header" fill="#6d28d9">④ 指数退避等待</text>
+  <text x="610" y="240" text-anchor="middle" class="label-mono-sm">compute_recovery_wait_seconds</text>
+  <text x="530" y="260" class="label-sm">base = 15s</text>
+  <text x="530" y="276" class="label-sm">multiplier = 3x</text>
+  <text x="530" y="292" class="label-sm">cap = 180s</text>
+  <text x="700" y="270" text-anchor="end" class="label-mono-sm" fill="#6d28d9">15→45→135→180</text>
+
+  <!-- State 5: retry -->
+  <rect x="280" y="200" width="180" height="100" rx="8" class="state-retry"/>
+  <text x="370" y="222" text-anchor="middle" class="label header" fill="#15803d">⑤ 重试阶梯 N</text>
+  <text x="370" y="240" text-anchor="middle" class="label-mono-sm">apply_canary_split_percent 25</text>
+  <text x="370" y="256" text-anchor="middle" class="label-sm">run_canary_step_validation</text>
+  <text x="370" y="278" text-anchor="middle" class="note">attempt++ 比对 MAX_RETRIES</text>
+  <text x="370" y="292" text-anchor="middle" class="label-mono-sm">默认 MAX_RETRIES = 1</text>
+
+  <!-- Outcome OK: continue ramp -->
+  <rect x="40" y="200" width="180" height="100" rx="8" class="state-ok"/>
+  <text x="130" y="222" text-anchor="middle" class="label header" fill="#15803d">✓ 阶梯通过</text>
+  <text x="130" y="240" text-anchor="middle" class="label-sm">→ 进入下一级阶梯</text>
+  <text x="130" y="256" text-anchor="middle" class="label-mono-sm">25% → 50% → 100%</text>
+  <text x="130" y="280" text-anchor="middle" class="note">80% 阶梯失败 = 临时抖动</text>
+  <text x="130" y="294" text-anchor="middle" class="note">软回退 + 重试就能恢复</text>
+
+  <!-- State 6: hard rollback (image swap) -->
+  <rect x="280" y="370" width="340" height="140" rx="8" class="state-rollback"/>
+  <text x="450" y="394" text-anchor="middle" class="label header" fill="#b91c1c">⑥ 硬回滚 · 整单 image swap</text>
+  <text x="450" y="412" text-anchor="middle" class="label-mono-sm">trap 'rollback_on_failure $?' EXIT (line 729)</text>
+  <text x="290" y="436" class="label-sm">触发条件：MAX_RETRIES 次后仍失败</text>
+  <text x="290" y="454" class="label-mono-sm">rollback_on_failure() {</text>
+  <text x="290" y="470" class="label-mono-sm">  docker compose up -d --no-build</text>
+  <text x="290" y="486" class="label-mono-sm">    web=&lt;previous_image&gt; engine=&lt;previous&gt;</text>
+  <text x="290" y="502" class="label-mono-sm">  apply_canary_split_percent 0  # 关 canary</text>
+
+  <!-- Arrows -->
+  <line x1="220" y1="120" x2="280" y2="120" class="arrow-fail" marker-end="url(#ar-org)"/>
+  <text x="250" y="112" text-anchor="middle" class="note" fill="#c2410c">fail</text>
+
+  <line x1="460" y1="120" x2="520" y2="120" class="arrow-fail" marker-end="url(#ar-org)"/>
+
+  <line x1="610" y1="160" x2="610" y2="200" class="arrow" marker-end="url(#ar-blk)"/>
+
+  <line x1="520" y1="250" x2="460" y2="250" class="arrow-loop" marker-end="url(#ar-pur)"/>
+  <text x="490" y="244" text-anchor="middle" class="note" fill="#6d28d9">wait done</text>
+
+  <!-- Retry succeeds -> back to OK / next step -->
+  <line x1="280" y1="240" x2="220" y2="240" class="arrow-ok" marker-end="url(#ar-grn)"/>
+  <text x="250" y="234" text-anchor="middle" class="note" fill="#15803d">pass</text>
+
+  <!-- OK -> loop back to next ramp step active (curved) -->
+  <path d="M 130 200 Q 130 175 130 160" class="arrow-ok" marker-end="url(#ar-grn)"/>
+
+  <!-- Retry fail AND retries exhausted -> hard rollback -->
+  <line x1="370" y1="300" x2="370" y2="370" class="arrow-hard" marker-end="url(#ar-red)"/>
+  <text x="378" y="335" class="label-mono-sm" fill="#b91c1c">attempt &gt; MAX_RETRIES</text>
+  <text x="378" y="350" class="note" fill="#b91c1c">trap 触发</text>
+
+  <!-- Side panel: design philosophy -->
+  <rect x="700" y="370" width="180" height="140" rx="6" fill="#fff7ed" stroke="#ea580c"/>
+  <text x="790" y="392" text-anchor="middle" class="label header" fill="#ea580c">软在前、硬在后</text>
+  <text x="710" y="412" class="label-sm">80% "阶梯失败" 是：</text>
+  <text x="710" y="427" class="label-sm">• GC pause</text>
+  <text x="710" y="441" class="label-sm">• 网络毛刺</text>
+  <text x="710" y="455" class="label-sm">• 依赖瞬时慢</text>
+  <text x="710" y="475" class="label-sm">→ 软回退 + 重试就够</text>
+  <text x="710" y="495" class="label-sm" fill="#b91c1c">真 bug 才硬回滚</text>
+
+  <!-- Side panel: ramp ladder values -->
+  <rect x="40" y="340" width="220" height="170" rx="6" fill="#f0fdf4" stroke="#15803d"/>
+  <text x="150" y="360" text-anchor="middle" class="label header" fill="#15803d">退避序列</text>
+  <text x="50" y="380" class="label-sm">attempt 1 失败 → 等</text>
+  <text x="50" y="395" class="label-mono">  15s</text>
+  <text x="50" y="412" class="label-sm">attempt 2 失败 → 等</text>
+  <text x="50" y="427" class="label-mono">  45s</text>
+  <text x="50" y="444" class="label-sm">attempt 3 失败 → 等</text>
+  <text x="50" y="459" class="label-mono">  135s</text>
+  <text x="50" y="476" class="label-sm">attempt 4+ 失败 → 等</text>
+  <text x="50" y="491" class="label-mono">  180s (cap)</text>
+  <text x="50" y="506" class="note">  multiplier 3x · cap 180s</text>
+
+  <!-- Footer -->
+  <rect x="20" y="525" width="860" height="40" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="30" y="544" class="label header">关键洞察：回退（ramp back）≠ 回滚（image swap）— 一个是软的、退到稳定阶梯；一个是硬的、整个 docker-compose 切回旧镜像。</text>
+  <text x="30" y="558" class="note">直觉是"阶梯失败 → 立刻回滚旧镜像"，但 80% 退化是临时抖动 — 软回退 + 等几十秒 + 重试就能恢复 = 既不放过真问题、又不被假阳性逼疯</text>
+</svg>

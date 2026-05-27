@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-rq d-rq">
+  <title id="t-rq">阶梯放量曲线 + 多探针质量门限</title>
+  <desc id="d-rq">展示 HarWork canary 放量的阶梯曲线（10% → 25% → 50% → 100%，每级间隔 phase_wait/step_count 默认 30s），并叠加 3 条多探针质量门限：失败率 20% / 平均延迟 1500ms / P95 延迟 2500ms。任一门限被超过 = 阶梯失败。重点突出 P95 vs avg 的差异 — 6 个样本里 5 个 50ms 1 个 5000ms，avg=875ms 通过 1500ms 门限但 P95=5000ms 直接超 2500ms 门限。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .axis { stroke: #1a1a1a; stroke-width: 1.5; fill: none; }
+    .grid { stroke: #d4d4d4; stroke-width: 0.5; fill: none; stroke-dasharray: 2 2; }
+    .ramp { stroke: #15803d; stroke-width: 2.5; fill: none; }
+    .ramp-fill { fill: #dcfce7; opacity: 0.4; }
+    .gate-line { stroke-width: 1.8; fill: none; stroke-dasharray: 6 3; }
+    .gate-fail { stroke: #b91c1c; }
+    .gate-avg { stroke: #ea580c; }
+    .gate-p95 { stroke: #6d28d9; }
+    .step-pt { fill: #15803d; }
+  </style>
+
+  <text x="20" y="26" class="header" font-size="14">阶梯放量曲线 + 多探针质量门限 · release.yml:840-944</text>
+  <text x="20" y="44" class="note">build_canary_ramp_steps 默认 10,25,50,100 · 每级 30s 观察窗 · 4 级 ≈ 2 分钟总观察</text>
+
+  <!-- Chart axes -->
+  <line x1="80" y1="80" x2="80" y2="380" class="axis"/>
+  <line x1="80" y1="380" x2="680" y2="380" class="axis"/>
+
+  <text x="40" y="84" class="label-sm">流量 %</text>
+  <text x="690" y="384" class="label-sm">t</text>
+
+  <!-- Y axis ticks -->
+  <line x1="75" y1="350" x2="80" y2="350" class="axis"/>
+  <text x="70" y="354" text-anchor="end" class="label-sm">0</text>
+  <line x1="75" y1="320" x2="80" y2="320" class="axis"/>
+  <text x="70" y="324" text-anchor="end" class="label-sm">10</text>
+  <line x1="75" y1="275" x2="80" y2="275" class="axis"/>
+  <text x="70" y="279" text-anchor="end" class="label-sm">25</text>
+  <line x1="75" y1="200" x2="80" y2="200" class="axis"/>
+  <text x="70" y="204" text-anchor="end" class="label-sm">50</text>
+  <line x1="75" y1="80" x2="80" y2="80" class="axis"/>
+  <text x="70" y="84" text-anchor="end" class="label-sm">100</text>
+
+  <!-- X axis ticks (time) -->
+  <line x1="200" y1="380" x2="200" y2="385" class="axis"/>
+  <text x="200" y="398" text-anchor="middle" class="label-sm">0s</text>
+  <line x1="320" y1="380" x2="320" y2="385" class="axis"/>
+  <text x="320" y="398" text-anchor="middle" class="label-sm">30s</text>
+  <line x1="440" y1="380" x2="440" y2="385" class="axis"/>
+  <text x="440" y="398" text-anchor="middle" class="label-sm">60s</text>
+  <line x1="560" y1="380" x2="560" y2="385" class="axis"/>
+  <text x="560" y="398" text-anchor="middle" class="label-sm">90s</text>
+  <line x1="680" y1="380" x2="680" y2="385" class="axis"/>
+  <text x="680" y="398" text-anchor="middle" class="label-sm">120s</text>
+
+  <!-- Grid -->
+  <line x1="80" y1="320" x2="680" y2="320" class="grid"/>
+  <line x1="80" y1="275" x2="680" y2="275" class="grid"/>
+  <line x1="80" y1="200" x2="680" y2="200" class="grid"/>
+
+  <!-- Ramp staircase fill -->
+  <path d="M 200 380 L 200 320 L 320 320 L 320 275 L 440 275 L 440 200 L 560 200 L 560 80 L 680 80 L 680 380 Z" class="ramp-fill"/>
+
+  <!-- Ramp staircase line -->
+  <path d="M 80 380 L 200 380 L 200 320 L 320 320 L 320 275 L 440 275 L 440 200 L 560 200 L 560 80 L 680 80" class="ramp"/>
+
+  <!-- Step points + labels -->
+  <circle cx="200" cy="320" r="5" class="step-pt"/>
+  <text x="205" y="312" class="label-mono-sm" fill="#15803d">10%</text>
+  <circle cx="320" cy="275" r="5" class="step-pt"/>
+  <text x="325" y="267" class="label-mono-sm" fill="#15803d">25%</text>
+  <circle cx="440" cy="200" r="5" class="step-pt"/>
+  <text x="445" y="192" class="label-mono-sm" fill="#15803d">50%</text>
+  <circle cx="560" cy="80" r="5" class="step-pt"/>
+  <text x="565" y="72" class="label-mono-sm" fill="#15803d">100%</text>
+
+  <!-- Quality gate validation tick at each step -->
+  <text x="200" y="425" text-anchor="middle" class="label-mono-sm" fill="#1a1a1a">✓ gate</text>
+  <text x="320" y="425" text-anchor="middle" class="label-mono-sm" fill="#1a1a1a">✓ gate</text>
+  <text x="440" y="425" text-anchor="middle" class="label-mono-sm" fill="#1a1a1a">✓ gate</text>
+  <text x="560" y="425" text-anchor="middle" class="label-mono-sm" fill="#1a1a1a">✓ gate</text>
+
+  <!-- Quality gate thresholds on side panel -->
+  <rect x="700" y="80" width="170" height="160" rx="6" fill="#fff" stroke="#6d28d9" stroke-width="1.5"/>
+  <text x="785" y="100" text-anchor="middle" class="label header" fill="#6d28d9">质量门限 (任一超 = 失败)</text>
+
+  <line x1="710" y1="115" x2="730" y2="115" class="gate-line gate-fail"/>
+  <text x="735" y="118" class="label-mono-sm">failure% ≤ 20</text>
+  <text x="735" y="132" class="note">MAX_FAILURE_PERCENT</text>
+
+  <line x1="710" y1="150" x2="730" y2="150" class="gate-line gate-avg"/>
+  <text x="735" y="153" class="label-mono-sm">avg ≤ 1500ms</text>
+  <text x="735" y="167" class="note">MAX_AVG_LATENCY_MS</text>
+
+  <line x1="710" y1="185" x2="730" y2="185" class="gate-line gate-p95"/>
+  <text x="735" y="188" class="label-mono-sm" fill="#6d28d9">P95 ≤ 2500ms ★</text>
+  <text x="735" y="202" class="note">MAX_P95_LATENCY_MS</text>
+
+  <text x="710" y="222" class="label-sm">每探针采 6 次</text>
+  <text x="710" y="236" class="note">PRODUCTION_CANARY_</text>
+
+  <!-- Right panel: P95 vs avg counter-example -->
+  <rect x="700" y="255" width="170" height="170" rx="6" fill="#fef9c3" stroke="#a16207"/>
+  <text x="785" y="275" text-anchor="middle" class="label header" fill="#a16207">P95 &gt; avg 的反直觉</text>
+  <text x="710" y="294" class="label-sm">6 个样本：</text>
+  <text x="710" y="310" class="label-mono-sm">[50, 50, 50, 50, 50, 5000]</text>
+  <text x="710" y="328" class="label-sm">avg = 875ms</text>
+  <text x="710" y="343" class="label-mono-sm" fill="#15803d">→ 通过 1500ms 门限 ✓</text>
+  <text x="710" y="362" class="label-sm">P95 = 5000ms</text>
+  <text x="710" y="377" class="label-mono-sm" fill="#b91c1c">→ 超 2500ms 门限 ✗</text>
+  <text x="710" y="398" class="note">P95 抓住尾延迟退化</text>
+  <text x="710" y="412" class="note">"大多数没事但一小撮卡死"</text>
+
+  <!-- Phase explanations below chart -->
+  <rect x="20" y="445" width="660" height="100" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="30" y="463" class="label header">每一级阶梯都跑 run_canary_step_validation (4 步)</text>
+  <text x="30" y="481" class="label-sm">① smoke (stable 桶)　② canary smoke (X-Harwork-Canary: always 强制)　③ stable 桶质量门限　④ canary 桶质量门限</text>
+  <text x="30" y="499" class="label-sm">4 步全过才放量到下一级 · 任一失败 → 阶梯失败 → 触发软回退 (退到上一级) + 指数退避重试</text>
+  <text x="30" y="518" class="note">P95 算法 :894-904 — p95_rank=$(((95 * successes + 99) / 100)) · sort -n $latency_samples_file | sed -n "${p95_rank}p"</text>
+  <text x="30" y="535" class="note">6 行 bash + curl --write-out '%{time_total}' 就够 — 不需要 Datadog / New Relic</text>
+</svg>

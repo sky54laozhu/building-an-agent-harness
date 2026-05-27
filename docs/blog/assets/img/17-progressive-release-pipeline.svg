@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 580" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-pp d-pp">
+  <title id="t-pp">7 件套渐进发布全景流水线</title>
+  <desc id="d-pp">展示 HarWork CI/CD 流水线的全貌：3 种触发模式（push main / push v* tag / workflow_dispatch）→ CI 基础门禁（lint/test）→ publish-engine 与 publish-web 并行构建镜像 → deploy-staging（含冻结窗口校验 + smoke）→ 晋升门禁（require_staging_promotion + GitHub Environment 审批 + production_confirmation）→ deploy-production 内嵌 web canary 阶梯 + engine full。每个节点都标注关键 release.yml 行号。</desc>
+  <style>
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .header { font-weight: 700; font-size: 12px; }
+    .trigger { fill: #ddd6fe; stroke: #6d28d9; stroke-width: 1.5; }
+    .ci { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 1.5; }
+    .build { fill: #fef3c7; stroke: #b45309; stroke-width: 1.5; }
+    .staging { fill: #fed7aa; stroke: #c2410c; stroke-width: 1.5; }
+    .gate { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; stroke-dasharray: 4 2; }
+    .prod { fill: #fecaca; stroke: #b91c1c; stroke-width: 1.5; }
+    .canary { fill: #dcfce7; stroke: #15803d; stroke-width: 1.5; }
+    .engine { fill: #ccfbf1; stroke: #0f766e; stroke-width: 1.5; }
+    .arrow { stroke: #1a1a1a; stroke-width: 1.5; fill: none; }
+    .arrow-prod { stroke: #b91c1c; stroke-width: 1.8; fill: none; }
+  </style>
+  <defs>
+    <marker id="ar-blk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a1a1a"/>
+    </marker>
+    <marker id="ar-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+  </defs>
+
+  <text x="20" y="26" class="header" font-size="14">7 件套渐进发布 · 全景流水线</text>
+  <text x="20" y="44" class="note">release.yml 1239 行 + ci.yml 97 行 + nginx.canary.conf.template 120 行</text>
+
+  <!-- Triggers -->
+  <rect x="20" y="70" width="160" height="50" rx="6" class="trigger"/>
+  <text x="100" y="90" text-anchor="middle" class="label header">① push main</text>
+  <text x="100" y="106" text-anchor="middle" class="label-mono-sm">tag = sha-&lt;12&gt;</text>
+
+  <rect x="20" y="135" width="160" height="50" rx="6" class="trigger"/>
+  <text x="100" y="155" text-anchor="middle" class="label header">② push v* tag</text>
+  <text x="100" y="171" text-anchor="middle" class="label-mono-sm">tag = git tag</text>
+
+  <rect x="20" y="200" width="160" height="60" rx="6" class="trigger"/>
+  <text x="100" y="220" text-anchor="middle" class="label header">③ workflow_dispatch</text>
+  <text x="100" y="236" text-anchor="middle" class="label-mono-sm">30 inputs · 全可调</text>
+  <text x="100" y="251" text-anchor="middle" class="note">支持回滚到历史镜像</text>
+
+  <text x="100" y="280" text-anchor="middle" class="note">release.yml:134-138</text>
+
+  <!-- CI gates -->
+  <rect x="210" y="120" width="140" height="100" rx="6" class="ci"/>
+  <text x="280" y="142" text-anchor="middle" class="label header" fill="#1d4ed8">CI 基础门禁</text>
+  <text x="280" y="160" text-anchor="middle" class="label-mono-sm">ci.yml</text>
+  <text x="280" y="178" text-anchor="middle" class="label-sm">lint (eslint + tsc)</text>
+  <text x="280" y="194" text-anchor="middle" class="label-sm">test-engine</text>
+  <text x="280" y="210" text-anchor="middle" class="label-sm">test-web</text>
+
+  <!-- Publish jobs -->
+  <rect x="380" y="80" width="160" height="60" rx="6" class="build"/>
+  <text x="460" y="102" text-anchor="middle" class="label header" fill="#b45309">publish-engine</text>
+  <text x="460" y="118" text-anchor="middle" class="label-mono-sm">GHCR push</text>
+  <text x="460" y="132" text-anchor="middle" class="note">:149-202</text>
+
+  <rect x="380" y="160" width="160" height="60" rx="6" class="build"/>
+  <text x="460" y="182" text-anchor="middle" class="label header" fill="#b45309">publish-web</text>
+  <text x="460" y="198" text-anchor="middle" class="label-mono-sm">GHCR push</text>
+  <text x="460" y="212" text-anchor="middle" class="note">:204-257</text>
+
+  <!-- Staging -->
+  <rect x="570" y="80" width="160" height="140" rx="6" class="staging"/>
+  <text x="650" y="102" text-anchor="middle" class="label header" fill="#c2410c">deploy-staging</text>
+  <text x="650" y="120" text-anchor="middle" class="label-mono-sm">:259-493</text>
+  <text x="580" y="142" class="label-sm">• 冻结窗口校验 :266</text>
+  <text x="580" y="160" class="label-sm">• docker pull + up</text>
+  <text x="580" y="178" class="label-sm">• wait_service_health</text>
+  <text x="580" y="196" class="label-sm">• run_smoke_check</text>
+  <text x="580" y="212" class="label-sm">• rollback snapshot 捕获</text>
+
+  <!-- Promotion gate -->
+  <rect x="760" y="80" width="180" height="140" rx="6" class="gate"/>
+  <text x="850" y="102" text-anchor="middle" class="label header" fill="#ea580c">晋升门禁 (3 道门)</text>
+  <text x="850" y="120" text-anchor="middle" class="label-mono-sm">release.yml:499-540</text>
+  <text x="770" y="142" class="label-sm">① require_staging_promotion</text>
+  <text x="780" y="158" class="note">默认 true</text>
+  <text x="770" y="176" class="label-sm">② Environment: production</text>
+  <text x="780" y="192" class="note">配审批规则 → 人工 approve</text>
+  <text x="770" y="208" class="label-sm">③ production_confirmation</text>
+
+  <!-- Production: web canary -->
+  <rect x="20" y="320" width="280" height="150" rx="6" class="canary"/>
+  <text x="160" y="342" text-anchor="middle" class="label header" fill="#15803d">web 走 canary (HTTP 无状态)</text>
+  <text x="160" y="358" text-anchor="middle" class="label-mono-sm">release.yml:1131-1180</text>
+
+  <text x="30" y="380" class="label-sm">enable_canary_runtime</text>
+  <text x="30" y="396" class="label-mono-sm">  起 web-canary container</text>
+  <text x="30" y="416" class="label-sm">for step in 10,25,50,100:</text>
+  <text x="30" y="432" class="label-mono-sm">  apply_canary_split_percent</text>
+  <text x="30" y="448" class="label-mono-sm">  run_canary_step_validation</text>
+  <text x="30" y="464" class="note">失败 → 软回退 → 指数退避重试</text>
+
+  <!-- Production: web full -->
+  <rect x="320" y="320" width="200" height="150" rx="6" class="prod"/>
+  <text x="420" y="342" text-anchor="middle" class="label header" fill="#b91c1c">web 全量收尾</text>
+  <text x="420" y="358" text-anchor="middle" class="label-mono-sm">:1182-1200</text>
+  <text x="330" y="384" class="label-sm">docker compose up -d web</text>
+  <text x="330" y="402" class="label-sm">disable_canary_runtime</text>
+  <text x="330" y="420" class="label-sm">apply_canary_split_percent 0</text>
+  <text x="330" y="446" class="note">回到单上游 stable</text>
+  <text x="330" y="462" class="note">canary container 销毁</text>
+
+  <!-- Production: engine full -->
+  <rect x="540" y="320" width="200" height="150" rx="6" class="engine"/>
+  <text x="640" y="342" text-anchor="middle" class="label header" fill="#0f766e">engine 直接 full</text>
+  <text x="640" y="358" text-anchor="middle" class="label-mono-sm">:1202-1206</text>
+  <text x="550" y="380" class="label-sm">为什么不 canary：</text>
+  <text x="550" y="396" class="label-sm">• WS 长连接 + 会话有状态</text>
+  <text x="550" y="412" class="label-sm">• Part 12 30s 宽限依赖</text>
+  <text x="550" y="426" class="label-sm">  单进程内存</text>
+  <text x="550" y="446" class="label-sm">→ docker compose up engine</text>
+  <text x="550" y="462" class="note">客户端 30s 自动重连</text>
+
+  <!-- Smoke final -->
+  <rect x="760" y="320" width="180" height="150" rx="6" class="staging"/>
+  <text x="850" y="342" text-anchor="middle" class="label header" fill="#c2410c">最终验证 + 回滚保险</text>
+  <text x="850" y="360" text-anchor="middle" class="label-mono-sm">:692-728</text>
+  <text x="770" y="382" class="label-sm">run_smoke_check (全量后)</text>
+  <text x="770" y="400" class="label-sm">trap 'rollback_on_failure $?'</text>
+  <text x="770" y="416" class="label-sm">    EXIT  (line 729)</text>
+  <text x="770" y="438" class="label-sm">失败 → 镜像 swap 到</text>
+  <text x="770" y="452" class="label-sm">      previous_image_tag</text>
+  <text x="770" y="466" class="note">"任何位置非 0 → 整单回滚"</text>
+
+  <!-- Arrows from triggers -->
+  <line x1="180" y1="95" x2="210" y2="150" class="arrow" marker-end="url(#ar-blk)"/>
+  <line x1="180" y1="160" x2="210" y2="170" class="arrow" marker-end="url(#ar-blk)"/>
+  <line x1="180" y1="230" x2="210" y2="190" class="arrow" marker-end="url(#ar-blk)"/>
+
+  <!-- CI -> Publish -->
+  <line x1="350" y1="155" x2="380" y2="110" class="arrow" marker-end="url(#ar-blk)"/>
+  <line x1="350" y1="180" x2="380" y2="190" class="arrow" marker-end="url(#ar-blk)"/>
+
+  <!-- Publish -> Staging -->
+  <line x1="540" y1="110" x2="570" y2="130" class="arrow" marker-end="url(#ar-blk)"/>
+  <line x1="540" y1="190" x2="570" y2="170" class="arrow" marker-end="url(#ar-blk)"/>
+
+  <!-- Staging -> Gate -->
+  <line x1="730" y1="150" x2="760" y2="150" class="arrow" marker-end="url(#ar-blk)"/>
+
+  <!-- Gate -> Production (down arrow) -->
+  <line x1="850" y1="220" x2="850" y2="270" class="arrow-prod" marker-end="url(#ar-red)"/>
+  <line x1="850" y1="270" x2="160" y2="270" class="arrow-prod"/>
+  <line x1="160" y1="270" x2="160" y2="320" class="arrow-prod" marker-end="url(#ar-red)"/>
+  <text x="500" y="265" text-anchor="middle" class="note" fill="#b91c1c">deploy-production 触发 → 进入 phased 策略</text>
+
+  <!-- Production sequence arrows -->
+  <line x1="300" y1="395" x2="320" y2="395" class="arrow" marker-end="url(#ar-blk)"/>
+  <line x1="520" y1="395" x2="540" y2="395" class="arrow" marker-end="url(#ar-blk)"/>
+  <line x1="740" y1="395" x2="760" y2="395" class="arrow" marker-end="url(#ar-blk)"/>
+
+  <!-- Footer -->
+  <rect x="20" y="495" width="920" height="70" rx="4" fill="#fff" stroke="#0284c7"/>
+  <text x="30" y="514" class="label header">3 道晋升门叠加 = 不可能"误推生产" · 冻结窗口可被 override_freeze=true 强制突破</text>
+  <text x="30" y="533" class="label-sm">staging 冻结：<tspan class="label-mono-sm">:266-293</tspan>　production 冻结：<tspan class="label-mono-sm">:502-529</tspan>　DEPLOY_FREEZE_UNTIL secret = UTC ISO8601 时间戳</text>
+  <text x="30" y="551" class="note">为什么 web canary engine full：HTTP 无状态 vs WS 长连接 — 强行 canary engine 要做"会话迁移到新进程"，工程量 10x</text>
+</svg>
