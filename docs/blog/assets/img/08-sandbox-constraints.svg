@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-sc d-sc">
+  <title id="t-sc">Docker / K8s 沙箱的关键约束</title>
+  <desc id="d-sc">HarWork 容器沙箱通过 4 条硬约束实现兜底防御：非 root 运行（User: worker）、唯一可写挂载（/workspace volume）、资源 limits（2 CPU / 3 GB RAM）、网络隔离（NetworkMode）。即使前两层防御漏过，攻击影响也被压在当前容器之内。</desc>
+  <style>
+    .container { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 2; }
+    .host { fill: #f3f4f6; stroke: #5a5a5a; stroke-width: 1.5; stroke-dasharray: 4 3; }
+    .constraint { fill: #fff; stroke: #1e3a8a; stroke-width: 1.5; }
+    .constraint-strong { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .blocked { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .header { font-weight: 700; font-size: 12px; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .arrow-block { stroke: #b91c1c; stroke-width: 2; fill: none; }
+    .icon-num { fill: #fff; font-weight: 700; font-size: 13px; }
+  </style>
+
+  <defs>
+    <marker id="sc-block" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">Docker / K8s 沙箱的 4 条硬约束</text>
+  <text x="440" y="48" text-anchor="middle" class="note">docker.ts:36-58 + k8s.ts:81-122 · 兜底前两层漏过的 10%</text>
+
+  <!-- Host machine -->
+  <rect x="30" y="75" width="820" height="370" rx="8" class="host"/>
+  <text x="50" y="98" class="header" fill="#5a5a5a">Host Machine</text>
+  <text x="50" y="115" class="note">host filesystem / 其他容器 / 网络服务 / root 权限</text>
+
+  <!-- Container -->
+  <rect x="120" y="135" width="640" height="290" rx="8" class="container"/>
+  <text x="140" y="158" class="header" fill="#1e3a8a">HarWork Container（每个 user 一个）</text>
+
+  <!-- Constraint 1: User -->
+  <circle cx="160" cy="195" r="13" fill="#a16207"/>
+  <text x="160" y="200" text-anchor="middle" class="icon-num">1</text>
+  <rect x="185" y="178" width="270" height="50" rx="5" class="constraint-strong"/>
+  <text x="200" y="198" class="header" fill="#78350f">User: worker（非 root）</text>
+  <text x="200" y="216" class="label-mono-sm">docker.ts:55 · k8s securityContext</text>
+  <text x="200" y="226" class="note">→ sudo 漏过也提升不了权限，chmod 777 改不了挂载文件 owner</text>
+
+  <!-- Constraint 2: WorkingDir + Binds -->
+  <circle cx="490" cy="195" r="13" fill="#a16207"/>
+  <text x="490" y="200" text-anchor="middle" class="icon-num">2</text>
+  <rect x="515" y="178" width="230" height="50" rx="5" class="constraint-strong"/>
+  <text x="530" y="198" class="header" fill="#78350f">/workspace 唯一可写</text>
+  <text x="530" y="216" class="label-mono-sm">Binds: harwork-data-${'{'}userId{'}'}:/workspace</text>
+  <text x="530" y="226" class="note">→ rm -rf / 只能删容器 rootfs，重启即恢复</text>
+
+  <!-- Constraint 3: Resource limits -->
+  <circle cx="160" cy="265" r="13" fill="#a16207"/>
+  <text x="160" y="270" text-anchor="middle" class="icon-num">3</text>
+  <rect x="185" y="248" width="270" height="50" rx="5" class="constraint-strong"/>
+  <text x="200" y="268" class="header" fill="#78350f">资源 limits</text>
+  <text x="200" y="286" class="label-mono-sm">NanoCpus: 2_000_000_000 · Memory: 3 GB</text>
+  <text x="200" y="296" class="note">→ fork bomb 漏过最多打满当前容器，OOM-kill 自己</text>
+
+  <!-- Constraint 4: Network -->
+  <circle cx="490" cy="265" r="13" fill="#a16207"/>
+  <text x="490" y="270" text-anchor="middle" class="icon-num">4</text>
+  <rect x="515" y="248" width="230" height="50" rx="5" class="constraint-strong"/>
+  <text x="530" y="268" class="header" fill="#78350f">独立 network namespace</text>
+  <text x="530" y="286" class="label-mono-sm">NetworkMode: NETWORK_NAME</text>
+  <text x="530" y="296" class="note">→ 容器只能访问指定网络，不能扫 host 端口</text>
+
+  <!-- Inside container - what LLM can do -->
+  <rect x="140" y="320" width="600" height="90" rx="5" fill="#fff" stroke="#1d4ed8" stroke-width="1"/>
+  <text x="155" y="342" class="header" fill="#1e3a8a">容器内 LLM 能做的</text>
+  <text x="155" y="362" class="label">✓ 在 /workspace 下读写文件（被 path-guard 进一步约束）</text>
+  <text x="155" y="380" class="label">✓ 跑 shell 命令（被 bash-analyzer 进一步约束）</text>
+  <text x="155" y="398" class="label">✓ 访问 NETWORK_NAME 内的服务（DB、其他 HarWork 内部 service）</text>
+
+  <!-- Escape attempts blocked -->
+  <rect x="780" y="135" width="60" height="290" rx="5" class="blocked"/>
+  <text x="810" y="280" text-anchor="middle" class="header" fill="#7f1d1d" transform="rotate(-90 810 280)">逃逸尝试被拦</text>
+
+  <!-- Blocked escape arrows -->
+  <path d="M 760 195 L 790 195" class="arrow-block" marker-end="url(#sc-block)"/>
+  <text x="775" y="190" text-anchor="middle" class="note" fill="#7f1d1d">×</text>
+
+  <path d="M 760 265 L 790 265" class="arrow-block" marker-end="url(#sc-block)"/>
+  <text x="775" y="260" text-anchor="middle" class="note" fill="#7f1d1d">×</text>
+
+  <path d="M 760 370 L 790 370" class="arrow-block" marker-end="url(#sc-block)"/>
+  <text x="775" y="365" text-anchor="middle" class="note" fill="#7f1d1d">×</text>
+
+  <text x="810" y="200" text-anchor="middle" fill="#7f1d1d" font-size="14" font-weight="700">🚫</text>
+  <text x="810" y="270" text-anchor="middle" fill="#7f1d1d" font-size="14" font-weight="700">🚫</text>
+  <text x="810" y="375" text-anchor="middle" fill="#7f1d1d" font-size="14" font-weight="700">🚫</text>
+
+  <!-- Why this matters -->
+  <rect x="40" y="465" width="800" height="80" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="485" class="label" font-weight="700">为什么 Docker 是兜底而非首要：</text>
+  <text x="55" y="505" class="label">前两层（bash-analyzer + path-guard）在 <tspan font-weight="600">应用层</tspan>挡掉 90% —— 因为容器内的 .git/hooks/post-commit 仍然会在下次 git commit 时执行</text>
+  <text x="55" y="523" class="label">容器隔离 <tspan font-weight="700" fill="#7f1d1d">不能替代应用层 ACL</tspan>。Docker 主要兜的是 "应用层漏过 + 攻击者获得 shell 后想出容器"，不是日常防御</text>
+  <text x="55" y="541" class="note">陷阱：dockerode 默认 user 是 root —— 一定要显式设 User: 'worker'；k8s 通过 Pod securityContext.runAsUser 实现</text>
+</svg>

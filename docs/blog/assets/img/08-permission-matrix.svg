@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-pm d-pm">
+  <title id="t-pm">permission mode 矩阵 + bypassImmune 短路</title>
+  <desc id="d-pm">三种 permission mode（strict / normal / yolo）与 6 类工具操作（读 / 写 / bash warning / bash critical / path PROTECTED / path BYPASS_IMMUNE）的行为矩阵。最右两列 bypassImmune 在三种模式下都 hard-deny；strict 模式下连读工具都要确认（audit mode）；yolo 不是全开，是开到 bypassImmune 为止。</desc>
+  <style>
+    .header { font-weight: 700; font-size: 12px; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-sm { fill: #1a1a1a; font-size: 10px; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .cell-auto { fill: #d1fae5; stroke: #047857; stroke-width: 1; }
+    .cell-prompt { fill: #fef3c7; stroke: #a16207; stroke-width: 1; }
+    .cell-deny { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .cell-deny-immune { fill: #b91c1c; stroke: #7f1d1d; stroke-width: 1.5; }
+    .row-strict { fill: #ede9fe; stroke: #6d28d9; stroke-width: 1; }
+    .row-normal { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 1; }
+    .row-yolo { fill: #fce7f3; stroke: #be185d; stroke-width: 1; }
+    .col-head { fill: #1a2233; stroke: #1a2233; stroke-width: 1; }
+  </style>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">permission mode × 工具类别行为矩阵</text>
+  <text x="440" y="48" text-anchor="middle" class="note">3 mode × 6 操作类别 · 最右两列 bypassImmune 短路 · yolo 不是放弃 invariants</text>
+
+  <!-- Column headers -->
+  <rect x="105" y="75" width="120" height="40" class="col-head"/>
+  <text x="165" y="93" text-anchor="middle" fill="#fff" class="header">Read 工具</text>
+  <text x="165" y="108" text-anchor="middle" fill="#fff" class="label-sm">Read / Glob / Grep</text>
+
+  <rect x="225" y="75" width="120" height="40" class="col-head"/>
+  <text x="285" y="93" text-anchor="middle" fill="#fff" class="header">Write 工具</text>
+  <text x="285" y="108" text-anchor="middle" fill="#fff" class="label-sm">Write / Edit</text>
+
+  <rect x="345" y="75" width="120" height="40" class="col-head"/>
+  <text x="405" y="93" text-anchor="middle" fill="#fff" class="header">Bash warning</text>
+  <text x="405" y="108" text-anchor="middle" fill="#fff" class="label-sm">kill -9, iptables</text>
+
+  <rect x="465" y="75" width="120" height="40" fill="#7f1d1d" stroke="#7f1d1d"/>
+  <text x="525" y="93" text-anchor="middle" fill="#fff" class="header">Bash critical</text>
+  <text x="525" y="108" text-anchor="middle" fill="#fff" class="label-sm">rm -rf, curl|sh</text>
+
+  <rect x="585" y="75" width="120" height="40" class="col-head"/>
+  <text x="645" y="93" text-anchor="middle" fill="#fff" class="header">PROTECTED</text>
+  <text x="645" y="108" text-anchor="middle" fill="#fff" class="label-sm">.env, .claude/</text>
+
+  <rect x="705" y="75" width="120" height="40" fill="#7f1d1d" stroke="#7f1d1d"/>
+  <text x="765" y="93" text-anchor="middle" fill="#fff" class="header">BYPASS_IMMUNE</text>
+  <text x="765" y="108" text-anchor="middle" fill="#fff" class="label-sm">.git/, .ssh/</text>
+
+  <!-- Row 1: strict -->
+  <rect x="40" y="125" width="65" height="60" class="row-strict"/>
+  <text x="72" y="152" text-anchor="middle" class="header" fill="#4c1d95">strict</text>
+  <text x="72" y="170" text-anchor="middle" class="note" fill="#6d28d9">audit mode</text>
+
+  <rect x="105" y="125" width="120" height="60" class="cell-prompt"/>
+  <text x="165" y="160" text-anchor="middle" class="label" font-weight="600" fill="#78350f">提示</text>
+
+  <rect x="225" y="125" width="120" height="60" class="cell-deny"/>
+  <text x="285" y="160" text-anchor="middle" class="label" font-weight="600" fill="#7f1d1d">hard-deny</text>
+
+  <rect x="345" y="125" width="120" height="60" class="cell-deny"/>
+  <text x="405" y="160" text-anchor="middle" class="label" font-weight="600" fill="#7f1d1d">hard-deny</text>
+
+  <rect x="465" y="125" width="120" height="60" class="cell-deny-immune"/>
+  <text x="525" y="155" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="525" y="172" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
+
+  <rect x="585" y="125" width="120" height="60" class="cell-deny"/>
+  <text x="645" y="160" text-anchor="middle" class="label" font-weight="600" fill="#7f1d1d">hard-deny</text>
+
+  <rect x="705" y="125" width="120" height="60" class="cell-deny-immune"/>
+  <text x="765" y="155" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="765" y="172" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
+
+  <!-- Row 2: normal -->
+  <rect x="40" y="185" width="65" height="60" class="row-normal"/>
+  <text x="72" y="212" text-anchor="middle" class="header" fill="#1e3a8a">normal</text>
+  <text x="72" y="230" text-anchor="middle" class="note" fill="#1d4ed8">默认</text>
+
+  <rect x="105" y="185" width="120" height="60" class="cell-auto"/>
+  <text x="165" y="220" text-anchor="middle" class="label" font-weight="600" fill="#065f46">自动</text>
+
+  <rect x="225" y="185" width="120" height="60" class="cell-prompt"/>
+  <text x="285" y="220" text-anchor="middle" class="label" font-weight="600" fill="#78350f">提示</text>
+
+  <rect x="345" y="185" width="120" height="60" class="cell-prompt"/>
+  <text x="405" y="220" text-anchor="middle" class="label" font-weight="600" fill="#78350f">提示</text>
+
+  <rect x="465" y="185" width="120" height="60" class="cell-deny-immune"/>
+  <text x="525" y="215" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="525" y="232" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
+
+  <rect x="585" y="185" width="120" height="60" class="cell-prompt"/>
+  <text x="645" y="220" text-anchor="middle" class="label" font-weight="600" fill="#78350f">提示</text>
+
+  <rect x="705" y="185" width="120" height="60" class="cell-deny-immune"/>
+  <text x="765" y="215" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="765" y="232" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
+
+  <!-- Row 3: yolo -->
+  <rect x="40" y="245" width="65" height="60" class="row-yolo"/>
+  <text x="72" y="272" text-anchor="middle" class="header" fill="#9d174d">yolo</text>
+  <text x="72" y="290" text-anchor="middle" class="note" fill="#be185d">少打扰</text>
+
+  <rect x="105" y="245" width="120" height="60" class="cell-auto"/>
+  <text x="165" y="280" text-anchor="middle" class="label" font-weight="600" fill="#065f46">自动</text>
+
+  <rect x="225" y="245" width="120" height="60" class="cell-auto"/>
+  <text x="285" y="280" text-anchor="middle" class="label" font-weight="600" fill="#065f46">自动</text>
+
+  <rect x="345" y="245" width="120" height="60" class="cell-auto"/>
+  <text x="405" y="280" text-anchor="middle" class="label" font-weight="600" fill="#065f46">自动</text>
+
+  <rect x="465" y="245" width="120" height="60" class="cell-deny-immune"/>
+  <text x="525" y="275" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="525" y="292" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
+
+  <rect x="585" y="245" width="120" height="60" class="cell-auto"/>
+  <text x="645" y="280" text-anchor="middle" class="label" font-weight="600" fill="#065f46">自动</text>
+
+  <rect x="705" y="245" width="120" height="60" class="cell-deny-immune"/>
+  <text x="765" y="275" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="765" y="292" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
+
+  <!-- bypassImmune highlight -->
+  <rect x="463" y="123" width="124" height="184" fill="none" stroke="#7f1d1d" stroke-width="3" stroke-dasharray="6 3" rx="3"/>
+  <rect x="703" y="123" width="124" height="184" fill="none" stroke="#7f1d1d" stroke-width="3" stroke-dasharray="6 3" rx="3"/>
+
+  <!-- bypassImmune short-circuit explanation -->
+  <rect x="40" y="335" width="800" height="100" fill="#fff" stroke="#7f1d1d" stroke-width="1.5" rx="4"/>
+  <text x="55" y="357" class="header" fill="#7f1d1d">▶ bypassImmune 短路机制（tool-executor.ts:417-440）</text>
+  <text x="55" y="378" class="label-mono-sm">if (!permResult.allowed &amp;&amp; permResult.bypassImmune) {</text>
+  <text x="55" y="392" class="label-mono-sm">  audit(context, call, 'bypass_immune_block', reason)</text>
+  <text x="55" y="406" class="label-mono-sm">  yield { type: 'tool_call_result', isError: true }  <tspan class="note">// ← 直接拒绝，不进入 requestPermission</tspan></text>
+  <text x="55" y="420" class="label-mono-sm">  continue  <tspan class="note">// 用户连选择都没有，连 audit 都记录为 bypass_immune_block</tspan></text>
+
+  <!-- Bottom takeaways -->
+  <rect x="40" y="445" width="800" height="100" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="465" class="label" font-weight="700">三条非显然的观察：</text>
+  <text x="55" y="485" class="label"><tspan font-weight="600" fill="#4c1d95">① strict 不是只读，是全审 mode</tspan> —— 连 Read / Glob / Grep 都要点提示，high-stakes 任务每步过用户脑子</text>
+  <text x="55" y="503" class="label"><tspan font-weight="600" fill="#9d174d">② yolo 不是全开，是开到 bypassImmune 为止</tspan> —— critical bash + .git/ + .ssh/ 在 yolo 下仍然 hard-deny</text>
+  <text x="55" y="521" class="label"><tspan font-weight="600" fill="#7f1d1d">③ bypassImmune 是产品决策不是技术决策</tspan> —— 移除某些决策能力（连用户都不能 override），是把责任拿回到系统</text>
+  <text x="55" y="539" class="note">denial tracker（5 连续 / 20 累计）防止 LLM 看到 deny 后反复变体重试，强制中断"硬撞墙"循环</text>
+</svg>

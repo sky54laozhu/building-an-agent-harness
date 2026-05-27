@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 560" font-family="-apple-system, 'PingFang SC', 'Helvetica Neue', Arial, sans-serif" font-size="13" role="img" aria-labelledby="t-3l d-3l">
+  <title id="t-3l">三层防御的关心边界与拦截示例</title>
+  <desc id="d-3l">HarWork 三层独立防御：bash-analyzer 守命令语义边界（rm -rf / curl|sh / fork bomb）、path-guard 守应用层 ACL 边界（.git/ / .env / .ssh/）、Docker 守 OS 内核边界（容器逃逸 / host 写入）。三层不重叠，各自捕获不同的威胁面，一层漏过另两层兜底。</desc>
+  <style>
+    .box-bash { fill: #fee2e2; stroke: #b91c1c; stroke-width: 1.5; }
+    .box-path { fill: #fef3c7; stroke: #a16207; stroke-width: 1.5; }
+    .box-docker { fill: #dbeafe; stroke: #1d4ed8; stroke-width: 1.5; }
+    .box-attack { fill: #fff; stroke: #5a5a5a; stroke-width: 1; }
+    .arrow { stroke: #1a2233; stroke-width: 1.5; fill: none; }
+    .arrow-block { stroke: #b91c1c; stroke-width: 2; fill: none; }
+    .label { fill: #1a1a1a; font-size: 11px; }
+    .label-mono { fill: #1a1a1a; font-size: 10px; font-family: 'SF Mono', Consolas, monospace; }
+    .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
+    .header { font-weight: 700; font-size: 12px; }
+    .layer-title { font-weight: 700; font-size: 14px; }
+    .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
+    .boundary { font-size: 10.5px; font-weight: 600; }
+  </style>
+
+  <defs>
+    <marker id="tl-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#1a2233"/>
+    </marker>
+    <marker id="tl-block" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#b91c1c"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="880" height="560" fill="#fafbfc" stroke="#1a2233" stroke-width="2"/>
+  <text x="440" y="28" text-anchor="middle" fill="#1a2233" font-size="16" font-weight="600">三层独立防御 —— 各守一道边界</text>
+  <text x="440" y="48" text-anchor="middle" class="note">bash-analyzer · path-guard · Docker / K8s sandbox 共 702 行代码，覆盖 3 个完全不同的威胁面</text>
+
+  <!-- LLM source -->
+  <rect x="40" y="75" width="120" height="50" rx="6" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.5"/>
+  <text x="100" y="95" text-anchor="middle" class="header" fill="#4c1d95">LLM 工具调用</text>
+  <text x="100" y="113" text-anchor="middle" class="note">Bash / Write / Edit</text>
+
+  <!-- Layer 1: bash-analyzer -->
+  <rect x="190" y="70" width="660" height="135" rx="8" class="box-bash"/>
+  <text x="208" y="93" class="layer-title" fill="#7f1d1d">Layer ① bash-analyzer</text>
+  <text x="208" y="110" class="label-mono">security/bash-analyzer.ts (76 行)</text>
+  <text x="208" y="126" class="boundary" fill="#7f1d1d">守边界：命令字符串的语义</text>
+
+  <!-- bash-analyzer attack examples -->
+  <rect x="350" y="78" width="240" height="22" rx="3" class="box-attack"/>
+  <text x="358" y="93" class="label-mono-sm">rm -rf / · sudo · curl | sh</text>
+  <rect x="600" y="78" width="240" height="22" rx="3" class="box-attack"/>
+  <text x="608" y="93" class="label-mono-sm">fork bomb · dd of=/dev/ · mkfs</text>
+
+  <text x="208" y="148" class="label">→ 26 条 regex，critical 级别 bypassImmune（用户都不能 override）</text>
+  <text x="208" y="166" class="label">→ rm regex 对称匹配：<tspan class="label-mono-sm">/\brm\s+(-[^\s]*)?r[^\s]*f|...f[^\s]*r/i</tspan>（覆盖 -rf / -fr / -Rf / -fR）</text>
+  <text x="208" y="184" class="label">→ 缺一条等于漏一种攻击（curl|sh 与 wget|sh 必须分开写）</text>
+
+  <!-- Layer 2: path-guard -->
+  <rect x="190" y="220" width="660" height="135" rx="8" class="box-path"/>
+  <text x="208" y="243" class="layer-title" fill="#78350f">Layer ② path-guard</text>
+  <text x="208" y="260" class="label-mono">security/path-guard.ts (55 行)</text>
+  <text x="208" y="276" class="boundary" fill="#78350f">守边界：文件路径的应用层 ACL</text>
+
+  <!-- path-guard attack examples -->
+  <rect x="350" y="228" width="240" height="22" rx="3" class="box-attack"/>
+  <text x="358" y="243" class="label-mono-sm">.git/hooks/post-commit · .ssh/</text>
+  <rect x="600" y="228" width="240" height="22" rx="3" class="box-attack"/>
+  <text x="608" y="243" class="label-mono-sm">.env · .bashrc · .claude/</text>
+
+  <text x="208" y="298" class="label">→ 两段式黑名单：BYPASS_IMMUNE（6 条，永远拦）+ PROTECTED（4 条，yolo 放行）</text>
+  <text x="208" y="316" class="label">→ regex 而非 startsWith：<tspan class="label-mono-sm">/\/\.git\//</tspan> 覆盖 monorepo 子目录里的 .git/</text>
+  <text x="208" y="334" class="label">→ Write / Edit / NotebookEdit 三个工具共享同一模块，零重复</text>
+
+  <!-- Layer 3: Docker sandbox -->
+  <rect x="190" y="370" width="660" height="135" rx="8" class="box-docker"/>
+  <text x="208" y="393" class="layer-title" fill="#1e3a8a">Layer ③ Docker / K8s 沙箱</text>
+  <text x="208" y="410" class="label-mono">workspace/docker.ts (271) + workspace/k8s.ts (300)</text>
+  <text x="208" y="426" class="boundary" fill="#1e3a8a">守边界：进程 + 文件系统 + OS 内核</text>
+
+  <!-- Docker attack examples -->
+  <rect x="370" y="378" width="220" height="22" rx="3" class="box-attack"/>
+  <text x="378" y="393" class="label-mono-sm">容器逃逸 · 写 host 文件</text>
+  <rect x="600" y="378" width="240" height="22" rx="3" class="box-attack"/>
+  <text x="608" y="393" class="label-mono-sm">资源耗尽 · 提权到 root</text>
+
+  <text x="208" y="448" class="label">→ User: worker（非 root） · WorkingDir: /workspace · Binds: 仅挂载 /workspace</text>
+  <text x="208" y="466" class="label">→ NanoCpus 2 · Memory 3 GB · fork bomb 漏过也只能打满当前容器</text>
+  <text x="208" y="484" class="label">→ 前两层抓 90% 在应用层；Docker 主要兜剩 10%（不是首要，是最后一道）</text>
+
+  <!-- Block arrow from LLM -->
+  <path d="M 160 100 L 190 100" class="arrow-block" marker-end="url(#tl-block)"/>
+  <path d="M 160 100 L 175 100 L 175 250 L 190 250" class="arrow-block" marker-end="url(#tl-block)"/>
+  <path d="M 160 100 L 175 100 L 175 400 L 190 400" class="arrow-block" marker-end="url(#tl-block)"/>
+
+  <!-- Bottom summary -->
+  <rect x="40" y="520" width="800" height="32" fill="#fff" stroke="#1a2233" rx="4"/>
+  <text x="55" y="540" class="label"><tspan font-weight="700">三层独立、互不依赖 ·</tspan> bash-analyzer 不看 path · path-guard 不看 command · Docker 不看应用层语义 —— <tspan font-weight="700" fill="#7f1d1d">守不同边界，才是 defense in depth</tspan></text>
+</svg>
