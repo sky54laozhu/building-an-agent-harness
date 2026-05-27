@@ -1,0 +1,82 @@
+Copyright (c) 2026 zhuweifeng
+
+This repository uses two licenses depending on the type of file:
+
+================================================================================
+1. CONTENT — articles, diagrams, and other written/visual works
+================================================================================
+
+Scope:
+  - Everything under `docs/` (Markdown articles, SVG diagrams, PNG images,
+    illustrations, and any other prose / visual content)
+  - README.md and other top-level documentation files
+
+License: Creative Commons Attribution-ShareAlike 4.0 International
+        (CC BY-SA 4.0)
+
+You are free to:
+  - Share — copy and redistribute the material in any medium or format
+  - Adapt — remix, transform, and build upon the material
+  for any purpose, even commercially.
+
+Under the following terms:
+  - Attribution — You must give appropriate credit, provide a link to the
+    license, and indicate if changes were made. You may do so in any
+    reasonable manner, but not in any way that suggests the licensor endorses
+    you or your use.
+  - ShareAlike — If you remix, transform, or build upon the material, you
+    must distribute your contributions under the same license as the original.
+  - No additional restrictions — You may not apply legal terms or
+    technological measures that legally restrict others from doing anything
+    the license permits.
+
+Full license text: https://creativecommons.org/licenses/by-sa/4.0/legalcode
+
+When attributing, please include:
+  - Author: zhuweifeng
+  - Title of the specific article (e.g., "Part 03: async generator Loop")
+  - Source: https://github.com/sky54laozhu/building-an-agent-harness
+  - License: CC BY-SA 4.0
+
+================================================================================
+2. TOOLING — scripts and code utilities
+================================================================================
+
+Scope:
+  - Everything under `scripts/`
+  - GitHub Actions workflows under `.github/`
+  - Any other source code in the repository not covered by Section 1
+
+License: MIT
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+
+================================================================================
+3. CLARIFICATIONS
+================================================================================
+
+  - Code excerpts embedded inside articles (e.g., TypeScript snippets in
+    `docs/blog/**/*.md`) are part of the prose and fall under CC BY-SA 4.0
+    along with the surrounding article.
+  - If a file's purpose is ambiguous (e.g., a Markdown file under `scripts/`),
+    the dominant content type governs: prose → CC BY-SA 4.0, executable code
+    → MIT.
+  - The HarWork product code referenced in these articles is a separate
+    project with its own license. This repository contains only the blog
+    series and supporting tooling.

@@ -49,8 +49,10 @@
 
 ## License
 
-Content (articles, diagrams): TBD — likely [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)
-Tooling (`scripts/blog/`): TBD — likely MIT
+Dual-licensed — see [LICENSE](./LICENSE) for the full text.
+
+- **Content** (`docs/`, README): [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) — free to share & adapt with attribution; derivatives must use the same license.
+- **Tooling** (`scripts/`, `.github/`): [MIT](https://opensource.org/licenses/MIT) — use freely with attribution.
 
 ---
 
