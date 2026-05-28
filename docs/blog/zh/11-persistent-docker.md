@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 第 10 篇把 session 数据落在 SQLite 里：用户回来对话历史还在。可对话**运行环境**呢？AI 跑命令的那个 Linux 沙箱，每次对话都开一个新容器吗？HarWork 的答案是：**一个用户一个持久容器，30 分钟空闲 `docker pause` 冻 CPU，用户回来 `docker unpause` 瞬间唤醒**。冷启动重型镜像（ubuntu + node + python + code-server + ssh）从头拉满要 10+ 秒；pause 用 cgroup freezer，unpause 是亚秒级。这一篇拆 HarWork 的容器生命周期表（**`packages/web/lib/workspace/docker.ts` 271 行 + `packages/engine/src/session/manager.ts` 的 idle sweep 部分 + `dev-server.ts` 的双重 guard**），重点是**为什么 pause 而不是 stop**。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [持久容器](#核心方案per-user-持久容器--30min-idle-sweep--双层-pause-guard) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 让每个用户都有一个能跑命令的 Linux 沙箱，听起来直接，做起来要解决至少 5 个问题：
@@ -261,6 +263,7 @@ async pause(_workspaceId: string): Promise<void> {
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **持久容器的关键不是"复用容器"，而是"区分活动信号的来源层"**。SessionManager 看的是 WebSocket（HarWork 自己的连接），pauseContainerFn 看的是 SSH 进程数 + code-server 网络连接（容器内部的真实状态）。两个信号源同时为零才 pause，缺一不可——**只看一头就会要么过早 pause（用户 SSH 着被冻），要么从来不 pause（容器内部明明没人在用）**。
 
 换句话说：**pause 决策不是单一信号能完成的**。WebSocket 断了不等于用户走了，30 分钟不动不等于容器空闲，pgrep 没 sshd 不等于以后不会有人 ssh 进来。HarWork 的答案是**多信号合议**：SessionManager 第一道关、容器内部 pgrep+ss 第二道关、两道都过才 pause；唤醒侧反向——任何一个入口（WebSocket / SSH / preview / cron / API）都能触发 unpause。**收紧 pause 决策、放宽 unpause 入口**——这种"严收宽出"是持久容器系统的关键平衡。
@@ -269,11 +272,20 @@ async pause(_workspaceId: string): Promise<void> {
 
 ## 三个生产坑
 
-**坑 1：以为 pause 期间收到的 TCP 连接会自动 unpause。** 错。`docker pause` 冻 cgroup，**容器内的进程一行代码都不会执行**——TCP 连接进来 SYN-ACK 都回不了，等 TCP 重试到超时 client 就报错了。所以 HarWork 把 unpause 显式挂在每个入口的"接收侧"：WebSocket 握手前、preview proxy 转发前、SSH 接受前都先 `ensureContainerRunning`。**容器要醒才能服务，靠 client 重试醒不过来。**
+> [!WARNING]
+> **坑 1 —— 以为 pause 期间收到的 TCP 连接会自动 unpause。**
+>
+> 错。`docker pause` 冻 cgroup，**容器内的进程一行代码都不会执行**——TCP 连接进来 SYN-ACK 都回不了，等 TCP 重试到超时 client 就报错了。所以 HarWork 把 unpause 显式挂在每个入口的"接收侧"：WebSocket 握手前、preview proxy 转发前、SSH 接受前都先 `ensureContainerRunning`。**容器要醒才能服务，靠 client 重试醒不过来。**
 
-**坑 2：sweep 间隔和 idle 阈值反向调整。** "30 分钟太长，调成 5 分钟，容器更省"——但是 60 秒一次 sweep + 5 分钟阈值意味着**用户出去倒杯水回来发现容器刚 pause 完**，下一句话要等 unpause。**idle 阈值 >> 用户离开屏幕的常见时长**（吃饭 30-60 分钟，会议 30-90 分钟）是用户体验和资源占用的平衡点，不能盲调小。
+> [!WARNING]
+> **坑 2 —— sweep 间隔和 idle 阈值反向调整。**
+>
+> "30 分钟太长，调成 5 分钟，容器更省"——但是 60 秒一次 sweep + 5 分钟阈值意味着**用户出去倒杯水回来发现容器刚 pause 完**，下一句话要等 unpause。**idle 阈值 >> 用户离开屏幕的常见时长**（吃饭 30-60 分钟，会议 30-90 分钟）是用户体验和资源占用的平衡点，不能盲调小。
 
-**坑 3：seedSkillsToContainer 同步 await 阻塞首次 provision。** Skills 几十个、每个写一个文件——seed 一次可能花 2-5 秒。如果 await seed 完才返回 containerId，用户首次进来等 docker create + seed = 15+ 秒。HarWork 选**异步 seed 不 await**（`resolve.ts:36`：`seedSkillsToContainer(containerId).catch(() => {})`）——容器先给用户用，skills 慢慢飘进去。代价是用户第一秒可能看不到 skill 列表，但大部分用户不会立刻用 skill。**异步初始化 vs 同步预备的取舍，按"用户期待的 P95 等待时间"选。**
+> [!WARNING]
+> **坑 3 —— seedSkillsToContainer 同步 await 阻塞首次 provision。**
+>
+> Skills 几十个、每个写一个文件——seed 一次可能花 2-5 秒。如果 await seed 完才返回 containerId，用户首次进来等 docker create + seed = 15+ 秒。HarWork 选**异步 seed 不 await**（`resolve.ts:36`：`seedSkillsToContainer(containerId).catch(() => {})`）——容器先给用户用，skills 慢慢飘进去。代价是用户第一秒可能看不到 skill 列表，但大部分用户不会立刻用 skill。**异步初始化 vs 同步预备的取舍，按"用户期待的 P95 等待时间"选。**
 
 ## 配图
 

@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Part 03 said every loop iteration starts with `await compress(messages)`. This article answers: **what does `compress` actually do**? Why don't Claude Code, Cursor, and HarWork blow the context window after hundreds of turns? Not "one clever summarization algorithm" — but **5 tiers firing at different moments, at different costs, with different intensities**. This piece opens up HarWork's `compression.ts` (378 lines) + `llm-compact.ts` (133 lines) and lays bare every threshold and compression ratio.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [5 tiers](#core-solution-5-tiers-stacked) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Production pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 Long agent conversations have two hard pain points:
@@ -170,6 +172,7 @@ After L5 finishes, the Loop yields `{ type: 'context_compressed', from, to }` (t
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **Context compaction is not "one clever algorithm" — it's "a set of strategies firing at different moments, at different costs, with different intensities."** Any proposal that talks only about "the summarization algorithm" misses the point: what matters is **when** to compress, **how aggressively**, and **whether to spend on an LLM call**.
 
 Put differently: **compaction is fundamentally a budget-management problem, not an information-theory problem.** Each tier answers a concrete budget question:
@@ -183,11 +186,20 @@ Each tier is an independent decision, with its own threshold and its own kill sw
 
 ## Three Production Pitfalls
 
-**Pitfall 1: token estimation by "chars / 4" underestimates 30%**. HarWork's `estimateTokens` (`compression.ts:108`) uses `CHARS_PER_TOKEN = 4`. Chinese text underestimates badly (Chinese tokenizes at ~1.5 chars/token). Fix: keep `AUTOCOMPACT_BUFFER = 13K` (Part 03's effectiveBudget formula) as safety pad. Better early than late.
+> [!WARNING]
+> **Pitfall 1 — token estimation by "chars / 4" underestimates 30%.**
+>
+> HarWork's `estimateTokens` (`compression.ts:108`) uses `CHARS_PER_TOKEN = 4`. Chinese text underestimates badly (Chinese tokenizes at ~1.5 chars/token). **HarWork's fix:** keep `AUTOCOMPACT_BUFFER = 13K` (Part 03's effectiveBudget formula) as safety pad. Better early than late.
 
-**Pitfall 2: L2 Snip breaks tool_use/tool_result pairing**. `compression.ts:197-216` has special code that **also compresses the preceding assistant's tool_use blocks** — because Anthropic's API requires every `tool_use` to have a matching `tool_result`. Strip the result without touching the call and you get `tool_use_id mismatch`. HarWork's early version paid for this lesson.
+> [!WARNING]
+> **Pitfall 2 — L2 Snip breaks tool_use/tool_result pairing.**
+>
+> `compression.ts:197-216` has special code that **also compresses the preceding assistant's tool_use blocks** — because Anthropic's API requires every `tool_use` to have a matching `tool_result`. Strip the result without touching the call and you get `tool_use_id mismatch`. HarWork's early version paid for this lesson.
 
-**Pitfall 3: L5 LLM call mid-abort leaves state stuck**. L5's `generateText` accepts an `abortSignal` — but if the user hits Ctrl-C mid-call, the prompt has already been sent and billed. HarWork's handling: L5 does NOT retry (different from the main LLM call's 3-retry policy); on failure it falls back to "skip this turn's compaction, let L4 catch it next turn before yielding `error`."
+> [!WARNING]
+> **Pitfall 3 — L5 LLM call mid-abort leaves state stuck.**
+>
+> L5's `generateText` accepts an `abortSignal` — but if the user hits Ctrl-C mid-call, the prompt has already been sent and billed. **HarWork's fix:** L5 does NOT retry (different from the main LLM call's 3-retry policy); on failure it falls back to "skip this turn's compaction, let L4 catch it next turn before yielding `error`."
 
 Common takeaway: **all the magic numbers (8KB / 0.7 / 0.85 / 8 messages) are NOT universal optima** — they're HarWork's "good-enough trade-offs" calibrated on real production data. Switch LLMs, switch use case (short Q&A vs code generation), and these numbers need recalibration.
 

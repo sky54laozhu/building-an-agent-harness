@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Part 08 framed "what the LLM can't do." This part flips it: how the user **injects their own code into the middle of what the LLM is doing** — lint before commit, prettier after Edit, project context on UserPromptSubmit, Slack notification on SessionEnd. Claude Code popularized this through settings.json; HarWork's 1277-line TypeScript implementation lands the same lifecycle on its own agent loop: 8 events, shell command + HTTP webhook, parallel execution, "most restrictive wins" aggregation. **This part isn't "how to call a hook" — it's "how the agent loop safely calls someone else's code without taking itself down."**
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [8 events](#core-solution-8-events--in-container-execution) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Production pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 Letting the user inject code into the agent loop sounds simple but actually solves at least five problems:
@@ -213,6 +215,7 @@ Hooks can rewrite input — but over 16K chars and it's dropped (prevents a mali
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **The hook system's core isn't "extensibility," it's "fault isolation."** Process isolation (run in user container), timeout isolation (60s force-kill), output clamping (anti-OOM), error aggregation (a crashed hook doesn't block main flow) — **all four isolation layers defend against "user script takes down the agent."** Only by treating "user code" as adversarial input can the hook system stay stable in production long term.
 
 Put differently: **"non-zero exit ≠ blocking" is the key design**. User scripts segfault, syntax errors, missing commands — none of these should stop the LLM. **Only an explicit `exit 2` or explicit `{"decision": "block"}` is a real "I want to block" signal**. Separating "failure" from "blocking" at the protocol layer is what lets the hook system reach production.
@@ -221,11 +224,20 @@ Most counterintuitive: **hooks run in the user's container** — most people wou
 
 ## Three Production Pitfalls
 
-**Pitfall 1: hook config without a default timeout.** `timeout: undefined` passed to fetch / exec — exec waits forever, hook stalls the entire agent loop. HarWork's `DEFAULT_HOOK_TIMEOUT_S = 60` and `DEFAULT_HTTP_TIMEOUT_S = 10` are **forced lower bounds**, defaults that apply even when the config row doesn't set them.
+> [!WARNING]
+> **Pitfall 1 — Hook config without a default timeout.**
+>
+> `timeout: undefined` passed to fetch / exec — exec waits forever, hook stalls the entire agent loop. HarWork's `DEFAULT_HOOK_TIMEOUT_S = 60` and `DEFAULT_HTTP_TIMEOUT_S = 10` are **forced lower bounds**, defaults that apply even when the config row doesn't set them.
 
-**Pitfall 2: merging additionalContext into one big string.** N hooks each return 100 chars of context, merge into one N×100 block — the LLM can't tell which segment is from which hook, and the prompt becomes hard to tune. HarWork preserves **list structure** (`additionalContexts: string[]`), capped by count + total chars (`output-limits.ts:13-14`).
+> [!WARNING]
+> **Pitfall 2 — Merging additionalContext into one big string.**
+>
+> N hooks each return 100 chars of context, merge into one N×100 block — the LLM can't tell which segment is from which hook, and the prompt becomes hard to tune. HarWork preserves **list structure** (`additionalContexts: string[]`), capped by count + total chars (`output-limits.ts:13-14`).
 
-**Pitfall 3: hook stdout dumped to console as "logs."** User script `cat /etc/passwd` lands directly in Engine logs — content leaks to ops dashboards. HarWork's `clampHookText(stdout, HOOK_MAX_STDOUT_CHARS)` caps to 64KB, and `hook_progress / hook_result` stream events cap to 2KB (`HOOK_STREAM_EVENT_MAX_CHARS=2000`) — **deliberately separates "hook output" from "system logs."**
+> [!WARNING]
+> **Pitfall 3 — Hook stdout dumped to console as "logs."**
+>
+> User script `cat /etc/passwd` lands directly in Engine logs — content leaks to ops dashboards. HarWork's `clampHookText(stdout, HOOK_MAX_STDOUT_CHARS)` caps to 64KB, and `hook_progress / hook_result` stream events cap to 2KB (`HOOK_STREAM_EVENT_MAX_CHARS=2000`) — **deliberately separates "hook output" from "system logs."**
 
 ## Figures
 

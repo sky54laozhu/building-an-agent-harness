@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Part 03 said the Agent Loop rebuilds the system prompt from scratch every turn — which raises the question: **every session starts at zero, and the user has to teach the AI their preferences over and over**. Stuff the whole history into the prompt? It overflows in a few turns. Hope the LLM "remembers" what the user likes? It doesn't have that receptor. HarWork (mirroring Claude Code) answers with **long-term memory** — but it's not one path; it's three: CLAUDE.md (instructions), file-based auto memory (user/model collaboration), and DB-based extraction (optional). This piece unpacks all three.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [Three paths](#core-solution-three-memory-paths) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Production pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 Cross-session state comes in three distinct shapes with very different requirements:
@@ -161,6 +163,7 @@ The `<!-- -->` is for humans; the AI only sees the rule below. Tokens not wasted
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **The real difficulty of a memory system isn't "how to remember" but "drawing clean boundaries."** CLAUDE.md / file memory / DB memory all look like "long-term memory," but their writers, readers, lifecycles, and sharing scopes are all different — mix them and three months later you can't tell which path a given rule came from.
 
 Put differently: **memory is a state machine the LLM reads, and state machines are at their worst when "two variables express the same concept."** HarWork's two sets of category constants (`fact/preference/context/correction` vs `user/feedback/project/reference`) are a live specimen of this trap — two devs writing into both sides, and `grep` can't even tell you which side to grep.
@@ -169,11 +172,20 @@ The most counterintuitive part: **the writer is the model itself**. File memory 
 
 ## Three Production Pitfalls
 
-**Pitfall 1: Treating CLAUDE.md like a product doc**. I've seen people stuff 5000 words of "project vision + team intro + decision history" into CLAUDE.md — and that gets pasted into every prompt every turn. Budget gone instantly. **CLAUDE.md is instruction, not documentation**: write "what to do, what not to do," not "why we did this." The latter goes in README.
+> [!WARNING]
+> **Pitfall 1 — Treating CLAUDE.md like a product doc.**
+>
+> I've seen people stuff 5000 words of "project vision + team intro + decision history" into CLAUDE.md — and that gets pasted into every prompt every turn. Budget gone instantly. **CLAUDE.md is instruction, not documentation**: write "what to do, what not to do," not "why we did this." The latter goes in README.
 
-**Pitfall 2: Replacing hand-curated CLAUDE.md with DB extraction**. `memory.ts`'s LLM extraction **only sees the last 4000 chars** (`memory.ts:50-51`), and confidence is the LLM's own estimate — unreliable. **Rules that truly must be obeyed every turn belong in CLAUDE.md** (hand-curated), not in hopes that the LLM will extract them. DB memory fits "the user mentioned a preference in passing" — secondary signal.
+> [!WARNING]
+> **Pitfall 2 — Replacing hand-curated CLAUDE.md with DB extraction.**
+>
+> `memory.ts`'s LLM extraction **only sees the last 4000 chars** (`memory.ts:50-51`), and confidence is the LLM's own estimate — unreliable. **Rules that truly must be obeyed every turn belong in CLAUDE.md** (hand-curated), not in hopes that the LLM will extract them. DB memory fits "the user mentioned a preference in passing" — secondary signal.
 
-**Pitfall 3: Committing `.claude/memory/` to git**. File memory is **written by the model** and may contain user-uttered ephemeral preferences or stale context. Commit it and every contributor gets polluted with noise. Correct: add `.claude/memory/` to `.gitignore`; put team-shared rules in `CLAUDE.md`. **Only CLAUDE.md / .claude/CLAUDE.md / .claude/rules/ belong in git** — `CLAUDE.local.md` and `.claude/memory/` should both be ignored.
+> [!WARNING]
+> **Pitfall 3 — Committing `.claude/memory/` to git.**
+>
+> File memory is **written by the model** and may contain user-uttered ephemeral preferences or stale context. Commit it and every contributor gets polluted with noise. Correct: add `.claude/memory/` to `.gitignore`; put team-shared rules in `CLAUDE.md`. **Only CLAUDE.md / .claude/CLAUDE.md / .claude/rules/ belong in git** — `CLAUDE.local.md` and `.claude/memory/` should both be ignored.
 
 ## Figures
 

@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Part 10 parked conversation history in SQLite. Part 11 paused the container after 30 minutes idle. This post switches to the layer in between — **the WebSocket connection between front-end and back-end**. The agent is running, the user closes the laptop / switches wifi / hits Cmd-R — the connection drops. **Should the agent loop abort immediately?** HarWork's answer: **wait 30 seconds**. Reconnect within 30 seconds and pick up seamlessly; truly gone past 30 seconds and only then abort. This post dissects the four-piece set in `session/manager.ts` — grace timer + EventBuffer(500) + front-end exponential backoff + dual ping/pong heartbeat — focused on **why "delayed abort" beats both "abort immediately" and "never abort"**.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [30s grace](#core-solution-30s-grace-timer--eventbuffer500--bidirectional-heartbeat) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 The relationship between WebSocket connection and agent is subtle:
@@ -257,6 +259,7 @@ When Part 11's idle sweep triggers a container pause, it also clears the buffer.
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **"30 seconds" is neither "good enough" nor "industry standard" — it's the intersection of "human-friendly window" × "cost-cruel boundary"**. Shorter than 30s: user wifi blips trigger abort, experience breaks; longer than 30s: user walked away half a minute ago and you're still burning LLM tokens, cost goes out of control. The essence of 30s is admitting that "minor network wobble" and "user really walked away" don't have a clean boundary — **you use a fixed window to cover the fuzzy zone**.
 
 Even more counterintuitive: **this 30-second window is bound to "agent is running."** Agent isn't running and you close the browser — I do nothing (grace doesn't arm), and 30 minutes later idle sweep pauses the container — that's minute-scale. Agent IS running and you close the browser — I wait 30 seconds to make sure you're not coming back, then abort — that's second-scale. **The two lifecycles use two time scales because they protect entirely different costs**: container memory is a continuous small bill (a 30-minute decision is fine), LLM tokens are big-grain spike bills (must respond in seconds). Putting "when to abort agent" and "when to pause container" on the same time scale means either bad UX (agent runs for 30 minutes after the user left) or memory waste (containers don't pause for 30 seconds).
@@ -265,11 +268,20 @@ The most counterintuitive engineering detail: **EventBuffer is a ring buffer, no
 
 ## Three Production Pitfalls
 
-**Pitfall 1: Assuming the front-end `lastEventId` accurately reflects what the client has seen.** `use-websocket.ts:115` updates `lastEventIdRef` inside `onmessage` — but React state hasn't updated, UI hasn't rendered. **If the client crashes between these** (onmessage ran, but OOM'd before React rendered), lastEventId has advanced but the user UI is still old. On reconnect, the client says "I saw X," the server believes it and doesn't send X again — **the user actually didn't see it**. HarWork's compromise: trust lastEventId first, manual refresh pulls conversation history (Part 10 path) when there's a UI discrepancy. The perfect solution is both sides report lastEventId and take the min, but it's complex and low-yield.
+> [!WARNING]
+> **Pitfall 1 — Assuming the front-end `lastEventId` accurately reflects what the client has seen.**
+>
+> `use-websocket.ts:115` updates `lastEventIdRef` inside `onmessage` — but React state hasn't updated, UI hasn't rendered. **If the client crashes between these** (onmessage ran, but OOM'd before React rendered), lastEventId has advanced but the user UI is still old. On reconnect, the client says "I saw X," the server believes it and doesn't send X again — **the user actually didn't see it**. HarWork's compromise: trust lastEventId first, manual refresh pulls conversation history (Part 10 path) when there's a UI discrepancy. The perfect solution is both sides report lastEventId and take the min, but it's complex and low-yield.
 
-**Pitfall 2: MAX_RECONNECT_ATTEMPTS=10, max delay 16s.** Math: 1+2+4+8+16+16+16+16+16+16 = 111 seconds, give up after ~2 minutes. **User closes laptop 5 minutes, comes back, page shows "Connection lost" — manual refresh needed**. This is intentional: more than 2 minutes is basically "user walked away," automatic retries become counterproductive (phone wakes every second to retry). But the UI must explicitly say "please refresh" — HarWork's `use-chat.ts:313` 'Connection lost, reconnecting…' message should flip to 'Please refresh' once attempts are exhausted.
+> [!WARNING]
+> **Pitfall 2 — MAX_RECONNECT_ATTEMPTS=10, max delay 16s.**
+>
+> Math: 1+2+4+8+16+16+16+16+16+16 = 111 seconds, give up after ~2 minutes. **User closes laptop 5 minutes, comes back, page shows "Connection lost" — manual refresh needed**. This is intentional: more than 2 minutes is basically "user walked away," automatic retries become counterproductive (phone wakes every second to retry). But the UI must explicitly say "please refresh" — HarWork's `use-chat.ts:313` 'Connection lost, reconnecting…' message should flip to 'Please refresh' once attempts are exhausted.
 
-**Pitfall 3: Long-running agent emits more than 500 events, user reconnects, head is lost.** EventBuffer is a ring buffer — agent emits 600 events while user is gone, user reconnects after the 500th event has been pushed, the first 100 have been `shift()`'d. **On reconnect, client sees agent output "starting from the middle"** — no thinking, tool calls start half-finished. HarWork's stance is: in this case the client should reload the conversation from SQLite for full history, not rely on EventBuffer to fill in. **Buffer's promise is "events in the last 30 seconds," not "all events."** If the agent emits 500+ events in 30 seconds, the agent is too chatty, not the buffer too small.
+> [!WARNING]
+> **Pitfall 3 — Long-running agent emits more than 500 events, user reconnects, head is lost.**
+>
+> EventBuffer is a ring buffer — agent emits 600 events while user is gone, user reconnects after the 500th event has been pushed, the first 100 have been `shift()`'d. **On reconnect, client sees agent output "starting from the middle"** — no thinking, tool calls start half-finished. HarWork's stance is: in this case the client should reload the conversation from SQLite for full history, not rely on EventBuffer to fill in. **Buffer's promise is "events in the last 30 seconds," not "all events."** If the agent emits 500+ events in 30 seconds, the agent is too chatty, not the buffer too small.
 
 ## Figures
 

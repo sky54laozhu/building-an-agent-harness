@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Part 09 covered how hooks inject user code. The next question is obvious: user closes the tab, container pauses, Engine restarts — **can the next session continue the conversation?** This part unpacks HarWork's 30-table SQLite + Drizzle ORM persistence layer (**`schema.ts` 383 LOC + `adapter.ts` 271 LOC + `migrate.ts` 550 LOC**). The more valuable finding than "use SQLite for chats" is: **session runtime state — AbortController / pending permission resolvers / event buffer / permissionMode — HarWork deliberately does NOT persist**. Engine process restart = all in-flight requests deny, but conversation history is intact. That's an intentional line between "process lifecycle" and "user-visible state."
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [Two-layer abstraction](#core-solution-two-layer-storage-abstraction--30-tables--in-memory-sessions) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Production pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 Making an agent "remember" the prior conversation sounds direct but actually solves five problems:
@@ -287,6 +289,7 @@ WebSocket disconnect **does not** immediately cancel the agent loop. Reconnect w
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **The correct boundary for session persistence isn't "store everything" — it's "separate process state from user state."** AbortController / pending Promise resolvers / event buffer / permissionMode are **process state, deliberately not persisted** — lost on process restart. conversation / message / memory / hook config are **user state, must be persisted**. Once these two boundaries are drawn, the entire persistence layer's complexity collapses: process restart logic becomes "in-flight requests drop, user resends," and there's no need for Redis, distributed state, saga / outbox / event sourcing.
 
 Put differently: **forcing process state to persist = disaster**. Serialize AbortController and on the next boot you deserialize an unusable native handle; persist a pending Promise and where does the resolver live after a process swap; cache EventBuffer to disk and do you really replay it on restart? **Every piece of runtime state that "feels like it should be persisted" is a state contamination source on closer inspection**. HarWork goes the other way — **what shouldn't persist, just don't persist** — and the storage layer becomes shockingly thin yet shockingly stable in production.
@@ -295,11 +298,20 @@ The most counterintuitive part: **ContentBlock[] stored as a JSON string**. Text
 
 ## Three Production Pitfalls
 
-**Pitfall 1: using better-sqlite3's sync API for Engine.** Sync API is fast in unit tests and benchmarks, but Engine streams events via async generator ([Part 03](03-agent-loop-async-generator.md)). Sync I/O blocks the event loop → streamed events queue up → UI freezes for the user. HarWork picks `@libsql/client` async driver (`web/lib/db/index.ts:22`) + drizzle-orm async APIs, **every DB op is awaited**.
+> [!WARNING]
+> **Pitfall 1 — Using better-sqlite3's sync API for Engine.**
+>
+> Sync API is fast in unit tests and benchmarks, but Engine streams events via async generator ([Part 03](03-agent-loop-async-generator.md)). Sync I/O blocks the event loop → streamed events queue up → UI freezes for the user. HarWork picks `@libsql/client` async driver (`web/lib/db/index.ts:22`) + drizzle-orm async APIs, **every DB op is awaited**.
 
-**Pitfall 2: awaiting every audit / usage / message DB write synchronously.** A single agent run yields tens of events; awaiting every INSERT visibly delays the LLM stream. HarWork streams messages (saveMessage as each arrives) but audit_log goes through a batched async channel. The more aggressive move: push audit_log via `setImmediate` to the next tick, off the main path.
+> [!WARNING]
+> **Pitfall 2 — Awaiting every audit / usage / message DB write synchronously.**
+>
+> A single agent run yields tens of events; awaiting every INSERT visibly delays the LLM stream. HarWork streams messages (saveMessage as each arrives) but audit_log goes through a batched async channel. The more aggressive move: push audit_log via `setImmediate` to the next tick, off the main path.
 
-**Pitfall 3: `drizzle-kit migrate` in the deploy stage.** "Run migration at deploy time" is the 12-factor textbook play, but in containerized scenarios **runtime migration is what makes the image launchable anywhere**. HarWork picks runtime migration (`web/lib/db/index.ts:17` awaits before db client creation) + versioned tracker table (MIGRATIONS array in migrate.ts:38), with exit(1) on failure. **Give the image + DB path → launch and go, no extra steps.**
+> [!WARNING]
+> **Pitfall 3 — `drizzle-kit migrate` in the deploy stage.**
+>
+> "Run migration at deploy time" is the 12-factor textbook play, but in containerized scenarios **runtime migration is what makes the image launchable anywhere**. HarWork picks runtime migration (`web/lib/db/index.ts:17` awaits before db client creation) + versioned tracker table (MIGRATIONS array in migrate.ts:38), with exit(1) on failure. **Give the image + DB path → launch and go, no extra steps.**
 
 ## Figures
 

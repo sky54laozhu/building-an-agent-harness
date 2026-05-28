@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 同样调 Claude API，为什么 Claude Code、Cursor、Aider 各有各的味道？答案藏在 LLM 之外的那层工程外壳里。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [定义](#核心定义) · [Loop 形态](#harness-loop-长什么样) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [何时自建](#什么时候才该自建-harness)
+
 ## 问题陈述
 
 如果你打开 Claude Code、Cursor、Aider、Continue 的源码或公开材料，会发现一件有意思的事：**它们底下的 LLM 是同一批**——多半是 Claude Sonnet/Opus、GPT-4 系列、Gemini，外加各家自己微调过的中小模型。可它们的产品手感、扩展性、安全边界、断网行为，完全不一样。
@@ -131,7 +133,10 @@ Loop 本体就 20 行。但要让这 20 行"在断线时能续上、在工具卡
 
 ## 反直觉结论
 
-> **Harness 的难点不在 LLM 调用，而在"LLM 不调用的时候"——工具结果如何回灌、压缩何时触发、断线如何续传、用户改主意时如何回滚。Harness ≈ 80% 工程问题 + 20% LLM 问题。**
+> [!IMPORTANT]
+> **Harness 的难点不在 LLM 调用，而在"LLM 不调用的时候"。**
+>
+> 工具结果如何回灌、压缩何时触发、断线如何续传、用户改主意时如何回滚。**Harness ≈ 80% 工程问题 + 20% LLM 问题。**
 
 这句话的含义是：**做一个能用的 AI 编程工具，主要靠的是经典分布式系统、操作系统、数据库的工程功夫，而不是 prompt engineering**。
 

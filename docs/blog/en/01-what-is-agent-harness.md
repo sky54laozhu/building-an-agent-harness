@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Claude Code, Cursor, and Aider all call the same Claude API. So why do they feel so different? The answer lives in the engineering shell wrapped around the LLM.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [Definition](#core-definition) · [The loop](#what-does-the-harness-loop-look-like) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Build your own?](#when-should-you-build-your-own-harness)
+
 ## Problem Statement
 
 If you open the source code or public material for Claude Code, Cursor, Aider, and Continue, you notice something striking: **they're all riding the same underlying LLMs** — mostly Claude Sonnet/Opus, GPT-4 variants, Gemini, plus some in-house fine-tuned smaller models. Yet their product feel, extensibility, security boundaries, and reconnect behavior diverge wildly.
@@ -131,7 +133,10 @@ With the trade-offs in view, here's one counterintuitive conclusion.
 
 ## Counterintuitive Conclusion
 
-> **The hardest part of a harness is not when the LLM is calling — it's when the LLM isn't. How tool results flow back, when compaction fires, how disconnects resume, how the user's mind-change rolls cleanly back. Harness ≈ 80% engineering problems + 20% LLM problems.**
+> [!IMPORTANT]
+> **The hardest part of a harness is not when the LLM is calling — it's when the LLM isn't.**
+>
+> How tool results flow back, when compaction fires, how disconnects resume, how the user's mind-change rolls cleanly back. **Harness ≈ 80% engineering problems + 20% LLM problems.**
 
 What this means: **building a working AI coding tool is mostly classic distributed systems, OS, and database engineering — not prompt engineering.**
 

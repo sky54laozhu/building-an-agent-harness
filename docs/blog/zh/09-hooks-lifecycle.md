@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 第 08 篇把"LLM 不能做什么"框住了。这一篇切到另一面：用户怎么在 LLM 做事的**正中间塞自己的代码**——commit 前跑 lint、Edit 完触发 prettier、UserPromptSubmit 注入项目上下文、SessionEnd 给 Slack 发通知。Claude Code 通过 settings.json 把这套能力做成了主流，HarWork 用 1277 行 TypeScript 把这套生命周期落到自己的 agent loop 上：8 个事件、shell 命令 + HTTP webhook、并行执行、聚合"最严格优先"。**这一篇拆的不是"hook 怎么调"，而是"agent loop 怎么在不打断自己的情况下安全调用别人的代码"。**
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [8 个事件](#核心方案8-个事件--容器内执行) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 让用户在 agent loop 里塞自己的代码听起来简单，做起来要解决至少 5 个问题：
@@ -213,6 +215,7 @@ hook 想改 input？可以，但超过 16K 字符就丢弃（防止恶意 hook �
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **Hook 系统的核心不是"扩展性"，是"故障隔离"。** 进程隔离（跑在用户容器）、超时隔离（60s 强制 kill）、输出 clamp（防 OOM）、错误聚合（hook 自己挂了不阻断主流程）——**4 层隔离都在防"用户脚本把 agent 拖死"**。只有把"用户代码"当成对抗性输入对待，hook 系统才能在生产环境长期稳定。
 
 换句话说：**"非 0 退出 ≠ 阻断"是关键设计**。用户脚本 segfault、写错语法、找不到命令——所有这些都不应该让 LLM 停下来。**只有显式 `exit 2` 或显式 `{"decision": "block"}` 才是真的"我要阻断"信号**。把"故障"和"阻断"在协议层就分开，才能让 hook 系统进生产。
@@ -221,11 +224,20 @@ hook 想改 input？可以，但超过 16K 字符就丢弃（防止恶意 hook �
 
 ## 三个生产坑
 
-**陷阱一：让 hook 配置不带 timeout 默认值**。`timeout: undefined` 直接传给 fetch / exec——exec 会一直等，hook 卡住整个 agent loop。HarWork `DEFAULT_HOOK_TIMEOUT_S = 60`、`DEFAULT_HTTP_TIMEOUT_S = 10` 都是**强制的下限**，配置 row 没设也得有默认。
+> [!WARNING]
+> **陷阱一 —— hook 配置不带 timeout 默认值。**
+>
+> `timeout: undefined` 直接传给 fetch / exec——exec 会一直等，hook 卡住整个 agent loop。HarWork `DEFAULT_HOOK_TIMEOUT_S = 60`、`DEFAULT_HTTP_TIMEOUT_S = 10` 都是**强制的下限**，配置 row 没设也得有默认。
 
-**陷阱二：把 additionalContext 合并到一个大 string**。N 个 hook 各自返回 100 字符的 context，合并成一个 N×100 的大块——LLM 看不出哪段是哪个 hook 的，prompt 也变难调。HarWork 保留**列表结构**（`additionalContexts: string[]`），上限是数量 + 总字符两条线（`output-limits.ts:13-14`）。
+> [!WARNING]
+> **陷阱二 —— 把 additionalContext 合并到一个大 string。**
+>
+> N 个 hook 各自返回 100 字符的 context，合并成一个 N×100 的大块——LLM 看不出哪段是哪个 hook 的，prompt 也变难调。HarWork 保留**列表结构**（`additionalContexts: string[]`），上限是数量 + 总字符两条线（`output-limits.ts:13-14`）。
 
-**陷阱三：hook stdout 当成"日志"打到 console**。用户脚本 `cat /etc/passwd` 直接打到 Engine 日志——内容被泄露到运维人员的日志查询面板。HarWork `clampHookText(stdout, HOOK_MAX_STDOUT_CHARS)` 限制到 64KB，且 `hook_progress / hook_result` stream event 限制到 2KB（`HOOK_STREAM_EVENT_MAX_CHARS=2000`）——**有意识地把"hook 输出"和"系统日志"分开**。
+> [!WARNING]
+> **陷阱三 —— hook stdout 当成"日志"打到 console。**
+>
+> 用户脚本 `cat /etc/passwd` 直接打到 Engine 日志——内容被泄露到运维人员的日志查询面板。HarWork `clampHookText(stdout, HOOK_MAX_STDOUT_CHARS)` 限制到 64KB，且 `hook_progress / hook_result` stream event 限制到 2KB（`HOOK_STREAM_EVENT_MAX_CHARS=2000`）——**有意识地把"hook 输出"和"系统日志"分开**。
 
 ## 配图
 

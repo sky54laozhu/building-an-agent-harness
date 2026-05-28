@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 第 09 篇讲完 hook 怎么塞用户代码，跨 session 的话题就摆在眼前：用户关掉浏览器、容器 pause、Engine 重启，**下次回来对话还能继续吗？** 这一篇拆 HarWork 的 30 张表 SQLite + Drizzle ORM 持久化层（**`schema.ts` 383 行 + `adapter.ts` 271 行 + `migrate.ts` 550 行**）。比"用 SQLite 存对话"更值钱的发现是：**session 运行时状态——AbortController / pending permission resolvers / event buffer / permissionMode——HarWork 故意不持久化**。Engine 进程重启 = 在飞的请求全部 deny，但 conversation 历史完整。这是"进程生命周期"和"用户可见状态"之间的一道刻意分隔。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [两层抽象](#核心方案两层存储抽象--30-张表--内存态-session) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 让 agent 能"记住"上次的对话听起来直接，做起来要解决至少 5 个问题：
@@ -287,6 +289,7 @@ WebSocket 断开**不立刻**取消 agent loop。30s 内重连 → `addConnectio
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **Session 持久化的正确边界不是"什么都存"，而是"区分进程态和用户态"**。AbortController / pending Promise resolver / event buffer / permissionMode —— 这些是进程态，**故意不持久**，进程重启即丢。conversation / message / memory / hook config —— 这些是用户态，**必须持久**。两条边界一旦划清，整个持久化层的复杂度立刻塌下来：进程重启的逻辑只剩"接受当前请求丢、用户重发"，根本不需要写 Redis、不需要分布式状态、不需要 saga / outbox / event sourcing。
 
 换句话说：**进程态硬持久 = 灾难**。你序列化了 AbortController，下次启动反序列化拿到一个无用的 native handle；你存了 pending Promise，进程换一个之后 resolve 在哪？你存了 EventBuffer，重启完真的还要重放？**所有"看起来该存"的运行时状态，仔细想都是状态污染源**。HarWork 反向操作——**该不持久的就坦然不持久**——结果是 storage 层薄得反常，但生产稳得反常。
@@ -295,11 +298,20 @@ WebSocket 断开**不立刻**取消 agent loop。30s 内重连 → `addConnectio
 
 ## 三个生产坑
 
-**坑 1：用 better-sqlite3 同步 API 跑 Engine。** 同步 API 单元测试很快、benchmark 很好看，但 Engine 用 async generator 流式吐事件（[第 03 篇](03-agent-loop-async-generator.md)）。同步 I/O 阻塞 event loop → 流式事件全部堵在队列里，用户看到 UI 卡死。HarWork 选 `@libsql/client` 异步 driver（`web/lib/db/index.ts:22`）+ drizzle-orm 异步 API，**所有 DB 操作都是 await**。
+> [!WARNING]
+> **坑 1 —— 用 better-sqlite3 同步 API 跑 Engine。**
+>
+> 同步 API 单元测试很快、benchmark 很好看，但 Engine 用 async generator 流式吐事件（[第 03 篇](03-agent-loop-async-generator.md)）。同步 I/O 阻塞 event loop → 流式事件全部堵在队列里，用户看到 UI 卡死。HarWork 选 `@libsql/client` 异步 driver（`web/lib/db/index.ts:22`）+ drizzle-orm 异步 API，**所有 DB 操作都是 await**。
 
-**坑 2：把所有 audit / usage / message 写库都同步等返回。** Agent 跑一次几十条事件，每条 INSERT 都 await 等返回 = 用户看 LLM 流式吐字延迟肉眼可见。HarWork 的 messages 是流式写的（每条收到就 saveMessage），但 audit_log 走批量异步通道。更激进的做法：把 audit_log 通过 `setImmediate` 推到下一 tick，不阻塞主路径。
+> [!WARNING]
+> **坑 2 —— 把所有 audit / usage / message 写库都同步等返回。**
+>
+> Agent 跑一次几十条事件，每条 INSERT 都 await 等返回 = 用户看 LLM 流式吐字延迟肉眼可见。HarWork 的 messages 是流式写的（每条收到就 saveMessage），但 audit_log 走批量异步通道。更激进的做法：把 audit_log 通过 `setImmediate` 推到下一 tick，不阻塞主路径。
 
-**坑 3：drizzle-kit migrate 跑在部署阶段。** "部署时跑 migration"是 12factor 教科书做法，但容器化场景下 **runtime 跑 migration 才能保证镜像随处可启**。HarWork 选 runtime migration（`web/lib/db/index.ts:17` 在 db client 创建前 await）+ 版本化追踪表（migrate.ts:38 的 MIGRATIONS 数组），失败直接 exit(1)。**镜像 + DB path 给你 → 启动就能用，不需要额外步骤。**
+> [!WARNING]
+> **坑 3 —— drizzle-kit migrate 跑在部署阶段。**
+>
+> "部署时跑 migration"是 12factor 教科书做法，但容器化场景下 **runtime 跑 migration 才能保证镜像随处可启**。HarWork 选 runtime migration（`web/lib/db/index.ts:17` 在 db client 创建前 await）+ 版本化追踪表（migrate.ts:38 的 MIGRATIONS 数组），失败直接 exit(1)。**镜像 + DB path 给你 → 启动就能用，不需要额外步骤。**
 
 ## 配图
 

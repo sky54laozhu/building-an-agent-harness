@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > The first 12 posts assumed the agent had one model behind it. Anyone who's shipped a commercial agent knows otherwise: **use Claude Opus for hard thinking, Haiku for cheap dialogue, Qwen for Chinese prompts, DeepSeek for SQL/data crunching at one-tenth the cost**. "Multi-model routing" sounds like a major project — provider adapters, stream-protocol conversion, per-model token accounting — but the **actual "model abstraction layer" in HarWork is ~230 lines** (`packages/engine/src/models/registry.ts`). This post explains why it can be that short: **because 90% of Chinese LLM providers have already wrapped themselves to look like the OpenAI API, and the remaining 10% is handled by the AI SDK** — HarWork doesn't write adapters, it writes an "API-key gate plus namespace prefix."
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [5 blocks](#core-solution-5-hardcoded-blocks--ai-sdk--namespace-prefixes) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 To get "swap the model behind an agent" right, you have to answer 5 questions:
@@ -280,6 +282,7 @@ First time you boot HarWork, **this line tells you whether your env vars are wir
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **"Multi-model support" effort scales with the number of protocol families, not provider count**. HarWork supports 5 providers (Anthropic / OpenAI / Zhipu / DeepSeek / Qwen) but only calls 2 SDK packages (`@ai-sdk/anthropic` + `@ai-sdk/openai`) — because **Zhipu speaks Anthropic-compatible, DeepSeek/Qwen speak OpenAI-compatible**. registry.ts fits all providers in ~230 lines because **the SDK has already abstracted "protocol family," and HarWork only writes "which key drives which SDK"**. If some day a provider arrives that's neither OpenAI- nor Anthropic-compatible (e.g. early Google Gemini), registry.ts will grow — not because of a new provider, but because of a new **protocol family**.
 
 Even more counterintuitive: **HarWork has no `ModelProvider` interface, no `BaseProvider` abstract class, no "plugin system."** If you've used LiteLLM or LangChain's provider plugin system, this registry will feel too "flat." But HarWork bets that **Vercel AI SDK is already the de facto standard — binding tightly to it beats writing your own "anti-lock-in" abstraction**. The cost is occasional `??` fallbacks when SDK evolves (`outputTokens ?? completionTokens`); the gain is **adding a provider = one `if` block + one pricing row**.
@@ -288,11 +291,20 @@ The most counterintuitive engineering detail: **provider quirks aren't abstracte
 
 ## Three Production Pitfalls
 
-**Pitfall 1: probeAll has non-zero startup cost, and you may not notice.** Each model = one `hi` call = a few tokens — 10 models = a few dozen tokens = ~$0.01. **One boot is negligible; but if your CI runs e2e tests with repeated engine restarts, hundreds per day, you'll see a "mysterious $1" appear on the bill**. HarWork doesn't gate it (`skipProbe: process.env.NODE_ENV === 'test'`). In CI you should use a mock provider or set ANTHROPIC_API_KEY etc. to empty so the registry skips registration entirely.
+> [!WARNING]
+> **Pitfall 1 — probeAll has non-zero startup cost, and you may not notice.**
+>
+> Each model = one `hi` call = a few tokens — 10 models = a few dozen tokens = ~$0.01. **One boot is negligible; but if your CI runs e2e tests with repeated engine restarts, hundreds per day, you'll see a "mysterious $1" appear on the bill**. HarWork doesn't gate it (`skipProbe: process.env.NODE_ENV === 'test'`). In CI you should use a mock provider or set ANTHROPIC_API_KEY etc. to empty so the registry skips registration entirely.
 
-**Pitfall 2: DEFAULT_PRICING `{3, 3}` is a silent trap.** You register a new model but forget to add the pricing.ts row — billing keeps running, but the price is always $3 / M tokens forever. **The user can't see the discrepancy** until the end-of-month reconciliation shows token count matching but dollar amount off — this kind of bug is painful to track down. **HarWork should `console.warn` inside `estimateCostByModel` when the DEFAULT branch fires**, but it doesn't today. **If you fork HarWork and add a custom provider, remember to add the pricing row at the same time**.
+> [!WARNING]
+> **Pitfall 2 — DEFAULT_PRICING `{3, 3}` is a silent trap.**
+>
+> You register a new model but forget to add the pricing.ts row — billing keeps running, but the price is always $3 / M tokens forever. **The user can't see the discrepancy** until the end-of-month reconciliation shows token count matching but dollar amount off — this kind of bug is painful to track down. **HarWork should `console.warn` inside `estimateCostByModel` when the DEFAULT branch fires**, but it doesn't today. **If you fork HarWork and add a custom provider, remember to add the pricing row at the same time**.
 
-**Pitfall 3: Dynamic providers aren't excluded from probe.** The `if (config.providers)` branch (`registry.ts:143-163`) — are its custom models auto-included in `probeAll`? **Yes** — `probeAll` iterates `this.models.keys()`, which includes everything registered. But if the user misconfigures the baseURL or key for a custom provider, it gets marked `available = false` within 5 seconds, UI immediately greys out. **The pit is from the user's POV**: they configured Kimi via env, booted, see Kimi greyed out in UI — **they don't know probe failed**, they assume HarWork is broken. **Production should expose probeAll's logs (`[models] xxx: unavailable — <msg>`) in an admin UI, not just `console.warn`**, but it currently doesn't.
+> [!WARNING]
+> **Pitfall 3 — Dynamic providers aren't excluded from probe.**
+>
+> The `if (config.providers)` branch (`registry.ts:143-163`) — are its custom models auto-included in `probeAll`? **Yes** — `probeAll` iterates `this.models.keys()`, which includes everything registered. But if the user misconfigures the baseURL or key for a custom provider, it gets marked `available = false` within 5 seconds, UI immediately greys out. **The pit is from the user's POV**: they configured Kimi via env, booted, see Kimi greyed out in UI — **they don't know probe failed**, they assume HarWork is broken. **Production should expose probeAll's logs (`[models] xxx: unavailable — <msg>`) in an admin UI, not just `console.warn`**, but it currently doesn't.
 
 ## Figures
 

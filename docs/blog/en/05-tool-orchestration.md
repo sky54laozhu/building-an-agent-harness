@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Part 03 said each loop iteration lets the LLM emit 0~N tool calls and then invokes `executeTools`. This article answers: **how does `executeTools` actually decide which calls run in parallel, which serially, and who can cancel whom**? `await Promise.all` and two concurrent Edits on the same file will silently lose data; all-serial and 3 Reads waste 3× the latency. HarWork's `tool-executor.ts` (657 lines) gives a "two-stage scheduling + four-path cancellation" answer. This piece unpacks each piece.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [Two-stage scheduling](#core-solution-two-stage-scheduling) · [Cancellation paths](#four-cancellation-paths) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Production pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 The LLM may emit 8 tool calls in a single turn. The orchestrator sitting between the LLM and the tools has to solve three concrete problems:
@@ -196,6 +198,7 @@ Five details that make or break this:
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **The orchestrator's real complexity isn't "concurrency algorithm" — it's "failure semantics."** Parallel grouping is ~50 lines of the 657; the other ~600 are all about "when to stop, who to stop, how to stop."
 
 Put differently: **parallelism is optimization; cancellation is correctness**. An orchestrator missing sibling abort looks just as fast in a demo — but run it in production for a week and you'll see "compile failed yet the tests kept running, producing a bunch of false-positive errors fed back to the LLM" disasters.
@@ -206,11 +209,20 @@ This also explains why `partitionToolCalls` never reorders: **only adjacent merg
 
 ## Three Production Pitfalls
 
-**Pitfall 1: Declaring a non-idempotent tool `isConcurrencySafe: () => true`**. I've seen people write a "counter increment" tool, declare it concurrencySafe, run two in parallel, and end up with +1 (race). **The default should be `false`** — unless you can prove the call has no dependency on shared external state (pure functions like Read / Glob qualify).
+> [!WARNING]
+> **Pitfall 1 — Declaring a non-idempotent tool `isConcurrencySafe: () => true`.**
+>
+> I've seen people write a "counter increment" tool, declare it concurrencySafe, run two in parallel, and end up with +1 (race). **HarWork's rule:** the default should be `false` — unless you can prove the call has no dependency on shared external state (pure functions like Read / Glob qualify).
 
-**Pitfall 2: Thinking "sibling abort = `AbortController.abort()` is enough"**. Look at `tool-executor.ts:291-301` — you have to wrap toolPromise and abortPromise in `Promise.race`. Just calling `siblingAbort.abort()` without the race **lets the already-awaited tool keep running** — the signal is a notification, not a forceful interrupt of an in-flight Promise. Very common pitfall, because many people misread `AbortController`'s "cancel" semantics as forced termination.
+> [!WARNING]
+> **Pitfall 2 — Thinking "sibling abort = `AbortController.abort()` is enough".**
+>
+> Look at `tool-executor.ts:291-301` — you have to wrap toolPromise and abortPromise in `Promise.race`. Just calling `siblingAbort.abort()` without the race **lets the already-awaited tool keep running** — the signal is a notification, not a forceful interrupt of an in-flight Promise. Very common pitfall, because many people misread `AbortController`'s "cancel" semantics as forced termination.
 
-**Pitfall 3: Forgetting to reset `bashErrored` between turns**. `tool-executor.ts:228` declares `let bashErrored = false` at every `executeTools` invocation — so each new loop iteration auto-resets. If you "optimize" by hoisting this variable into ToolContext for reuse, you'll get the ghost bug "user's previous turn had a Bash failure → this turn all Bash calls are cancelled."
+> [!WARNING]
+> **Pitfall 3 — Forgetting to reset `bashErrored` between turns.**
+>
+> `tool-executor.ts:228` declares `let bashErrored = false` at every `executeTools` invocation — so each new loop iteration auto-resets. If you "optimize" by hoisting this variable into ToolContext for reuse, you'll get the ghost bug "user's previous turn had a Bash failure → this turn all Bash calls are cancelled."
 
 ## Figures
 

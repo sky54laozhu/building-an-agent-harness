@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 第 03 篇说 Agent Loop 每轮都会从头组装 system prompt——可这就引出一个问题：**每次会话从零开始，用户得反复教 AI 自己的偏好**。把所有历史塞进 prompt？几轮就爆。靠 LLM 自己每轮"想起来"用户喜欢什么？它没那个 receptor。HarWork（复刻 Claude Code）的答案是**长期记忆**——但它不是一条路径，是三条：CLAUDE.md（指令）、文件级 auto memory（用户/模型协作）、DB-based 抽取（可选）。这一篇把三条全拆开。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [三条路径](#核心方案三条记忆路径) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 跨会话状态有三种典型形态，需求差异很大：
@@ -161,6 +163,7 @@ DB 路径会在会话结束（或某个钩子）触发抽取，单次调用最�
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **记忆系统的真正难点不是"怎么记"，而是"分清边界"。** CLAUDE.md / 文件 memory / DB memory 看起来都在做"长期记忆"，但它们各自的写入者、读取者、生命周期、共享范围全不同—— 混用 = 你过 3 个月就分不清某条规则来源是哪条路径。
 
 换种说法：**记忆是给 LLM 看的状态机，而状态机最怕的是"两个变量同时表达同一含义"**。HarWork 的两套分类常量（`fact/preference/context/correction` vs `user/feedback/project/reference`）就是这个坑的活样本——两个开发同时往两边写，结果就是你 grep 都不知道该 grep 哪一套。
@@ -169,11 +172,20 @@ DB 路径会在会话结束（或某个钩子）触发抽取，单次调用最�
 
 ## 三个生产坑
 
-**陷阱一：CLAUDE.md 写得像产品文档**。我见过有人在 CLAUDE.md 里塞了 5000 字"项目愿景 + 团队介绍 + 历史决策"—— 每轮会话每轮都贴进 prompt，预算瞬间被吃光。**CLAUDE.md 是 instruction，不是文档**：写"应该做什么、不应该做什么"，不写"为什么我们这么做"。后者放 README。
+> [!WARNING]
+> **陷阱一 —— CLAUDE.md 写得像产品文档。**
+>
+> 我见过有人在 CLAUDE.md 里塞了 5000 字"项目愿景 + 团队介绍 + 历史决策"—— 每轮会话每轮都贴进 prompt，预算瞬间被吃光。**CLAUDE.md 是 instruction，不是文档**：写"应该做什么、不应该做什么"，不写"为什么我们这么做"。后者放 README。
 
-**陷阱二：用 DB memory 抽取代替手工 CLAUDE.md**。`memory.ts` 的 LLM 抽取**只看末尾 4000 字符**（`memory.ts:50-51`），且 confidence 是 LLM 自己估的——不可靠。**真正重要的、需要每轮都遵守的规则，必须写进 CLAUDE.md**（人工 curate），而不是寄希望于 LLM 抽取出来。DB memory 适合捕捉"用户随手说了一句的偏好"这种次要信号。
+> [!WARNING]
+> **陷阱二 —— 用 DB memory 抽取代替手工 CLAUDE.md。**
+>
+> `memory.ts` 的 LLM 抽取**只看末尾 4000 字符**（`memory.ts:50-51`），且 confidence 是 LLM 自己估的——不可靠。**真正重要的、需要每轮都遵守的规则，必须写进 CLAUDE.md**（人工 curate），而不是寄希望于 LLM 抽取出来。DB memory 适合捕捉"用户随手说了一句的偏好"这种次要信号。
 
-**陷阱三：把 `.claude/memory/` 提交进 git**。文件 memory 是**模型写的**，里面可能有用户随口说的临时偏好、不再相关的旧上下文。提交后所有 contributor 都会被这些噪音污染。正确做法：`.claude/memory/` 加到 `.gitignore`，团队共享的规则放 `CLAUDE.md`。**只有 CLAUDE.md / .claude/CLAUDE.md / .claude/rules/ 应该 in git**——`CLAUDE.local.md` 和 `.claude/memory/` 都该 ignored。
+> [!WARNING]
+> **陷阱三 —— 把 `.claude/memory/` 提交进 git。**
+>
+> 文件 memory 是**模型写的**，里面可能有用户随口说的临时偏好、不再相关的旧上下文。提交后所有 contributor 都会被这些噪音污染。正确做法：`.claude/memory/` 加到 `.gitignore`，团队共享的规则放 `CLAUDE.md`。**只有 CLAUDE.md / .claude/CLAUDE.md / .claude/rules/ 应该 in git**——`CLAUDE.local.md` 和 `.claude/memory/` 都该 ignored。
 
 ## 配图
 

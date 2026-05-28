@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Part 10 parked session data in SQLite — when users return, their conversation history is intact. But what about the **runtime environment**? The Linux sandbox the AI runs commands in — do we spin up a new container per conversation? HarWork's answer: **one persistent container per user, `docker pause` after 30 idle minutes to freeze CPU, `docker unpause` to wake instantly when they're back**. Cold-starting a fat image (ubuntu + node + python + code-server + ssh) takes 10+ seconds; pause uses the cgroup freezer, unpause is sub-second. This post dissects HarWork's container lifecycle table (**`packages/web/lib/workspace/docker.ts` 271 lines + the idle sweep in `packages/engine/src/session/manager.ts` + the two-layer guard in `dev-server.ts`**), with the central question being **why pause, not stop**.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [Persistent containers](#core-solution-per-user-persistent-containers--30min-idle-sweep--two-layer-pause-guard) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Production pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 Giving every user a Linux sandbox to run commands in sounds simple. To make it work, you need to solve at least 5 problems:
@@ -261,6 +263,7 @@ After switching to K8s, `pause` becomes a no-op rather than a throw. **Why not j
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **The key to persistent containers isn't "reuse the container" — it's "separate activity signals by source layer."** SessionManager watches WebSocket (HarWork's own connection); `pauseContainerFn` watches SSH process count + code-server network connections (inside the container). Both must be zero to pause, neither alone is sufficient — **looking at only one signal means you either pause too eagerly (user SSH'd in gets frozen) or never pause (container has activity that's invisible)**.
 
 In other words: **the pause decision can't be made on a single signal**. WebSocket closed doesn't mean the user is gone, 30 minutes idle doesn't mean the container is empty, `pgrep` showing no sshd doesn't mean nobody will ssh in next minute. HarWork's answer is **multi-signal consensus**: SessionManager is gate 1, the container's internal pgrep+ss is gate 2, both must clear to pause. The wake path is the opposite — **any single entry point** (WebSocket / SSH / preview / cron / API) can trigger unpause. **Tighten the pause decision, broaden the wake doors** — this "strict in, loose out" is the key balance of persistent container systems.
@@ -269,11 +272,20 @@ Most counterintuitive: **pause uses less memory than stop**. Intuition says stop
 
 ## Three Production Pitfalls
 
-**Pitfall 1: Assuming a TCP connection during pause will auto-unpause the container.** Wrong. `docker pause` freezes the cgroup — **not a single line of code in the container will execute**. TCP connections come in, even SYN-ACK can't be sent — the client errors out after TCP retries time out. HarWork explicitly hooks unpause into every entry point's "receive side": before WebSocket handshake, before preview proxy forwards, before SSH accepts — all call `ensureContainerRunning` first. **The container must wake to serve; client retries cannot wake it.**
+> [!WARNING]
+> **Pitfall 1 — Assuming a TCP connection during pause will auto-unpause the container.**
+>
+> Wrong. `docker pause` freezes the cgroup — **not a single line of code in the container will execute**. TCP connections come in, even SYN-ACK can't be sent — the client errors out after TCP retries time out. HarWork explicitly hooks unpause into every entry point's "receive side": before WebSocket handshake, before preview proxy forwards, before SSH accepts — all call `ensureContainerRunning` first. **The container must wake to serve; client retries cannot wake it.**
 
-**Pitfall 2: Tuning sweep interval and idle threshold the wrong direction.** "30 minutes is too long, let's drop to 5 minutes, save more memory" — but a 60-second sweep + 5-minute threshold means **users come back from refilling their coffee and find the container just paused**, the next message waits for unpause. **The idle threshold should be much greater than typical user-away durations** (lunch 30–60min, meetings 30–90min) — that's the balance point between UX and resource use. Don't blindly shrink it.
+> [!WARNING]
+> **Pitfall 2 — Tuning sweep interval and idle threshold the wrong direction.**
+>
+> "30 minutes is too long, let's drop to 5 minutes, save more memory" — but a 60-second sweep + 5-minute threshold means **users come back from refilling their coffee and find the container just paused**, the next message waits for unpause. **The idle threshold should be much greater than typical user-away durations** (lunch 30–60min, meetings 30–90min) — that's the balance point between UX and resource use. Don't blindly shrink it.
 
-**Pitfall 3: Synchronously awaiting `seedSkillsToContainer` during first provision.** Tens of skills, each writing a file — seeding can take 2–5 seconds. If you await it before returning containerId, first-time users wait docker create + seed = 15+ seconds. HarWork chose **async seed, don't await** (`resolve.ts:36`: `seedSkillsToContainer(containerId).catch(() => {})`) — the user gets the container, skills flow in afterwards. The cost: skill list might be empty for the first second. Most users don't need skills immediately. **Async init vs. sync prep is a tradeoff — pick based on "user-expected P95 wait time."**
+> [!WARNING]
+> **Pitfall 3 — Synchronously awaiting `seedSkillsToContainer` during first provision.**
+>
+> Tens of skills, each writing a file — seeding can take 2–5 seconds. If you await it before returning containerId, first-time users wait docker create + seed = 15+ seconds. HarWork chose **async seed, don't await** (`resolve.ts:36`: `seedSkillsToContainer(containerId).catch(() => {})`) — the user gets the container, skills flow in afterwards. The cost: skill list might be empty for the first second. Most users don't need skills immediately. **Async init vs. sync prep is a tradeoff — pick based on "user-expected P95 wait time."**
 
 ## Figures
 

@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > The first 6 parts were about "how the system holds up the LLM" — Loop / context / tool orchestration / memory. This one drops down to the tools themselves. HarWork has 20 tools (`packages/engine/src/tools/*.ts`, 2020 lines), smallest Glob at 35 lines, largest Bash at 335 — but every tool conforms to a single 9-method `HarWorkTool` interface. After reading the source, the one-line takeaway: **a tool isn't a function — it's "a function with its own instruction manual."** The function body may be a few lines; the manual (`prompt()` + `description()` + `inputSchema.describe`) is what makes the LLM use it correctly.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [9-method interface](#core-solution-the-harworktool-9-method-interface) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Production pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 Exposing a set of tools to an LLM requires solving four things:
@@ -182,6 +184,7 @@ Most of the 20 tools' isEnabled returns the constant true. Exceptions are contex
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **A tool's line count is inversely correlated with its design complexity.** Read is 44 lines, but its contract with Edit (cat -n format + unique-match) needs both tools to follow it for it to work. Bash is 335 lines, but 80% is isolated static analysis — caring only "is this command safe," not coordinating with other tools. **The shortest tools often carry the heaviest cross-tool coordination.**
 
 Put differently: **Read is a "protocol," Bash is an "implementation."** Read defines "how file contents are presented to the LLM," and Edit / Write depend on its output format. Bash defines no protocol; it just implements "safe shell execution." If you extend HarWork, **new tools should follow existing protocols rather than inventing new ones** — e.g., a new "FileDiff" tool should follow Read's cat -n format, not invent its own line layout.
@@ -190,15 +193,24 @@ Most counterintuitive: **separating `description()` and `prompt()` is meaningful
 
 ## Three Production Pitfalls
 
-**Pitfall 1: writing description too long**. I've seen 5-line detailed-usage descriptions; result: at tool spec time the LLM reads every one of them — 10 tools × 5 lines = 50 lines of description in prompt. **Description should be 1 line**, save the long stuff for prompt(). SDK description is for "picking which," and shorter is better.
+> [!WARNING]
+> **Pitfall 1 — Writing description too long.**
+>
+> I've seen 5-line detailed-usage descriptions; result: at tool spec time the LLM reads every one of them — 10 tools × 5 lines = 50 lines of description in prompt. **Description should be 1 line**, save the long stuff for prompt(). SDK description is for "picking which," and shorter is better.
 
-**Pitfall 2: hand-writing schemas instead of zod**. zod gives you runtime validation, but more importantly the `.describe()` chain keeps schema and prompt co-located. With hand-written JSON Schema, schema and description drift apart over a few iterations — fields that exist in schema get no description, fields described don't exist in schema. zod forces alignment.
+> [!WARNING]
+> **Pitfall 2 — Hand-writing schemas instead of zod.**
+>
+> zod gives you runtime validation, but more importantly the `.describe()` chain keeps schema and prompt co-located. With hand-written JSON Schema, schema and description drift apart over a few iterations — fields that exist in schema get no description, fields described don't exist in schema. zod forces alignment.
 
-**Pitfall 3: doing permission checks inside `call()`**. `checkPermissions` is a separate interface method — permission decides **can it be invoked**, call **does invoke**. Checking inside call leads to:
-- The executor audits "about to call X" then throws permission denied, so the audit log is wrong
-- The same permission logic gets duplicated across hook / pre-call check / call
-
-**Correct**: permission runs before call, via executor invoking `checkPermissions`; when call runs, assume permission already passed.
+> [!WARNING]
+> **Pitfall 3 — Doing permission checks inside `call()`.**
+>
+> `checkPermissions` is a separate interface method — permission decides **can it be invoked**, call **does invoke**. Checking inside call leads to:
+> - The executor audits "about to call X" then throws permission denied, so the audit log is wrong
+> - The same permission logic gets duplicated across hook / pre-call check / call
+>
+> **Correct**: permission runs before call, via executor invoking `checkPermissions`; when call runs, assume permission already passed.
 
 ## Figures
 

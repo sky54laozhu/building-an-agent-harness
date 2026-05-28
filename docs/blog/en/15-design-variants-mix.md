@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Last post unpacked "point at one artifact and edit it." But the real high-frequency scenario in a commercial design agent is **comparing 3 variants side by side** — hero from A, nav from B, footer from C. HarWork's multi-variant system isn't "3 independent iframes" — it makes **composition a first-class citizen**: the user picks, across 8 section dimensions, **which section comes from which variant**, then POSTs to `/variants/mix` to generate a 4th variant. This post unpacks 4 things: the 3-column compare layout strategy, the mix "recipe" protocol (not HTML synthesis), the `design_variants` schema's status state machine, and **why the "version tree" is actually just a linear log in the schema** — a total of **818 lines of code** (`variant-comparison-canvas.tsx` 94 + `variant-mix-panel.tsx` 133 + `variant-selector.tsx` 105 + `variant-utils.ts` 41 + `variants/route.ts` 143 + `variants/mix/route.ts` 125 + `[variantId]/route.ts` 177).
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [4-step pipeline](#core-solution-4-step-pipeline) · [Counterintuitive](#counter-intuitive-takeaway) · [Pitfalls](#three-production-traps)
+
 ## Problem Statement
 
 To get "the agent emits 3 designs and the user composes a 4th" right, you have to answer 4 questions:
@@ -133,6 +135,7 @@ Rate limit (`variants/route.ts:20-25`): 20 variant creates per user per minute, 
 
 ## Counter-Intuitive Takeaway
 
+> [!IMPORTANT]
 > **The real value of "AI outputs 3 variants at once" is not "providing 3 options" — it's "the elements of those 3 variants can be pulled apart and recombined."** If variants can't be decomposed, 3 variants = a beefed-up retry — the user picks one, throws two away, the agent burns 3× the tokens, the user gets 0× the upgrade. HarWork's mix-and-match makes "composition" a first-class citizen (8-section button grid), **turning "I want A's hero + B's navigation" from spoken description into structured input** — the agent's next turn input isn't text, it's `{ sources: [{ variantId: 'A', sections: ['hero'] }, { variantId: 'B', sections: ['navigation'] }] }`. Precise reference, no language understanding required.
 
 More counter-intuitively: **the mix endpoint doesn't synthesize HTML.** When you first read `variants/mix/route.ts` you expect "input 3 variants, output 1 composed HTML" — actually it writes one metadata row and returns 201. **HTML synthesis is the LLM's job, not the server's** — the server doing section diff/merge would mean: every time the AI changes HTML structure (`<nav>` becomes `<header>`) the algorithm has to follow. Hand "what DOM node is hero?" to the LLM; the server only keeps **intent** (which variant, which sections) — that's the real decoupling.
@@ -141,11 +144,20 @@ The most counter-intuitive engineering detail: **what's called the "version tree
 
 ## Three Production Traps
 
-**Trap 1: sandbox is inconsistent between snapshotHtml and previewUrl paths.** `variant-comparison-canvas.tsx:72` uses `srcDoc={variant.snapshotHtml}` with `sandbox="allow-scripts"` (matches Part 14, safe), but line 79 uses `<iframe src={variant.previewUrl}>` with `sandbox="allow-scripts allow-same-origin"` — Part 14 hammered repeatedly that both together **equals no sandbox**. **Why both exist**: `previewUrl` goes through HarWork's own nginx static preview (same-origin), so historically `allow-same-origin` was added so the parent could `querySelector` the iframe content. But **that opens a sandbox-escape door for same-origin static previews** — when the AI artifact writes `parent.location = '...'`, the previewUrl path succeeds, the srcDoc path is blocked. **Fix**: change line 79 to `sandbox="allow-scripts"` too, give up same-origin access on the previewUrl path, route everything through postMessage — consistent with srcDoc.
+> [!WARNING]
+> **Pitfall 1 — sandbox is inconsistent between snapshotHtml and previewUrl paths.**
+>
+> `variant-comparison-canvas.tsx:72` uses `srcDoc={variant.snapshotHtml}` with `sandbox="allow-scripts"` (matches Part 14, safe), but line 79 uses `<iframe src={variant.previewUrl}>` with `sandbox="allow-scripts allow-same-origin"` — Part 14 hammered repeatedly that both together **equals no sandbox**. **Why both exist**: `previewUrl` goes through HarWork's own nginx static preview (same-origin), so historically `allow-same-origin` was added so the parent could `querySelector` the iframe content. But **that opens a sandbox-escape door for same-origin static previews** — when the AI artifact writes `parent.location = '...'`, the previewUrl path succeeds, the srcDoc path is blocked. **Fix**: change line 79 to `sandbox="allow-scripts"` too, give up same-origin access on the previewUrl path, route everything through postMessage — consistent with srcDoc.
 
-**Trap 2: `variant.snapshotHtml` doesn't exist in the schema.** `variant-selector.tsx:10` defines the `Variant` interface with `snapshotHtml?: string`, but `design-variants-schema.ts` **doesn't have this column** — the variant table only has `snapshotPath` (path string placeholder) and `previewUrl`. Meaning: for the 3-column compare canvas to render variant HTML, the frontend has to inject the `snapshotHtml` from `design_versions` into the Variant object at runtime — that's what `app/design/project/[id]/page.tsx:110`'s `if (v.snapshotHtml) setCurrentHtml(...)` is gluing. **Production cost**: if a freshly-mixed variant has no one to populate `snapshotHtml` (and no one writes a matching `design_versions` row), the 3-column canvas displays "Generating..." forever (lines 84-86). **Fix**: in the variant lifecycle add a "mix → generate the corresponding design_versions row" automation, or actually store snapshotHtml on the design_variants table (accept the redundancy).
+> [!WARNING]
+> **Pitfall 2 — `variant.snapshotHtml` doesn't exist in the schema.**
+>
+> `variant-selector.tsx:10` defines the `Variant` interface with `snapshotHtml?: string`, but `design-variants-schema.ts` **doesn't have this column** — the variant table only has `snapshotPath` (path string placeholder) and `previewUrl`. Meaning: for the 3-column compare canvas to render variant HTML, the frontend has to inject the `snapshotHtml` from `design_versions` into the Variant object at runtime — that's what `app/design/project/[id]/page.tsx:110`'s `if (v.snapshotHtml) setCurrentHtml(...)` is gluing. **Production cost**: if a freshly-mixed variant has no one to populate `snapshotHtml` (and no one writes a matching `design_versions` row), the 3-column canvas displays "Generating..." forever (lines 84-86). **Fix**: in the variant lifecycle add a "mix → generate the corresponding design_versions row" automation, or actually store snapshotHtml on the design_variants table (accept the redundancy).
 
-**Trap 3: mix-panel's button grid becomes 40 buttons at 8 sections × 5 variants.** `variant-mix-panel.tsx:96-114` uses nested map for rendering: 8 rows of section × N columns of variant. When the user has 5 variants open, the UI is 40 buttons — **screen readers have no group semantics** (no `role="radiogroup"`), keyboard Tab order traverses 40 buttons before completing a selection. **Production cost**: accessibility audits flag red; on mobile, 40px buttons easily mis-tap neighboring sections. **Fix**: use a native `<select>` or `<radiogroup>` per section — gives a11y proper semantics and drops Tab count from 40 to 8.
+> [!WARNING]
+> **Pitfall 3 — mix-panel's button grid becomes 40 buttons at 8 sections × 5 variants.**
+>
+> `variant-mix-panel.tsx:96-114` uses nested map for rendering: 8 rows of section × N columns of variant. When the user has 5 variants open, the UI is 40 buttons — **screen readers have no group semantics** (no `role="radiogroup"`), keyboard Tab order traverses 40 buttons before completing a selection. **Production cost**: accessibility audits flag red; on mobile, 40px buttons easily mis-tap neighboring sections. **Fix**: use a native `<select>` or `<radiogroup>` per section — gives a11y proper semantics and drops Tab count from 40 to 8.
 
 ## Diagrams
 

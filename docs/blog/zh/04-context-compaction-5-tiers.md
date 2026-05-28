@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 第 03 篇说 Agent Loop 每轮第一件事是 `await compress(messages)`。这一篇要回答：**这个 compress 到底干了什么**？为什么 Claude Code、Cursor、HarWork 跑几百轮对话不爆窗口？答案不是「一个聪明的摘要算法」，而是**5 层在不同时机、用不同代价、做不同烈度的压缩组合**。本文用 HarWork 的 `compression.ts`（378 行）+ `llm-compact.ts`（133 行）把每层的真实触发阈值与压缩率全部摊开。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [5 层](#核心方案5-层叠加) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 让 Agent 跑长对话有两件硬伤：
@@ -174,6 +176,7 @@ L5 完成后，Loop 会 yield `{ type: 'context_compressed', from, to }`（from/
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **上下文压缩不是「一个聪明算法」，是「一组在不同时机用不同代价做不同烈度的策略」。** 任何只讲「摘要算法」的方案都不解决问题——因为关键不是「怎么压」，而是「什么时候压」「该压到什么程度」「该不该花 LLM 调用的钱」。
 
 换种说法：**压缩的本质是「预算管理」，不是「信息论」**。每层压缩都在回答一个具体的预算问题：
@@ -187,11 +190,20 @@ L5 完成后，Loop 会 yield `{ type: 'context_compressed', from, to }`（from/
 
 ## 三个生产坑
 
-**陷阱一：估算 token 用「字符数 / 4」会低估 30%**。HarWork 的 `estimateTokens` 在 `compression.ts:108` 用 `CHARS_PER_TOKEN = 4` 估算——对中文文本会低估很多（中文 token 化大约 1.5 字符/token）。修复方式：保留 13K 的 `AUTOCOMPACT_BUFFER`（见第 03 篇 effectiveBudget 公式）作为安全垫，宁可早压一些。
+> [!WARNING]
+> **陷阱一 — 估算 token 用「字符数 / 4」会低估 30%。**
+>
+> HarWork 的 `estimateTokens` 在 `compression.ts:108` 用 `CHARS_PER_TOKEN = 4` 估算——对中文文本会低估很多（中文 token 化大约 1.5 字符/token）。**HarWork 的修复**：保留 13K 的 `AUTOCOMPACT_BUFFER`（见第 03 篇 effectiveBudget 公式）作为安全垫，宁可早压一些。
 
-**陷阱二：L2 Snip 会把工具调用对断开**。`compression.ts:197-216` 有一段「同时压上一条 assistant 的 tool_use」的代码——因为 Anthropic API 要求 `tool_use` 和 `tool_result` 必须配对，否则会报错 `tool_use_id mismatch`。如果你只压结果不动 tool_use，API 会拒绝整个请求。HarWork 早期版本就栽过这个坑。
+> [!WARNING]
+> **陷阱二 — L2 Snip 会把工具调用对断开。**
+>
+> `compression.ts:197-216` 有一段「同时压上一条 assistant 的 tool_use」的代码——因为 Anthropic API 要求 `tool_use` 和 `tool_result` 必须配对，否则会报错 `tool_use_id mismatch`。如果你只压结果不动 tool_use，API 会拒绝整个请求。HarWork 早期版本就栽过这个坑。
 
-**陷阱三：L5 调 LLM 时如果用户中断，状态会卡住**。L5 的 `generateText` 调用接了 `abortSignal`——但如果用户在 L5 进行到一半按 Ctrl-C，已经发出去的 prompt 还是会被计费。HarWork 的处理：L5 不重试（与 LLM 主调用的 3 次重试不同），失败立刻 fallback 到「跳过本轮压缩、让 L4 在下一轮 yield error 之前救场」。
+> [!WARNING]
+> **陷阱三 — L5 调 LLM 时如果用户中断，状态会卡住。**
+>
+> L5 的 `generateText` 调用接了 `abortSignal`——但如果用户在 L5 进行到一半按 Ctrl-C，已经发出去的 prompt 还是会被计费。**HarWork 的处理**：L5 不重试（与 LLM 主调用的 3 次重试不同），失败立刻 fallback 到「跳过本轮压缩、让 L4 在下一轮 yield error 之前救场」。
 
 三个陷阱共同的教训：**压缩系统的所有数字（8KB / 0.7 / 0.85 / 8 条）都不是普适最优值，是 HarWork 在生产数据上微调过的「足够好的妥协」**。你换一种 LLM、换一种对话场景（短问答 vs 代码生成），这些数字都该重新校准。
 

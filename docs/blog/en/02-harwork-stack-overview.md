@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > If you were building a Claude Code alternative, what would the stack look like? This article lays out HarWork's actual 16-layer stack on one page, and runs cloc to confirm a counterintuitive number: in the codebase you think of as "an AI product," the code that actually calls the LLM is **0.67%**.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [16 layers](#core-solution-harworks-16-layers) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion-cloc-on-an-ai-product) · [Reading paths](#how-to-read-this-series-two-paths)
+
 ## Problem Statement
 
 Part 01 settled what an Agent Harness *is*: the runtime layer that wraps a stateless LLM API into something stateful, controllable, observable, and extensible. The next obvious engineering question — and the one I've actually been asked the most — is **"OK, so what does that runtime layer break down into? How many layers, how big is each, how do they talk to each other?"**
@@ -110,6 +112,7 @@ The moment of truth. The series spec requires this article to forbid any unverif
 
 With these numbers, Part 01's "80% engineering / 20% LLM" claim turns out to be too polite. **In 33,807 lines of TypeScript, the code responsible for actually calling the LLM is 228 lines — 0.67%.**
 
+> [!IMPORTANT]
 > **You think the hard part of an AI product is the AI; after you've actually finished one that works, the LLM-call code is under 1%.**
 
 What's the other 99.33% doing? Making sure that 0.67% **actually runs, runs stably, runs safely, and is shippable.** This is why the Claude Code, Cursor, and Aider teams have each spent hundreds of person-months — calling the LLM isn't hard. **Making the call *look easy from the outside*** is hard.

@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 上一篇拆完"一份 AI 产物里指着改"。但商业 design agent 真正的高频场景是**一次出 3 个方案并排比**——hero 区用 A、导航用 B、footer 用 C。HarWork 的多方案系统不是"3 个独立 iframe"，而是把"组合"做成一等公民：用户在 8 个 section 维度上**点选哪个 section 取自哪个方案**，POST 给 `/variants/mix` 接口生成第 4 个 variant。这一篇拆 4 个东西：3 列对比画布的布局策略、mix 的"配方"协议（不是 HTML 合成）、`design_variants` schema 的 status 状态机、以及"为什么版本树在 schema 里其实只是一条线性日志"——共 **818 行代码**（`variant-comparison-canvas.tsx` 94 + `variant-mix-panel.tsx` 133 + `variant-selector.tsx` 105 + `variant-utils.ts` 41 + `variants/route.ts` 143 + `variants/mix/route.ts` 125 + `[variantId]/route.ts` 177）。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [4 步管线](#核心方案4-步管线) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 把"AI 一次出 3 版让用户拼第 4 版"做对，要回答 4 个问题：
@@ -133,6 +135,7 @@ export function generateVariantLabels(count: number): string[] {
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **AI 一次出 3 个方案的真正价值不在"提供 3 个选项"，而在"3 个方案的元素可以被拆开重组"**。如果方案不能拆，3 个方案 = 一个加强版的 retry——用户挑一个、丢两个、agent 烧 3 倍 token、用户得到 0 倍升级。HarWork 的 mix-and-match 把"组合"做成一等公民（8 个预定义 section 的 button grid），**让用户的"我想要 A 的 hero + B 的 navigation"从口述变成结构化输入**——agent 下一轮拿到的不是文字描述，是 `{ sources: [{ variantId: 'A', sections: ['hero'] }, { variantId: 'B', sections: ['navigation'] }] }`，精确指代不靠语言理解。
 
 更反直觉的：**mix 接口不合成 HTML**。第一次看 `variants/mix/route.ts` 时所有人都期待"输入 3 个 variant 输出 1 份合成 HTML"，实际它只写一条 metadata 记录就返回 201。**合成 HTML 是 LLM 的活，不是服务端的活**——服务端做 section diff/merge 算法的代价是：每次 AI 改 HTML 结构（`<nav>` 变 `<header>`）算法跟着改。把"hero 是什么 DOM 节点"的语义判断交给 LLM，服务端只保管**意图**（哪个 variant 的哪个 section）——这才是真正的解耦。
@@ -141,11 +144,20 @@ export function generateVariantLabels(count: number): string[] {
 
 ## 三个生产坑
 
-**坑 1：sandbox 在 snapshotHtml / previewUrl 两路上不一致**。`variant-comparison-canvas.tsx:72` 走 `srcDoc={variant.snapshotHtml}` 时 `sandbox="allow-scripts"`（和 Part 14 一致，安全），但 line 79 走 `<iframe src={variant.previewUrl}>` 时是 `sandbox="allow-scripts allow-same-origin"`——Part 14 反复强调过两个一起开**等于没沙箱**。**为什么两路不同**：`previewUrl` 走的是 HarWork 自己的 nginx 静态预览（同源），所以历史上加了 `allow-same-origin` 想让父页能 querySelector iframe 内容。但**这等于给同源静态预览开了从沙箱逃逸的口子**——当 AI 产物里写 `parent.location = '...'` 时，previewUrl 路径会成功，srcDoc 路径会被阻挡。**修法**：把 line 79 也改成 `sandbox="allow-scripts"`，previewUrl 路径放弃同源访问，全部走 postMessage——和 srcDoc 一致。
+> [!WARNING]
+> **坑 1 —— sandbox 在 snapshotHtml / previewUrl 两路上不一致。**
+>
+> `variant-comparison-canvas.tsx:72` 走 `srcDoc={variant.snapshotHtml}` 时 `sandbox="allow-scripts"`（和 Part 14 一致，安全），但 line 79 走 `<iframe src={variant.previewUrl}>` 时是 `sandbox="allow-scripts allow-same-origin"`——Part 14 反复强调过两个一起开**等于没沙箱**。**为什么两路不同**：`previewUrl` 走的是 HarWork 自己的 nginx 静态预览（同源），所以历史上加了 `allow-same-origin` 想让父页能 querySelector iframe 内容。但**这等于给同源静态预览开了从沙箱逃逸的口子**——当 AI 产物里写 `parent.location = '...'` 时，previewUrl 路径会成功，srcDoc 路径会被阻挡。**修法**：把 line 79 也改成 `sandbox="allow-scripts"`，previewUrl 路径放弃同源访问，全部走 postMessage——和 srcDoc 一致。
 
-**坑 2：variant.snapshotHtml 在 schema 里根本不存在**。`variant-selector.tsx:10` 定义的 `Variant` 接口里有 `snapshotHtml?: string`，但 `design-variants-schema.ts` 里**没这个字段**——variant 表只有 `snapshotPath`（文件路径占位）和 `previewUrl`。意思是：3 列对比画布要拿到 variant 的 HTML 渲染，得在**前端运行时把 design_versions 的 snapshotHtml 注入到 Variant 对象**——`app/design/project/[id]/page.tsx:110` 那行 `if (v.snapshotHtml) setCurrentHtml(...)` 就是这个胶水。**生产代价**：如果 mix 出的新 variant 没人帮它写 snapshotHtml（也没人补 design_versions 记录），3 列画布会一直显示 "Generating..."（line 84-86）。**修法**：variant 生命周期里加"mix → 生成对应 design_versions 记录"的自动化触发，或者把 snapshotHtml 真正存到 design_variants 表里（接受冗余）。
+> [!WARNING]
+> **坑 2 —— variant.snapshotHtml 在 schema 里根本不存在。**
+>
+> `variant-selector.tsx:10` 定义的 `Variant` 接口里有 `snapshotHtml?: string`，但 `design-variants-schema.ts` 里**没这个字段**——variant 表只有 `snapshotPath`（文件路径占位）和 `previewUrl`。意思是：3 列对比画布要拿到 variant 的 HTML 渲染，得在**前端运行时把 design_versions 的 snapshotHtml 注入到 Variant 对象**——`app/design/project/[id]/page.tsx:110` 那行 `if (v.snapshotHtml) setCurrentHtml(...)` 就是这个胶水。**生产代价**：如果 mix 出的新 variant 没人帮它写 snapshotHtml（也没人补 design_versions 记录），3 列画布会一直显示 "Generating..."（line 84-86）。**修法**：variant 生命周期里加"mix → 生成对应 design_versions 记录"的自动化触发，或者把 snapshotHtml 真正存到 design_variants 表里（接受冗余）。
 
-**坑 3：mix-panel 的 button grid 在 8 个 section × 5 个 variant 时变成 40 个按钮**。`variant-mix-panel.tsx:96-114` 用嵌套 map 渲染：8 行 section × N 列 variant。当用户开 5 个 variant 后，UI 是 40 个按钮，**screen reader 没有任何分组语义**（没有 `role="radiogroup"`），键盘 Tab 顺序穿过 40 个 button 才能完成一次选择。**生产代价**：accessibility audit 直接红条；移动端拇指点击 40 px button 经常误触相邻 section。**修法**：每个 section 改用原生 `<select>` 或 `<radiogroup>`——既给 a11y 正确语义，又把 Tab 数量从 40 降到 8。
+> [!WARNING]
+> **坑 3 —— mix-panel 的 button grid 在 8 个 section × 5 个 variant 时变成 40 个按钮。**
+>
+> `variant-mix-panel.tsx:96-114` 用嵌套 map 渲染：8 行 section × N 列 variant。当用户开 5 个 variant 后，UI 是 40 个按钮，**screen reader 没有任何分组语义**（没有 `role="radiogroup"`），键盘 Tab 顺序穿过 40 个 button 才能完成一次选择。**生产代价**：accessibility audit 直接红条；移动端拇指点击 40 px button 经常误触相邻 section。**修法**：每个 section 改用原生 `<select>` 或 `<radiogroup>`——既给 a11y 正确语义，又把 Tab 数量从 40 降到 8。
 
 ## 配图
 

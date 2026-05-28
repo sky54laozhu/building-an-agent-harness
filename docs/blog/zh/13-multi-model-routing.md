@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 前 12 篇我们假设 agent 背后只有一个模型。但凡做过商用 agent 都知道：**复杂任务用 Claude Opus 思考，日常对话用 Haiku 省钱，写中文 prompt 用 Qwen 更顺，看 SQL/数据用 DeepSeek 性价比最高**。"多模型路由"听起来像个大工程——provider adapter、stream protocol 转换、token 计费分模型记账——但 HarWork 里**真正的"模型抽象层"只有约 230 行**（`packages/engine/src/models/registry.ts`）。这一篇拆解它为什么能这么短：**因为 90% 的国产模型都已经把自己包装成 OpenAI 兼容接口，剩下 10% 由 AI SDK 接管**——HarWork 不写适配器，只写"API key 闸口 + 命名空间前缀"。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [5 段硬编码](#核心方案5-段硬编码--ai-sdk--命名空间前缀) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 把"在 agent 里换模型"做对，要回答 5 个问题：
@@ -280,6 +282,7 @@ console.log(`[engine] Models registered: ${modelRegistry.listModels().map((m) =>
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **"多模型支持"的工程量与 provider 数量无关，与"协议家族数"相关**。HarWork 支持 5 个 provider（Anthropic / OpenAI / Zhipu / DeepSeek / Qwen），但其实只调用 2 个 SDK 包（`@ai-sdk/anthropic` + `@ai-sdk/openai`）——因为**Zhipu 走 Anthropic 兼容协议，DeepSeek/Qwen 走 OpenAI 兼容协议**。registry.ts 约 230 行能装下所有 provider 的原因是：**SDK 已经把"协议家族"那层抽好了，HarWork 只要写"哪个 key 走哪个 SDK"**。如果哪天有个 provider 既不兼容 OpenAI 也不兼容 Anthropic、自己另搞一套（比如 Google Gemini 早期），那 registry.ts 就会涨——不是因为多了一个 provider，而是因为多了一个**协议家族**。
 
 更反直觉的：**HarWork 没有 "ModelProvider" 接口，没有 "BaseProvider" 抽象类，没有"插件系统"**。如果你之前做过 LiteLLM 或 LangChain 的 provider plugin 体系，会觉得这个 registry 太"扁"。但 HarWork 的押注是：**Vercel AI SDK 已经是事实标准，绑死它好过自己造一层"防止 lock-in"的抽象**。代价是 SDK 升级时偶尔要 `?? ` 兜底（如 `outputTokens ?? completionTokens`），收益是**新加 provider = 一个 `if` 块 + 一行 pricing**。
@@ -288,11 +291,20 @@ console.log(`[engine] Models registered: ${modelRegistry.listModels().map((m) =>
 
 ## 三个生产坑
 
-**坑 1：probeAll 启动期跑成本不为零，但你可能没注意。** 每个模型一次 `hi` 调用 = 几个 token——10 个模型 = 几十个 token = ~ 0.01 美元。**单次启动忽略不计；但你如果在 CI 里跑 e2e 反复重启 engine，一天几百次，账单会冒出"莫名其妙的 1 美元"**。HarWork 没有 `skipProbe: process.env.NODE_ENV === 'test'` 的判断——CI 环境你应该用 mock provider 或者把 ANTHROPIC_API_KEY 等设成空，让 registry 直接跳过。
+> [!WARNING]
+> **坑 1 —— probeAll 启动期跑成本不为零，但你可能没注意。**
+>
+> 每个模型一次 `hi` 调用 = 几个 token——10 个模型 = 几十个 token = ~ 0.01 美元。**单次启动忽略不计；但你如果在 CI 里跑 e2e 反复重启 engine，一天几百次，账单会冒出"莫名其妙的 1 美元"**。HarWork 没有 `skipProbe: process.env.NODE_ENV === 'test'` 的判断——CI 环境你应该用 mock provider 或者把 ANTHROPIC_API_KEY 等设成空，让 registry 直接跳过。
 
-**坑 2：DEFAULT_PRICING `{3, 3}` 是个静音陷阱。** 你注册了一个新模型但忘了在 pricing.ts 加条目——计费照跑、但价格永远是 3 美元/百万 token。**用户看不出差错**，直到月底对账发现 token 数对得上、金额对不上——这种 bug 排查起来极痛苦。**HarWork 应该在 estimateCostByModel 里加 `console.warn` 当走 DEFAULT 分支时**，但目前没加。**如果你 fork HarWork、加自定义 provider，请记得同时加 pricing 条目**。
+> [!WARNING]
+> **坑 2 —— DEFAULT_PRICING `{3, 3}` 是个静音陷阱。**
+>
+> 你注册了一个新模型但忘了在 pricing.ts 加条目——计费照跑、但价格永远是 3 美元/百万 token。**用户看不出差错**，直到月底对账发现 token 数对得上、金额对不上——这种 bug 排查起来极痛苦。**HarWork 应该在 estimateCostByModel 里加 `console.warn` 当走 DEFAULT 分支时**，但目前没加。**如果你 fork HarWork、加自定义 provider，请记得同时加 pricing 条目**。
 
-**坑 3：动态 providers 没经过 probe。** `if (config.providers)` 分支（`registry.ts:143-163`）注册的自定义模型不会自动加入 `probeAll` 吗？其实**会**——`probeAll` 遍历的是 `this.models.keys()`，包含所有注册的模型。但是如果用户自定义 provider 的 baseURL 配错了或者 key 错了，会 5 秒内被标 `available = false`、UI 直接灰掉。**坑在用户视角**：他从环境变量配了 Kimi，结果启动后 UI 上 Kimi 是灰的——**他不知道是 probe 失败了**，以为是 HarWork bug。**生产部署应该把 probeAll 的日志（`[models] xxx: unavailable — <msg>`）暴露在 admin UI 而不只是 console.log**，但目前 HarWork 只 console.warn。
+> [!WARNING]
+> **坑 3 —— 动态 providers 没经过 probe。**
+>
+> `if (config.providers)` 分支（`registry.ts:143-163`）注册的自定义模型不会自动加入 `probeAll` 吗？其实**会**——`probeAll` 遍历的是 `this.models.keys()`，包含所有注册的模型。但是如果用户自定义 provider 的 baseURL 配错了或者 key 错了，会 5 秒内被标 `available = false`、UI 直接灰掉。**坑在用户视角**：他从环境变量配了 Kimi，结果启动后 UI 上 Kimi 是灰的——**他不知道是 probe 失败了**，以为是 HarWork bug。**生产部署应该把 probeAll 的日志（`[models] xxx: unavailable — <msg>`）暴露在 admin UI 而不只是 console.log**，但目前 HarWork 只 console.warn。
 
 ## 配图
 

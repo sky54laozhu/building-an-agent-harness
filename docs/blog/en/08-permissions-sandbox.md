@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > Part 07 said `checkPermissions` is the first gate at the tool layer. But the LLM will find ways around any single gate — concatenating `rm -rf` after `;`, base64-encoding then piping to shell, command substitution with `$()`, or writing to `.git/hooks/post-commit`. This part unpacks how HarWork stops all of those with **three layers of defense**: bash-analyzer for command content, path-guard for file paths, and the Docker sandbox to catch physical side effects. The three layers aren't redundant — they're **complementary**, each catching a different threat model. Bypassing one doesn't compromise the others.
 
+**Jump to:** [Problem](#problem-statement) · [Naive approaches](#why-naive-approaches-fail) · [Three layers](#core-solution-roles-of-the-three-layers) · [Implementation](#key-implementation-details) · [Counterintuitive](#counterintuitive-conclusion) · [Production pitfalls](#three-production-pitfalls)
+
 ## Problem Statement
 
 The LLM isn't malicious, but its training corpus is full of `curl xxx | bash` oneliners — it'll write them naturally while helping you install something. You need to solve:
@@ -221,6 +223,7 @@ In strict mode partitionToolCalls stops merging parallel batches — each call n
 
 ## Counterintuitive Conclusion
 
+> [!IMPORTANT]
 > **Triple defense isn't "duplicate protection" — it's "guarding different boundaries."** bash-analyzer guards command semantic boundaries, path-guard guards application-layer ACL boundaries, Docker guards OS kernel boundaries. Three layers guarding the same thing is redundancy; three layers guarding different boundaries is defense in depth. **When adding a new security check, decide which boundary it guards first, then decide which layer it belongs to.**
 
 Put differently: **bypassImmune is a product decision, not a technical one.** Technically you could route `.git/` through requestPermission (user-overridable), but the product doesn't allow it — because "user gets social-engineered into clicking allow" is a real threat. **Removing the ability to make certain decisions wrong, even for the user, is taking responsibility back to the system layer.**
@@ -229,11 +232,20 @@ Most counterintuitive: **yolo mode is more conservative than it sounds.** Functi
 
 ## Three Production Pitfalls
 
-**Pitfall 1: making bash-analyzer an LLM-callable tool.** Some try "let the LLM use the analyzer tool to vet commands" — the LLM will route around it (skip analyzer, call Bash directly). **Security checks must live on the tool executor's mandatory path**, not be left to LLM self-discipline.
+> [!WARNING]
+> **Pitfall 1 — Making bash-analyzer an LLM-callable tool.**
+>
+> Some try "let the LLM use the analyzer tool to vet commands" — the LLM will route around it (skip analyzer, call Bash directly). **Security checks must live on the tool executor's mandatory path**, not be left to LLM self-discipline.
 
-**Pitfall 2: path-guard with startsWith instead of regex.** `startsWith('/workspace/.git/')` misses `/workspace/sub/.git/` (the user's monorepo). **path-guard must use regex matching `\/\.git\//`** — "contains," not "prefix."
+> [!WARNING]
+> **Pitfall 2 — path-guard with startsWith instead of regex.**
+>
+> `startsWith('/workspace/.git/')` misses `/workspace/sub/.git/` (the user's monorepo). **path-guard must use regex matching `\/\.git\//`** — "contains," not "prefix."
 
-**Pitfall 3: forgetting to set Docker's user to worker.** dockerode's default user is root — and once root inside the container, `chown` / `chmod 777` can change the owner of any mounted file. HarWork `docker.ts:55` sets `User: 'worker'`; k8s does it through Pod securityContext. **Non-root inside containers is baseline, not optional.**
+> [!WARNING]
+> **Pitfall 3 — Forgetting to set Docker's user to worker.**
+>
+> dockerode's default user is root — and once root inside the container, `chown` / `chmod 777` can change the owner of any mounted file. HarWork `docker.ts:55` sets `User: 'worker'`; k8s does it through Pod securityContext. **Non-root inside containers is baseline, not optional.**
 
 ## Figures
 

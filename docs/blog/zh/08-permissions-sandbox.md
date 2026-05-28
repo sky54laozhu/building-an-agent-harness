@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 上一篇说了 `checkPermissions` 是工具的"第一道闸门"。但 LLM 会想出绕开第一道闸门的办法——把 `rm -rf` 拼到 `;` 后面、`base64` 编码再 pipe 给 shell、用 `$()` 替换、甚至直接写文件到 `.git/hooks/post-commit`。这一篇拆 HarWork 怎么用**三层防御**接住所有这些招式：bash-analyzer 拦命令内容、path-guard 拦写文件路径、Docker 沙箱兜底物理副作用。三层不是冗余，是**互补**——每一层抓不同的威胁模型，绕过一层不能绕过另两层。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [三层防御](#核心方案三层防御的分工) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 LLM 不会主动作恶，但它的训练语料里有大量"`curl xxx | bash`"这种 oneliner——它会在帮你装依赖的时候自然写出来。需要解决：
@@ -221,6 +223,7 @@ strict 模式下 partitionToolCalls 不再合并 parallel batch——因为每�
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **三层防御不是"重复保护"，是"分别守不同的边界"。** bash-analyzer 守命令语义边界、path-guard 守应用层 ACL 边界、Docker 守 OS 内核边界。三层守同一个东西就是冗余；守不同边界就是 defense in depth。**新加一个安全检查时，先想清楚它守的是哪条边界，再决定加在哪一层。**
 
 换句话说：**bypassImmune 是产品决策，不是技术决策**。技术上完全可以让 `.git/` 也走 requestPermission（用户也能 override），但产品上不允许——因为"用户被社工后点 allow"是真实威胁。**让某些决策连用户都没机会做错，是把责任拿回到系统手里**。
@@ -229,11 +232,20 @@ strict 模式下 partitionToolCalls 不再合并 parallel batch——因为每�
 
 ## 三个生产坑
 
-**陷阱一：把 bash-analyzer 写成 LLM 调的工具**。有人想"让 LLM 自己用 analyzer 工具检查命令"——LLM 会绕过去（不调用 analyzer 直接调 Bash）。**安全检查必须在 tool executor 强制路径上**，不能交给 LLM 自觉。
+> [!WARNING]
+> **陷阱一 —— 把 bash-analyzer 写成 LLM 调的工具。**
+>
+> 有人想"让 LLM 自己用 analyzer 工具检查命令"——LLM 会绕过去（不调用 analyzer 直接调 Bash）。**安全检查必须在 tool executor 强制路径上**，不能交给 LLM 自觉。
 
-**陷阱二：path-guard 用 startsWith 而不是 regex**。`startsWith('/workspace/.git/')` 漏掉 `/workspace/sub/.git/`（用户的 monorepo）。**path-guard 必须用 regex 匹配 `\/\.git\//`** 这种"包含"，不是"前缀"。
+> [!WARNING]
+> **陷阱二 —— path-guard 用 startsWith 而不是 regex。**
+>
+> `startsWith('/workspace/.git/')` 漏掉 `/workspace/sub/.git/`（用户的 monorepo）。**path-guard 必须用 regex 匹配 `\/\.git\//`** 这种"包含"，不是"前缀"。
 
-**陷阱三：Docker 的 user 字段忘记设 worker**。dockerode 默认 user 是 root——一旦 root 在容器内，`chown` / `chmod 777` 可以改任何挂载文件的 owner。HarWork `docker.ts:55` 设 `User: 'worker'`、k8s 走 Pod securityContext。**容器内非 root 是 baseline，不是 optional**。
+> [!WARNING]
+> **陷阱三 —— Docker 的 user 字段忘记设 worker。**
+>
+> dockerode 默认 user 是 root——一旦 root 在容器内，`chown` / `chmod 777` 可以改任何挂载文件的 owner。HarWork `docker.ts:55` 设 `User: 'worker'`、k8s 走 Pod securityContext。**容器内非 root 是 baseline，不是 optional**。
 
 ## 配图
 

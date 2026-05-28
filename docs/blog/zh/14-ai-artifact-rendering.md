@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 前 13 篇 agent harness 一直在讲"看不见的部分"——loop、上下文、工具、权限、会话、模型。但商业 agent 卖给客户的从来不是 token 流，是**产物**（artifact）：HTML 设计稿、Mermaid 图表、Markdown 报告、SVG 图标。**产物必须被看见，才有价值**。HarWork 的 design canvas 是这个系列里最"可视"的子系统——agent 输出一段 HTML，浏览器实时渲染，用户**点页面里某个按钮说"这块改得太挤了"**，agent 下一轮就精确改那个按钮。这一篇拆这条路径背后的 3 个核心技术：**iframe sandbox 隔离、overlay 脚本注入、postMessage 双向协议**——总共 **368 行代码**（`design-canvas.tsx` 92 + `overlay-script.ts` 154 + `design-annotation-layer.tsx` 122）。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [4 步管线](#核心方案4-步管线) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 把"agent 输出的 HTML 让用户点着改"做对，要回答 4 个问题：
@@ -127,6 +129,7 @@ export const designAnnotations = sqliteTable('design_annotations', {
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **iframe sandbox 的"难"不在选哪些 capability，而在"不选 same-origin"**。看到 `sandbox="allow-scripts allow-same-origin allow-forms allow-popups"` 这种长串属性的 PR 你会以为作者很懂——其实他在**关闭 sandbox**。HarWork 故意只开 `allow-scripts`（`design-canvas.tsx:86`），代价是任何状态共享必须走 postMessage——但这正是你想要的"代价"：**postMessage 是显式协议、可审计；同源访问是隐式共享、不可审计**。同源很爽，但当你的 iframe 内容是 LLM 生成的、不可信的，**显式协议是唯一的护城河**。
 
 更反直觉的：**`sandbox="allow-scripts"`（不带 allow-same-origin）的 iframe 里，`window.origin === "null"`**。你不能 `event.origin === 'https://harwork.example.com'` 检查——因为 origin 就是字符串 `"null"`。所以 HarWork 用**命名空间字段**（`source: 'harwork-design'`）而不是 origin check（`design-canvas.tsx:52`、`overlay-script.ts:123`）。看到别人代码里 `if (e.origin !== window.origin) return` 来 sandbox srcdoc iframe 的——**那段代码永远走不到 return 后面**，因为两边都是 `"null"`。命名空间 + `source: e.source !== iframeRef.current.contentWindow` 检查（`design-canvas.tsx:50`）才是 srcdoc 场景的正解。
@@ -135,11 +138,20 @@ export const designAnnotations = sqliteTable('design_annotations', {
 
 ## 三个生产坑
 
-**坑 1：两套 postMessage 协议同时活着**。`overlay-script.ts:43` 发的消息是 `{ source: 'harwork-design', type: 'elementSelected', payload: {...} }`，但 `lib/design/annotation-protocol.ts:1-8` 又定义了一套 `{ type: 'harwork-design:element-clicked', payload: {...} }` 的"前缀式" type 协议——`design-annotation-layer.tsx:55` 用 `isOverlayMessage` 检查后者。**两套并存的原因**：早期用 source+type，后来重构成 `harwork-design:` 前缀想统一，但 design-canvas.tsx 这条主链路没改完。**生产代价**：annotation-layer 收不到 design-canvas iframe 直接发的消息（type 不匹配），目前是父组件把消息再转发一次。**如果你 fork HarWork**，建议**先把两套合并成一套**——选前缀式更好，因为它在 chrome devtools "message" panel 里更容易过滤。
+> [!WARNING]
+> **坑 1 —— 两套 postMessage 协议同时活着。**
+>
+> `overlay-script.ts:43` 发的消息是 `{ source: 'harwork-design', type: 'elementSelected', payload: {...} }`，但 `lib/design/annotation-protocol.ts:1-8` 又定义了一套 `{ type: 'harwork-design:element-clicked', payload: {...} }` 的"前缀式" type 协议——`design-annotation-layer.tsx:55` 用 `isOverlayMessage` 检查后者。**两套并存的原因**：早期用 source+type，后来重构成 `harwork-design:` 前缀想统一，但 design-canvas.tsx 这条主链路没改完。**生产代价**：annotation-layer 收不到 design-canvas iframe 直接发的消息（type 不匹配），目前是父组件把消息再转发一次。**如果你 fork HarWork**，建议**先把两套合并成一套**——选前缀式更好，因为它在 chrome devtools "message" panel 里更容易过滤。
 
-**坑 2：`enableOverlay` 之前发的事件全丢**。`design-canvas.tsx:66-68` 在 `editMode` 变化时发 `enableOverlay`/`disableOverlay`，但 iframe 加载是异步的——**iframe 还没跑完 overlay 脚本，父页就 sendToIframe 了**——这条消息**永远到不了**（postMessage 不缓冲）。HarWork 的当前缓解：overlay 脚本启动时 `send('overlayReady', {})`（`overlay-script.ts:143`），父页**应该**用这个信号触发 enableOverlay——但 design-canvas.tsx **没监听 overlayReady**（搜 `overlayReady` 在父端没出现）。结果：第一次打开设计稿时，**点元素偶发不弹标注框**，要切换 editMode 一次才好。**修法**：父页 useEffect 监听 overlayReady 再发 enableOverlay；或者 overlay 脚本启动时直接 `enabled = true`（取消 enableOverlay 信令）。
+> [!WARNING]
+> **坑 2 —— `enableOverlay` 之前发的事件全丢。**
+>
+> `design-canvas.tsx:66-68` 在 `editMode` 变化时发 `enableOverlay`/`disableOverlay`，但 iframe 加载是异步的——**iframe 还没跑完 overlay 脚本，父页就 sendToIframe 了**——这条消息**永远到不了**（postMessage 不缓冲）。HarWork 的当前缓解：overlay 脚本启动时 `send('overlayReady', {})`（`overlay-script.ts:143`），父页**应该**用这个信号触发 enableOverlay——但 design-canvas.tsx **没监听 overlayReady**（搜 `overlayReady` 在父端没出现）。结果：第一次打开设计稿时，**点元素偶发不弹标注框**，要切换 editMode 一次才好。**修法**：父页 useEffect 监听 overlayReady 再发 enableOverlay；或者 overlay 脚本启动时直接 `enabled = true`（取消 enableOverlay 信令）。
 
-**坑 3：getSelectorPath 在 React 重新挂载后失效**。AI 重新生成 HTML 时，class 名通常变化不大（Tailwind 那几个 class），但**Tailwind JIT 在 production build 可能给你 `class="text-sm font-bold sm:text-base"` 这种空格分隔 4 个 class 的元素**——`getSelectorPath` 用 `.join('.')` 把 4 个 class 全拼成 `text-sm.font-bold.sm:text-base` 这种**带冒号**的 selector——浏览器 `querySelector` 见到 `:` 当成伪类，**直接 throw**。HarWork 现在没对 `:` 做 CSS.escape——遇到 sm:/md:/lg: 这种 Tailwind responsive class，selector 直接报错。**修法**：在 `getSelectorPath:15` 里加 `cls.replace(/:/g, '\\\\:')`，或者用 `CSS.escape(c)` 包每个 class。**生产部署如果允许 Tailwind 产物，必须修这个**。
+> [!WARNING]
+> **坑 3 —— getSelectorPath 在 React 重新挂载后失效。**
+>
+> AI 重新生成 HTML 时，class 名通常变化不大（Tailwind 那几个 class），但**Tailwind JIT 在 production build 可能给你 `class="text-sm font-bold sm:text-base"` 这种空格分隔 4 个 class 的元素**——`getSelectorPath` 用 `.join('.')` 把 4 个 class 全拼成 `text-sm.font-bold.sm:text-base` 这种**带冒号**的 selector——浏览器 `querySelector` 见到 `:` 当成伪类，**直接 throw**。HarWork 现在没对 `:` 做 CSS.escape——遇到 sm:/md:/lg: 这种 Tailwind responsive class，selector 直接报错。**修法**：在 `getSelectorPath:15` 里加 `cls.replace(/:/g, '\\\\:')`，或者用 `CSS.escape(c)` 包每个 class。**生产部署如果允许 Tailwind 产物，必须修这个**。
 
 ## 配图
 

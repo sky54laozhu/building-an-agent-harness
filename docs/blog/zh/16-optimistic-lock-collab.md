@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > AI 产物（设计稿、PRD、HTML）越好用，多人并发编辑的需求越高。Google Docs 用 OT、Figma 用 CRDT、Notion 用 OT —— 这些都是**普通文档**的协作模型。但 AI 产物的每次编辑都携带**语义决策**（"这个按钮改红是因为品牌主色"），自动合并 = 把语义判断交给 diff 算法，灾难。HarWork 选了相反的路：**乐观锁 + 显式冲突 + 不自动合并**。这一篇拆 4 个东西：5 种朴素方案为什么都不行、HarWork 的乐观锁为什么在**内存**里不在 DB 里、WebSocket `design:*` 消息协议的 5 种 type 怎么分流、以及组织级 share token 的 TTL + 软撤销 —— 共 **852 行代码**（`collab-server.ts` 183 + `version-store.ts` 89 + `ws-server.ts` 280 + `versions/route.ts` 108 + `shares/route.ts` 108 + `shares/[shareId]/route.ts` 129 + `shared/[token]/route.ts` 62 + `design-share-dialog.tsx` 138 + `share-utils.ts` 29 + `design-shares-schema.ts` 20）。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [4 步管线](#核心方案4-步管线) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 多人协作 AI 产物要回答 4 个核心问题：
@@ -137,6 +139,7 @@ export function isShareValid(share: ShareRecord): boolean {
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **AI 产物多人协作不该用 CRDT**。这个结论反 10 年来的协作工具技术潮流（Figma / Linear / Notion 都在卷 CRDT 实现）。但 CRDT 的核心假设是"**编辑可以自动合并**"——这个假设在普通文档（两人同时输入"hello"无冲突）、设计稿位置（两人拖拽不同元素无冲突）里成立，但**在 AI 产物里完全失效**。AI 产物的每次编辑都是**语义决策**——"我把这个按钮改红，是因为基于品牌主色 + 用户行为数据 + 上次和 PM 讨论的结论"。把这种决策交给 diff 算法自动合并 = 让算法替人做产品判断。**HarWork 选乐观锁 + 显式冲突，是承认"AI 产物的协作单位是决策，不是字符"**。
 
 更反直觉的：**乐观锁不在 DB 里，在内存 Map 里**。所有教科书讲乐观锁都教你"加个 version 列、走事务"——但 HarWork 的 `VersionStore.versions: Map<string, number>`（`version-store.ts:21`）就是个纯内存 Map。3 个收益：(1) 性能——SQLite 单线程事务在 10 人并发时锁表，Map O(1) 操作不会；(2) 简化——版本号不需要持久化，**engine 重启时所有 WS 连接断、重连时客户端会主动 `design:sync` 同步**（`collab-server.ts:143-150`），等于天然重置；(3) 分层——DB 的 `design_versions.versionNumber` 管"快照历史"（Part 15 拆过的线性日志），内存的 `VersionStore.versions` 管"并发冲突检测"，**两个维度的版本号绝不混用**。
@@ -145,11 +148,20 @@ export function isShareValid(share: ShareRecord): boolean {
 
 ## 三个生产坑
 
-**坑 1：engine 重启清空 VersionStore，所有客户端的 editVersion 全部变成"过期"**。`version-store.ts:21` 的 `Map` 在进程重启时归零——所有客户端最后一次收到的 `currentVersion` 比如是 47，重启后 server 内 `versions.get('proj-X') = 0`。客户端如果**没有先发 `design:sync`** 就直接发 `design:edit { editVersion: 47 }`，server 比对 `47 !== 0` → 全部 conflict。**生产代价**：engine 重启后第一波编辑全失败，用户看到一堆"冲突"提示但实际没人和他冲突。**修法**：(1) 客户端 WebSocket onopen 必须先发 `design:join`，server 会主动推 `design:sync`（`collab-server.ts:68-73`）让客户端校准；(2) `design:edit` 失败时客户端自动重试一次，先发 `design:sync` 再重发 edit；(3) 终极方案：把 `versions` 从内存搬到 Redis（带 TTL），engine 重启不丢但仍然不走 DB 事务。
+> [!WARNING]
+> **坑 1 —— engine 重启清空 VersionStore，所有客户端的 editVersion 全部变成"过期"。**
+>
+> `version-store.ts:21` 的 `Map` 在进程重启时归零——所有客户端最后一次收到的 `currentVersion` 比如是 47，重启后 server 内 `versions.get('proj-X') = 0`。客户端如果**没有先发 `design:sync`** 就直接发 `design:edit { editVersion: 47 }`，server 比对 `47 !== 0` → 全部 conflict。**生产代价**：engine 重启后第一波编辑全失败，用户看到一堆"冲突"提示但实际没人和他冲突。**修法**：(1) 客户端 WebSocket onopen 必须先发 `design:join`，server 会主动推 `design:sync`（`collab-server.ts:68-73`）让客户端校准；(2) `design:edit` 失败时客户端自动重试一次，先发 `design:sync` 再重发 edit；(3) 终极方案：把 `versions` 从内存搬到 Redis（带 TTL），engine 重启不丢但仍然不走 DB 事务。
 
-**坑 2：share-dialog 生成的 URL 格式与服务端路由不匹配**。`design-share-dialog.tsx:56` 拼的链接是 `${origin}/design/project/${projectId}?token=${shareToken}`（query param 风格），但服务端的 share 路由是 `/api/design/shared/[token]/route.ts`（路径风格）。**当前能跑通是因为**`/design/project/[id]/page.tsx` 在客户端读 `searchParams.token` 后再去 fetch `/api/design/shared/${token}`——多一跳。**生产代价**：(1) 客户端要写额外的"读 query → 调 API"胶水代码；(2) 分享链接给非登录用户时，page.tsx 会先要求登录、再跳转 share 路由，**不是真正的"匿名访问"**。**修法**：要么把 share URL 改成 `/design/shared/${token}` 直接对齐服务端路由，要么 page.tsx 在 query 里有 token 时跳过 auth gate。
+> [!WARNING]
+> **坑 2 —— share-dialog 生成的 URL 格式与服务端路由不匹配。**
+>
+> `design-share-dialog.tsx:56` 拼的链接是 `${origin}/design/project/${projectId}?token=${shareToken}`（query param 风格），但服务端的 share 路由是 `/api/design/shared/[token]/route.ts`（路径风格）。**当前能跑通是因为**`/design/project/[id]/page.tsx` 在客户端读 `searchParams.token` 后再去 fetch `/api/design/shared/${token}`——多一跳。**生产代价**：(1) 客户端要写额外的"读 query → 调 API"胶水代码；(2) 分享链接给非登录用户时，page.tsx 会先要求登录、再跳转 share 路由，**不是真正的"匿名访问"**。**修法**：要么把 share URL 改成 `/design/shared/${token}` 直接对齐服务端路由，要么 page.tsx 在 query 里有 token 时跳过 auth gate。
 
-**坑 3：shared/[token] 路由用 withAuth 但缺 isOrgMember 校验**。`shared/[token]/route.ts:17` 包了 `withAuth`——意思是**share token 不是"公开链接"，使用者必须登录**。问题：`route.ts:11` 的 TODO 注释写着 "Add isOrgMember check when multi-org is implemented"——目前**任何登录用户都能用任何有效的 share token 访问其他组织的 project**。`share-utils.ts:26-29` 有 `isOrgMember` 函数，但它在 share 路由里**没被调用**。**生产代价**：组织 A 的 share token 泄漏给组织 B 的员工 → 组织 B 员工登录后能看到组织 A 的设计稿（虽然不能写，但能看是 view permission 设计的本意外延）。**修法**：`shared/[token]/route.ts` 在 line 32 后加 `if (!isOrgMember(request.user.orgId, share.orgId)) return 403`——4 行代码。
+> [!WARNING]
+> **坑 3 —— shared/[token] 路由用 withAuth 但缺 isOrgMember 校验。**
+>
+> `shared/[token]/route.ts:17` 包了 `withAuth`——意思是**share token 不是"公开链接"，使用者必须登录**。问题：`route.ts:11` 的 TODO 注释写着 "Add isOrgMember check when multi-org is implemented"——目前**任何登录用户都能用任何有效的 share token 访问其他组织的 project**。`share-utils.ts:26-29` 有 `isOrgMember` 函数，但它在 share 路由里**没被调用**。**生产代价**：组织 A 的 share token 泄漏给组织 B 的员工 → 组织 B 员工登录后能看到组织 A 的设计稿（虽然不能写，但能看是 view permission 设计的本意外延）。**修法**：`shared/[token]/route.ts` 在 line 32 后加 `if (!isOrgMember(request.user.orgId, share.orgId)) return 403`——4 行代码。
 
 ## 配图
 

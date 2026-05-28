@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 第 03 篇说每轮 Loop 会让 LLM 输出 0~N 个工具调用，然后调 `executeTools`。这一篇要回答：**executeTools 到底怎么决定哪些并行、哪些串行、谁能取消谁**？如果你直接 `await Promise.all`，连两条 Edit 同时写同一个文件都救不了；如果一律串行，3 个 Read 白白排队 3 倍延迟。HarWork 的 `tool-executor.ts`（657 行）给出了一个"两段式调度 + 4 路取消"的答案，本文把每一段拆开。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [两段式调度](#核心方案两段式调度) · [取消机制](#4-路取消机制) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 LLM 一轮可能吐出 8 个工具调用。Harness 在 LLM 与工具之间夹一个编排器，要解决 3 个具体问题：
@@ -196,6 +198,7 @@ const denials = createDenialTracker(5, 20)  // 5 连续 / 20 总数 → abort
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **编排器的真正复杂度不在"并发算法"，而在"失败语义"。** 并行分组只占 657 行里的 ~50 行；剩下 600 行全在处理"什么时候该停、停谁、怎么停"。
 
 换句话说：**并行是优化，取消是正确性**。一个错过 sibling abort 的编排器在演示视频里看起来一样快——但 production 跑久了你会看到「编译失败但仍然在跑测试，跑出一堆假阳性错误然后回灌给 LLM」的灾难。
@@ -206,11 +209,20 @@ const denials = createDenialTracker(5, 20)  // 5 连续 / 20 总数 → abort
 
 ## 三个生产坑
 
-**陷阱一：把非幂等工具声明为 `isConcurrencySafe: () => true`**。我见过有人写"自增计数器"工具，声明 concurrencySafe，跑两次并发结果只 +1（race condition）。**默认应该是 false**——除非你能证明工具调用对外部状态没有任何依赖（Read / Glob 这种纯函数才符合）。
+> [!WARNING]
+> **陷阱一 — 把非幂等工具声明为 `isConcurrencySafe: () => true`。**
+>
+> 我见过有人写"自增计数器"工具，声明 concurrencySafe，跑两次并发结果只 +1（race condition）。**HarWork 的规则**：默认应该是 false——除非你能证明工具调用对外部状态没有任何依赖（Read / Glob 这种纯函数才符合）。
 
-**陷阱二：误以为 "sibling abort = AbortController.abort() 就够"**。看 `tool-executor.ts:291-301`，必须用 `Promise.race` 把 toolPromise 和 abortPromise 包起来。如果只 `siblingAbort.abort()` 而不 race，**已经在 await 的工具会继续跑完**——signal 只是个通知，不会强行中断 in-flight Promise。这个坑很常见，因为 AbortController 的语义"取消"被很多人误解为强制终止。
+> [!WARNING]
+> **陷阱二 — 误以为 "sibling abort = AbortController.abort() 就够"。**
+>
+> 看 `tool-executor.ts:291-301`，必须用 `Promise.race` 把 toolPromise 和 abortPromise 包起来。如果只 `siblingAbort.abort()` 而不 race，**已经在 await 的工具会继续跑完**——signal 只是个通知，不会强行中断 in-flight Promise。这个坑很常见，因为 AbortController 的语义"取消"被很多人误解为强制终止。
 
-**陷阱三：忘了 `bashErrored` 在 turn 之间需要重置**。`tool-executor.ts:228` 在每次 `executeTools` 调用时 `let bashErrored = false`——所以新一轮 Loop 自动重置。如果你把这变量提升到 ToolContext 里"复用"，你会得到「用户上一轮 Bash 失败，这一轮所有 Bash 都被取消」的诡异 bug。
+> [!WARNING]
+> **陷阱三 — 忘了 `bashErrored` 在 turn 之间需要重置。**
+>
+> `tool-executor.ts:228` 在每次 `executeTools` 调用时 `let bashErrored = false`——所以新一轮 Loop 自动重置。如果你把这变量提升到 ToolContext 里"复用"，你会得到「用户上一轮 Bash 失败，这一轮所有 Bash 都被取消」的诡异 bug。
 
 ## 配图
 

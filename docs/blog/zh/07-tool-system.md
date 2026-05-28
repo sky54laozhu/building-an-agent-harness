@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 前 6 篇都在讲"系统怎么撑起 LLM"——Loop / 上下文 / 工具编排 / 记忆。这一篇下沉到工具本身。HarWork 有 20 个工具（`packages/engine/src/tools/*.ts`，2020 行），最小的 Glob 35 行，最大的 Bash 335 行——但每个工具背后的`HarWorkTool`接口只有 9 个方法。读完源码我得出一句话：**工具不是函数，是"带说明书的函数"**。函数体可能就几行，但说明书（`prompt()` + `description()` + `inputSchema.describe`）才是 LLM 用对的前提。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [9-method 接口](#核心方案harworktool-9-方法接口) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 把一组工具暴露给 LLM，需要解决 4 件事：
@@ -182,6 +184,7 @@ zod → JSON Schema 时 `.describe()` 变 `"description"`，跟 tool spec 一起
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **工具的代码量和它的设计复杂度成反比。** Read 44 行，但它和 Edit 之间的协同契约（cat -n 格式 + unique-match）需要 2 个工具共同遵守、跨工具一致才有效。Bash 335 行，但 80% 是孤立的静态分析——只关心"这条命令安不安全"，不和别的工具协同。**最短的工具往往承载最重的协同设计。**
 
 换种说法：**Read 是"协议"，Bash 是"实现"**。Read 定义了"文件内容怎么呈现给 LLM"这个协议，Edit / Write 都依赖它的输出格式。Bash 不定义协议，只实现"安全的 shell 执行"。如果你扩展 HarWork，**新工具应该尽量 follow 协议而不是新建协议**——比如新加一个 "FileDiff" 工具，应该 follow Read 的 cat -n 格式，而不是发明自己的 line format。
@@ -190,15 +193,24 @@ zod → JSON Schema 时 `.describe()` 变 `"description"`，跟 tool spec 一起
 
 ## 三个生产坑
 
-**陷阱一：把 description 写得太详细**。我见过有人把 description 写成 5 行 detailed usage，结果 LLM 在工具 spec 阶段每个工具都读一遍——10 个工具就 50 行 description 进 prompt。**Description 1 行就够**，长说明放 prompt()。SDK 的 description 字段是为"选哪个"服务的，越简洁越好。
+> [!WARNING]
+> **陷阱一 —— 把 description 写得太详细。**
+>
+> 我见过有人把 description 写成 5 行 detailed usage，结果 LLM 在工具 spec 阶段每个工具都读一遍——10 个工具就 50 行 description 进 prompt。**Description 1 行就够**，长说明放 prompt()。SDK 的 description 字段是为"选哪个"服务的，越简洁越好。
 
-**陷阱二：自己写 schema 不用 zod**。zod 给你的不只是运行时校验，更重要的是 `.describe()` 链式 API 让 schema 和 prompt 写在一起。手写 JSON Schema 时 schema 和 description 分离，**几次迭代后两者会不同步**——schema 里有的字段 description 没提，反之亦然。zod 把它强制对齐。
+> [!WARNING]
+> **陷阱二 —— 自己写 schema 不用 zod。**
+>
+> zod 给你的不只是运行时校验，更重要的是 `.describe()` 链式 API 让 schema 和 prompt 写在一起。手写 JSON Schema 时 schema 和 description 分离，**几次迭代后两者会不同步**——schema 里有的字段 description 没提，反之亦然。zod 把它强制对齐。
 
-**陷阱三：在 call() 里做 permission check**。`checkPermissions` 是接口的独立方法——permission 决定**能不能调**，call 是**实际调**。在 call 里检查权限会导致：
-- 工具执行器先 audit log 了"准备调 X"，再 throw permission denied，audit 就乱套
-- 同一份 permission 逻辑可能在 hook / pre-call check / call 里写三遍
-
-**正确做法**：permission 在 call 之前由 executor 调 `checkPermissions` 决定；call 进来时假设权限已通过。
+> [!WARNING]
+> **陷阱三 —— 在 call() 里做 permission check。**
+>
+> `checkPermissions` 是接口的独立方法——permission 决定**能不能调**，call 是**实际调**。在 call 里检查权限会导致：
+> - 工具执行器先 audit log 了"准备调 X"，再 throw permission denied，audit 就乱套
+> - 同一份 permission 逻辑可能在 hook / pre-call check / call 里写三遍
+>
+> **正确做法**：permission 在 call 之前由 executor 调 `checkPermissions` 决定；call 进来时假设权限已通过。
 
 ## 配图
 

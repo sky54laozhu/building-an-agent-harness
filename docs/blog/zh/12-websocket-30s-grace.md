@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 第 10 篇说"对话历史落 SQLite"，第 11 篇说"30 分钟空闲 pause 容器"。本篇切到中间那一层——**前后端之间的 WebSocket 连接**。Agent 在跑、用户合上电脑/切 wifi/Cmd-R 刷新，连接断了，**agent loop 要立刻 abort 吗？** HarWork 的答案是：**等 30 秒**。30 秒内重连回来无缝衔接、超过 30 秒确实是走了再 abort。这一篇拆 `session/manager.ts` 的 grace timer + EventBuffer(500) + 前端指数退避重连 + 服务端 ping/pong heartbeat 四件套，重点是**为什么"延迟 abort"比"立即 abort"或"永不 abort"都好**。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [30s 宽限](#核心方案30s-grace-timer--eventbuffer500--双向-heartbeat) · [实现要点](#关键实现要点) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 WebSocket 连接和 agent 的关系很微妙：
@@ -257,6 +259,7 @@ session.clearEventBuffer()                        // ← pause 容器的同时�
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **"30 秒"既不是"够用了"也不是"业界惯例"——它是"对人友好的窗口" × "对成本残忍的边界"的交点**。比 30 秒短：用户 wifi 抖一下就触发 abort，体验破碎；比 30 秒长：用户走了半分钟你还在烧 LLM token，成本不可控。30 秒的本质是承认"用户的网络小波动"和"用户真走了"之间没有清晰边界，**用一个固定窗口把模糊地带覆盖掉**。
 
 更反直觉的是：**这个 30 秒的窗口本身和"agent 在跑"绑定**。Agent 没跑你直接关浏览器我什么都不做（grace 不启动），等到 30 分钟后 idle sweep 把容器 pause 了——这是分钟级别。Agent 在跑你关浏览器，我等 30 秒确认你不回来再 abort——这是秒级别。**两个 lifecycle 用两套时间尺度因为它们保护的成本完全不同**：容器内存是连续小账单（可以 30 分钟决策一次），LLM token 是大颗粒尖刺账单（必须秒级响应）。把"什么时候 abort agent"和"什么时候 pause 容器"放在同一个时间尺度上，要么用户体验差（30 分钟还在跑 agent），要么内存浪费（30 秒还不 pause 容器）。
@@ -265,11 +268,20 @@ session.clearEventBuffer()                        // ← pause 容器的同时�
 
 ## 三个生产坑
 
-**坑 1：以为前端 `lastEventId` 准确反映 client 看到的状态。** `use-websocket.ts:115` 在 `onmessage` 里更新 `lastEventIdRef`——但 React state 还没更新、UI 还没渲染。**如果 client 中间崩了**（onmessage 走完但 React 渲染前 OOM），lastEventId 已经更新但用户看到的 UI 是旧的，重连时 client 说"我看到了 X"server 信以为真不再发 X——**用户其实没看到**。HarWork 的折中：先信 lastEventId、显示有冲突时手动 refresh 拉 conversation history（第 10 篇路径）。完美的方案是双方各报 lastEventId 取小，但实现复杂收益小。
+> [!WARNING]
+> **坑 1 —— 以为前端 `lastEventId` 准确反映 client 看到的状态。**
+>
+> `use-websocket.ts:115` 在 `onmessage` 里更新 `lastEventIdRef`——但 React state 还没更新、UI 还没渲染。**如果 client 中间崩了**（onmessage 走完但 React 渲染前 OOM），lastEventId 已经更新但用户看到的 UI 是旧的，重连时 client 说"我看到了 X"server 信以为真不再发 X——**用户其实没看到**。HarWork 的折中：先信 lastEventId、显示有冲突时手动 refresh 拉 conversation history（第 10 篇路径）。完美的方案是双方各报 lastEventId 取小，但实现复杂收益小。
 
-**坑 2：MAX_RECONNECT_ATTEMPTS=10、最大 delay 16s。** 算一下：1+2+4+8+16+16+16+16+16+16 = 111 秒，约 2 分钟后就放弃了。**用户合上电脑 5 分钟回来发现页面显示 "Connection lost"——需要手动刷新**。这是有意的：超过 2 分钟基本是"用户走了"，自动重连有反向作用（手机弹窗每秒重试）。但是要在 UI 上明确提示"请刷新"，HarWork `use-chat.ts:313` 那条 'Connection lost, reconnecting...' 文案要在 attempt 满了之后换成 'Please refresh'。
+> [!WARNING]
+> **坑 2 —— MAX_RECONNECT_ATTEMPTS=10、最大 delay 16s。**
+>
+> 算一下：1+2+4+8+16+16+16+16+16+16 = 111 秒，约 2 分钟后就放弃了。**用户合上电脑 5 分钟回来发现页面显示 "Connection lost"——需要手动刷新**。这是有意的：超过 2 分钟基本是"用户走了"，自动重连有反向作用（手机弹窗每秒重试）。但是要在 UI 上明确提示"请刷新"，HarWork `use-chat.ts:313` 那条 'Connection lost, reconnecting...' 文案要在 attempt 满了之后换成 'Please refresh'。
 
-**坑 3：长跑 agent 出 event 超过 500 条用户重连后丢失开头。** EventBuffer 是 ring buffer——agent 输出 600 条 event 用户 500 条之后才重连，前 100 条已经被 `shift()` 掉了。**重连后 client 看到的是"从中间开始"的 agent 输出**，没有 thinking、tool 调用都从一半开始。HarWork 的态度是这种情况下 client 应该直接 reload 对话从 SQLite 拉完整历史，而不是依赖 EventBuffer 补全——**Buffer 的承诺是"30 秒内的事件"，不是"全部事件"**。如果 agent 30 秒内能输出 500+ event 是 agent 太啰嗦的问题，不是 buffer 太小的问题。
+> [!WARNING]
+> **坑 3 —— 长跑 agent 出 event 超过 500 条用户重连后丢失开头。**
+>
+> EventBuffer 是 ring buffer——agent 输出 600 条 event 用户 500 条之后才重连，前 100 条已经被 `shift()` 掉了。**重连后 client 看到的是"从中间开始"的 agent 输出**，没有 thinking、tool 调用都从一半开始。HarWork 的态度是这种情况下 client 应该直接 reload 对话从 SQLite 拉完整历史，而不是依赖 EventBuffer 补全——**Buffer 的承诺是"30 秒内的事件"，不是"全部事件"**。如果 agent 30 秒内能输出 500+ event 是 agent 太啰嗦的问题，不是 buffer 太小的问题。
 
 ## 配图
 

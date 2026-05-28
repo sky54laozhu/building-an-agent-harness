@@ -14,6 +14,8 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 > 一个人撑 AI 平台，发布要回答 3 件事：每次部署不挂掉用户、出问题 5 分钟回滚、不需要 24h 监控也能睡好觉。HarWork 用 **7 件套渐进发布** 顶住——main/tag 自动构建 + staging→production 晋升门禁 + 组件分离发布 + nginx split_clients 流量切分 + 10/25/50/100 阶梯放量 + 失败率/平均/P95 多探针门限 + 阶梯失败指数退避重试。**关键不是抄大厂工具链，是把渐进发布这个工程模式做对**。本篇拆这 7 件套各自的工程细节、为什么 web 走 canary 而 engine 走 full、为什么 P95 比平均延迟更靠谱、为什么阶梯失败先回退不直接回滚——共 **1592 行 infra-as-code**（`.github/workflows/release.yml` 1239 + `.github/workflows/ci.yml` 97 + `docker/nginx.canary.conf.template` 120 + `docs/release.md` 136）。
 
+**章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [7 件套](#核心方案7-件套渐进发布) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
+
 ## 问题陈述
 
 solo founder 做生产级 SaaS，发布管线要解 4 个问题：
@@ -157,6 +159,7 @@ compute_recovery_wait_seconds() {
 
 ## 反直觉结论
 
+> [!IMPORTANT]
 > **一人撑企业级发布的关键不是抄大厂工具链，是把渐进发布这个工程模式做对**。Spinnaker / ArgoCD / Flagger 是 100 人发布团队的工具——单人用 = 自虐。HarWork 用 **1239 行 GitHub Actions YAML + 120 行 nginx template** 实现 7 件套（canary 切流 + 阶梯放量 + 多探针门限 + 指数退避回退 + 自动回滚），跑在阿里云一台 ECS 上 docker-compose 拉起。**复杂度不是越高越好——单人维护要的是"7 件套都做对"，不是"100 件套都做错"**。
 
 更反直觉的：**P95 比平均延迟更靠谱**。99% 的教程教 "monitoring 看 avg latency"，但 avg 是骗子——6 个请求 5 个 50ms 1 个 5000ms，avg=875ms 通过 1500ms 门限，但有一个用户等了 5 秒。**P95 才能抓出尾延迟退化**：同样的样本 P95=5000ms 直接超 2500ms 门限。HarWork 在 `release.yml:894-904` 用 `sort -n | sed -n "${p95_rank}p"` 6 行 bash 算出 P95 ——不需要 Datadog / New Relic，**6 行 bash + curl --write-out '%{time_total}' 就够**。
@@ -165,11 +168,20 @@ compute_recovery_wait_seconds() {
 
 ## 三个生产坑
 
-**坑 1：`trap 'rollback_on_failure $?' EXIT` 的 `$?` 语义不稳。** `release.yml:400`、`:729` 都用了这个模式——意图是"脚本任何位置非 0 退出 → trap 抓到 exit code → 执行回滚"。但 bash 在 EXIT trap 里 `$?` 的值依赖触发场景：**`set -e` 触发的隐式退出**保留原 exit code，但**显式 `exit N`** 后 trap 里 `$?` = N，**信号触发（SIGTERM）**则 `$?` = 128+signal。SSH 断连（GitHub Actions runner 网络抖动）触发 SIGHUP → trap 看到 `$?` = 129 ≠ 0 → 误判"部署失败"启动回滚，但其实部署已成功只是 SSH 断了。**生产代价**：低概率但出现就是大事故。**修法**：trap 入口处加 `[ "$exit_code" -ge 128 ] && return`——信号触发不回滚（GitHub Actions 会重跑），只在脚本逻辑非 0 时回滚。
+> [!WARNING]
+> **坑 1 —— `trap 'rollback_on_failure $?' EXIT` 的 `$?` 语义不稳。**
+>
+> `release.yml:400`、`:729` 都用了这个模式——意图是"脚本任何位置非 0 退出 → trap 抓到 exit code → 执行回滚"。但 bash 在 EXIT trap 里 `$?` 的值依赖触发场景：**`set -e` 触发的隐式退出**保留原 exit code，但**显式 `exit N`** 后 trap 里 `$?` = N，**信号触发（SIGTERM）**则 `$?` = 128+signal。SSH 断连（GitHub Actions runner 网络抖动）触发 SIGHUP → trap 看到 `$?` = 129 ≠ 0 → 误判"部署失败"启动回滚，但其实部署已成功只是 SSH 断了。**生产代价**：低概率但出现就是大事故。**修法**：trap 入口处加 `[ "$exit_code" -ge 128 ] && return`——信号触发不回滚（GitHub Actions 会重跑），只在脚本逻辑非 0 时回滚。
 
-**坑 2：质量门限把 stable 桶也算进去 = 反向冤枉新版本。** `release.yml:937-942` 的 `run_canary_step_validation` 跑 4 个检查：smoke / canary smoke / **stable 桶质量门限** / canary 桶质量门限——任一失败整级失败。问题：**stable 桶跑的是旧版镜像**，如果旧版本身已经性能退化（比如内存泄漏跑了 30 天）、新版反而修复了——按当前逻辑，stable 桶超 P95 门限 → 整级失败 → 触发回退 → 回退到的就是更烂的旧版。**生产代价**：好版本被坏旧版的退化反向拖死、永远无法上线。**修法**：把 stable 桶的门限改成"参考值不阻塞"（记录但不 return 1），只让 canary 桶门限决定阶梯成败——**对比基线，不是双门限**。
+> [!WARNING]
+> **坑 2 —— 质量门限把 stable 桶也算进去 = 反向冤枉新版本。**
+>
+> `release.yml:937-942` 的 `run_canary_step_validation` 跑 4 个检查：smoke / canary smoke / **stable 桶质量门限** / canary 桶质量门限——任一失败整级失败。问题：**stable 桶跑的是旧版镜像**，如果旧版本身已经性能退化（比如内存泄漏跑了 30 天）、新版反而修复了——按当前逻辑，stable 桶超 P95 门限 → 整级失败 → 触发回退 → 回退到的就是更烂的旧版。**生产代价**：好版本被坏旧版的退化反向拖死、永远无法上线。**修法**：把 stable 桶的门限改成"参考值不阻塞"（记录但不 return 1），只让 canary 桶门限决定阶梯成败——**对比基线，不是双门限**。
 
-**坑 3：冻结窗口的 `date -u -d` 不跨平台。** `release.yml:278`、`:514` 用 `date -u -d "$DEPLOY_FREEZE_UNTIL" +%s` 解析 UTC ISO8601——这是 **GNU coreutils 语法**，在 GitHub Actions 默认 ubuntu runner 上能跑。但部署目标主机若是 macOS（开发者本地）或 Alpine（小镜像 OS）→ `date` 是 BSD/busybox 实现、不识别 `-d`，**直接报"Invalid DEPLOY_FREEZE_UNTIL format"然后 exit 1**。当前能跑是因为 runner 是 ubuntu，但**复用脚本到本地或 Alpine 容器内就炸**。**修法**：用 Python 一行替代——`python3 -c "from datetime import datetime; print(int(datetime.fromisoformat('$DEPLOY_FREEZE_UNTIL'.replace('Z','+00:00')).timestamp()))"`——跨平台稳定。
+> [!WARNING]
+> **坑 3 —— 冻结窗口的 `date -u -d` 不跨平台。**
+>
+> `release.yml:278`、`:514` 用 `date -u -d "$DEPLOY_FREEZE_UNTIL" +%s` 解析 UTC ISO8601——这是 **GNU coreutils 语法**，在 GitHub Actions 默认 ubuntu runner 上能跑。但部署目标主机若是 macOS（开发者本地）或 Alpine（小镜像 OS）→ `date` 是 BSD/busybox 实现、不识别 `-d`，**直接报"Invalid DEPLOY_FREEZE_UNTIL format"然后 exit 1**。当前能跑是因为 runner 是 ubuntu，但**复用脚本到本地或 Alpine 容器内就炸**。**修法**：用 Python 一行替代——`python3 -c "from datetime import datetime; print(int(datetime.fromisoformat('$DEPLOY_FREEZE_UNTIL'.replace('Z','+00:00')).timestamp()))"`——跨平台稳定。
 
 ## 配图
 
