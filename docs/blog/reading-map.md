@@ -74,6 +74,8 @@
 - **写作周期**：2026-08-04 → 2026-09-01（4 周）
 - **代码周期**：2026-04-08 → 2026-05-26（49 天 / 287 commits / 110 测试）
 - **真实代码**：60,444 LOC（engine/src 12,988 + web 36,627 + 其它 ~10,829）
+- **代码引用基准**：全系列所有 `文件:行号` 引用（如 `loop.ts:115`、`compression.ts:142`）对应 HarWork 源码在 commit [`5c11da1`](https://github.com/sky54laozhu/building-an-agent-harness)（2026-05-26）时的快照;代码持续演进后行号可能漂移几行,以该快照为准。
+  _All `file:line` references in this series point to the HarWork source at commit `5c11da1` (2026-05-26); line numbers may drift by a few lines as the code evolves._
 - **配图**：54 张原创 SVG（含 `<title>` / `<desc>` 无障碍标注）
 - **配套**：[seo-matrix.md](seo-matrix.md) · [publishing-checklist.md](publishing-checklist.md) · [DECISIONS.md](DECISIONS.md)
 
