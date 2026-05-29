@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<!-- ============================================================
+     SEO / 社交分享元信息 —— 这些决定客户 google / 转发时看到什么
+     当前用 GitHub Pages 默认地址;买了自有域名后全局替换这个 URL 即可。
+     ============================================================ -->
+<title>Lao Zhu · Agent Harness / AI 工程师 — 49 天独立造了一个生产级 AI Agent Harness</title>
+<meta name="description" content="独立工程师,49 天单人造出 HarWork —— 一个生产级 AI Agent Harness。18 篇双语工程拆解:Agent Loop、上下文压缩、工具沙箱、多模型路由、企业级 CI/CD。承接 Agent 基础设施 / LLM 应用工程咨询与开发。" />
+<meta name="keywords" content="Agent Harness, AI Agent 工程师, LLM 应用开发, Agent Loop, 上下文工程, AI 基础设施咨询, Claude Code 原理, freelance AI engineer" />
+<meta name="author" content="Lao Zhu" />
+<link rel="canonical" href="https://sky54laozhu.github.io/building-an-agent-harness/" />
+
+<!-- Open Graph (微信/Twitter/LinkedIn 转发卡片) -->
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Lao Zhu · Agent Harness / AI 工程师" />
+<meta property="og:description" content="49 天独立造了一个生产级 AI Agent Harness。18 篇双语工程拆解 + 承接 AI Agent / LLM 工程咨询。" />
+<meta property="og:url" content="https://sky54laozhu.github.io/building-an-agent-harness/" />
+<!-- TODO: 换成一张 1200x630 预览图的绝对 URL(可用博客里的某张 SVG 导出 PNG) -->
+<meta property="og:image" content="https://sky54laozhu.github.io/building-an-agent-harness/og-cover.png" />
+<meta name="twitter:card" content="summary_large_image" />
+
+<style>
+  :root{
+    --bg:#0c0d10; --panel:#15171c; --line:#262a32;
+    --fg:#e7e9ee; --muted:#9aa0ad; --accent:#5b9dff; --accent-2:#7ee0c0;
+    --max:920px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:var(--max); margin:0 auto; padding:0 20px}
+  .muted{color:var(--muted)}
+
+  /* 语言切换:默认显示 zh,body.en 时切到 en */
+  .en .lang-zh{display:none}
+  body:not(.en) .lang-en{display:none}
+
+  /* 顶栏 */
+  header.top{position:sticky; top:0; z-index:10; background:rgba(12,13,16,.85); backdrop-filter:blur(8px); border-bottom:1px solid var(--line)}
+  .top .wrap{display:flex; align-items:center; justify-content:space-between; height:56px}
+  .brand{font-weight:700; letter-spacing:.2px}
+  .langbtn{cursor:pointer; border:1px solid var(--line); background:var(--panel); color:var(--fg); border-radius:8px; padding:6px 12px; font-size:14px}
+  .langbtn:hover{border-color:var(--accent)}
+
+  /* Hero */
+  .hero{padding:72px 0 40px}
+  .hero h1{font-size:clamp(28px,5vw,44px); line-height:1.2; margin:0 0 16px}
+  .hero .accent{color:var(--accent-2)}
+  .hero p.lede{font-size:clamp(16px,2.4vw,19px); color:var(--muted); max-width:680px; margin:0 0 28px}
+  .cta-row{display:flex; gap:12px; flex-wrap:wrap}
+  .btn{display:inline-block; padding:11px 18px; border-radius:10px; font-weight:600; font-size:15px}
+  .btn.primary{background:var(--accent); color:#06203f}
+  .btn.primary:hover{filter:brightness(1.08); text-decoration:none}
+  .btn.ghost{border:1px solid var(--line); color:var(--fg)}
+  .btn.ghost:hover{border-color:var(--accent); text-decoration:none}
+
+  /* 数据条 */
+  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:40px 0 8px}
+  .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 12px; text-align:center}
+  .stat b{display:block; font-size:clamp(18px,3vw,26px); color:var(--fg)}
+  .stat span{font-size:12px; color:var(--muted)}
+  @media(max-width:640px){ .stats{grid-template-columns:repeat(2,1fr)} }
+
+  section{padding:44px 0; border-top:1px solid var(--line)}
+  section h2{font-size:22px; margin:0 0 8px}
+  section .sub{color:var(--muted); margin:0 0 24px}
+
+  /* 服务卡 */
+  .cards{display:grid; grid-template-columns:repeat(3,1fr); gap:16px}
+  @media(max-width:760px){ .cards{grid-template-columns:1fr} }
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:20px}
+  .card h3{margin:0 0 8px; font-size:17px}
+  .card p{margin:0; color:var(--muted); font-size:14.5px}
+
+  /* 系列列表 */
+  .series{display:grid; grid-template-columns:1fr 1fr; gap:10px 22px}
+  @media(max-width:640px){ .series{grid-template-columns:1fr} }
+  .series .row{display:flex; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:14.5px}
+  .series .row .n{color:var(--accent); font-variant-numeric:tabular-nums; min-width:26px}
+
+  footer{padding:36px 0 60px; border-top:1px solid var(--line); color:var(--muted); font-size:14px}
+  .contact a{margin-right:18px; font-weight:600}
+  .note{font-size:12.5px; color:#6b7280; margin-top:18px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <span class="brand">Lao Zhu</span>
+    <button class="langbtn" onclick="document.body.classList.toggle('en')">
+      <span class="lang-zh">EN</span><span class="lang-en">中文</span>
+    </button>
+  </div>
+</header>
+
+<!-- ===================== HERO ===================== -->
+<div class="hero">
+  <div class="wrap">
+    <h1>
+      <span class="lang-zh">我用 49 天,一个人造了一个<span class="accent">生产级 AI Agent Harness</span>。</span>
+      <span class="lang-en">In 49 days, solo, I built a <span class="accent">production-grade AI Agent Harness</span>.</span>
+    </h1>
+    <p class="lede">
+      <span class="lang-zh">同样调 Claude API,为什么 Claude Code、Cursor 各有各的手感?差异在 LLM 外面那层"壳"。我把这层壳从零造了出来(HarWork),并写成了 18 篇双语工程拆解 —— 每一处架构决策都有真实代码与数字支撑。现承接 <b>Agent 基础设施 / LLM 应用工程</b> 的咨询与开发。</span>
+      <span class="lang-en">Same Claude API — yet Claude Code, Cursor, Aider all feel different. The difference is the engineering shell around the LLM. I built that shell from scratch (HarWork) and documented it in 18 bilingual deep-dives, every decision backed by real code and numbers. Available for <b>agent-infrastructure / LLM-application</b> consulting & build work.</span>
+    </p>
+    <div class="cta-row">
+      <a class="btn primary" href="mailto:sky54laozhu@gmail.com?subject=Agent%20%2F%20LLM%20%E5%B7%A5%E7%A8%8B%E5%92%A8%E8%AF%A2">
+        <span class="lang-zh">→ 聊聊你的项目</span><span class="lang-en">→ Discuss your project</span>
+      </a>
+      <a class="btn ghost" href="#series">
+        <span class="lang-zh">读 18 篇拆解</span><span class="lang-en">Read the 18-part series</span>
+      </a>
+      <a class="btn ghost" href="https://github.com/sky54laozhu/building-an-agent-harness" target="_blank" rel="noopener">GitHub</a>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b>49</b><span class="lang-zh">天独立开发</span><span class="lang-en">days, solo</span></div>
+      <div class="stat"><b>287</b><span>commits</span></div>
+      <div class="stat"><b>60K</b><span class="lang-zh">行真实代码</span><span class="lang-en">lines of code</span></div>
+      <div class="stat"><b>110</b><span class="lang-zh">个测试</span><span class="lang-en">tests</span></div>
+      <div class="stat"><b>18</b><span class="lang-zh">篇双语拆解</span><span class="lang-en">deep-dives</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== 服务 ===================== -->
+<section id="services">
+  <div class="wrap">
+    <h2><span class="lang-zh">我能帮你做什么</span><span class="lang-en">What I can help with</span></h2>
+    <p class="sub"><span class="lang-zh">不是"会调 API",是把 LLM 变成断网能续、超窗不崩、删库被拦的生产系统。</span><span class="lang-en">Not "I can call an API" — turning an LLM into a system that survives disconnects, never overflows, and refuses to <code>rm -rf</code>.</span></p>
+    <div class="cards">
+      <div class="card">
+        <h3><span class="lang-zh">Agent 基础设施</span><span class="lang-en">Agent Infrastructure</span></h3>
+        <p><span class="lang-zh">Agent Loop、工具协议、权限沙箱、Hooks、中断与恢复 —— 从零搭可维护的 harness,或审查你现有的。</span><span class="lang-en">Agent loops, tool protocols, permission sandboxes, hooks, interrupt/resume — build a maintainable harness from scratch, or audit your existing one.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="lang-zh">LLM 应用工程</span><span class="lang-en">LLM Application Engineering</span></h3>
+        <p><span class="lang-zh">上下文压缩、多模型路由、流式 + WebSocket 韧性、token 成本治理 —— 让长对话不爆窗口、不烧钱。</span><span class="lang-en">Context compaction, multi-model routing, streaming + WebSocket resilience, token-cost control — long conversations that don't overflow or burn cash.</span></p>
+      </div>
+      <div class="card">
+        <h3><span class="lang-zh">生产化与上线</span><span class="lang-en">Productionizing & Shipping</span></h3>
+        <p><span class="lang-zh">会话存储、每用户持久 Docker、金丝雀发布 + 多探针自动回滚 —— 把 demo 变成扛得住真实流量的服务。</span><span class="lang-en">Session storage, per-user persistent Docker, canary releases + multi-probe auto-rollback — turn a demo into a service that holds under real traffic.</span></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 系列 ===================== -->
+<section id="series">
+  <div class="wrap">
+    <h2><span class="lang-zh">18 篇工程拆解</span><span class="lang-en">The 18-part series</span></h2>
+    <p class="sub"><span class="lang-zh">每篇都从"朴素方案为什么不行"讲到真实代码。<a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/reading-map.md">完整阅读地图 →</a></span><span class="lang-en">Each part goes from "why the naive approach fails" to real code. <a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/en/01-what-is-agent-harness.md">Start reading →</a></span></p>
+    <div class="series">
+      <div class="row"><span class="n">01</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/01-what-is-agent-harness.md"><span class="lang-zh">什么是 Agent Harness</span><span class="lang-en">What is an Agent Harness</span></a></div>
+      <div class="row"><span class="n">02</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/02-harwork-stack-overview.md"><span class="lang-zh">技术栈全景(16 层)</span><span class="lang-en">Stack overview (16 layers)</span></a></div>
+      <div class="row"><span class="n">03</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/03-agent-loop-async-generator.md"><span class="lang-zh">Agent Loop:async generator</span><span class="lang-en">Agent Loop: async generator</span></a></div>
+      <div class="row"><span class="n">04</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/04-context-compaction-5-tiers.md"><span class="lang-zh">5 层上下文压缩</span><span class="lang-en">5-tier context compaction</span></a></div>
+      <div class="row"><span class="n">05</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/05-tool-orchestration.md"><span class="lang-zh">工具编排:并行/串行/中断</span><span class="lang-en">Tool orchestration</span></a></div>
+      <div class="row"><span class="n">06</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/06-long-term-memory.md"><span class="lang-zh">长期记忆</span><span class="lang-en">Long-term memory</span></a></div>
+      <div class="row"><span class="n">07</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/07-tool-system.md"><span class="lang-zh">工具系统:9 方法接口</span><span class="lang-en">Tool system</span></a></div>
+      <div class="row"><span class="n">08</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/08-permissions-sandbox.md"><span class="lang-zh">权限沙箱:3 层防御</span><span class="lang-en">Permission sandbox</span></a></div>
+      <div class="row"><span class="n">09</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/09-hooks-lifecycle.md"><span class="lang-zh">Hooks 生命周期</span><span class="lang-en">Hooks lifecycle</span></a></div>
+      <div class="row"><span class="n">10</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/10-session-storage.md"><span class="lang-zh">会话存储:30 表 schema</span><span class="lang-en">Session storage</span></a></div>
+      <div class="row"><span class="n">11</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/11-persistent-docker.md"><span class="lang-zh">每用户持久 Docker</span><span class="lang-en">Persistent Docker</span></a></div>
+      <div class="row"><span class="n">12</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/12-websocket-30s-grace.md"><span class="lang-zh">WebSocket 30s 宽限</span><span class="lang-en">WebSocket 30s grace</span></a></div>
+      <div class="row"><span class="n">13</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/13-multi-model-routing.md"><span class="lang-zh">多模型路由</span><span class="lang-en">Multi-model routing</span></a></div>
+      <div class="row"><span class="n">14</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/14-ai-artifact-rendering.md"><span class="lang-zh">AI artifact 渲染</span><span class="lang-en">AI artifact rendering</span></a></div>
+      <div class="row"><span class="n">15</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/15-design-variants-mix.md"><span class="lang-zh">多版本对比 + 混搭</span><span class="lang-en">Variants + remix</span></a></div>
+      <div class="row"><span class="n">16</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/16-optimistic-lock-collab.md"><span class="lang-zh">乐观锁实时协作</span><span class="lang-en">Optimistic-lock collab</span></a></div>
+      <div class="row"><span class="n">17</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/17-enterprise-cicd.md"><span class="lang-zh">企业级 CI/CD</span><span class="lang-en">Enterprise CI/CD</span></a></div>
+      <div class="row"><span class="n">18</span><a href="https://github.com/sky54laozhu/building-an-agent-harness/blob/master/docs/blog/zh/18-49-day-retro.md"><span class="lang-zh">49 天复盘</span><span class="lang-en">49-day retrospective</span></a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 联系 ===================== -->
+<footer id="contact">
+  <div class="wrap">
+    <h2 style="color:var(--fg); margin-bottom:14px"><span class="lang-zh">找我合作</span><span class="lang-en">Work with me</span></h2>
+    <p><span class="lang-zh">有 Agent / LLM 工程的活儿,或想让现有系统更稳更省?发我一段背景,我会在一个工作日内回。</span><span class="lang-en">Got agent / LLM engineering work, or want an existing system more robust and cheaper? Send me a paragraph of context — I reply within one business day.</span></p>
+    <p class="contact">
+      <a href="mailto:sky54laozhu@gmail.com">Email</a>
+      <a href="https://github.com/sky54laozhu" target="_blank" rel="noopener">GitHub</a>
+    </p>
+    <p class="note">© 2026 Lao Zhu · <span class="lang-zh">内容 CC BY-SA 4.0,代码 MIT。本页基于真实项目 HarWork(287 commits / 60,444 LOC / 110 测试)。</span><span class="lang-en">Content CC BY-SA 4.0, code MIT. Built on the real HarWork project (287 commits / 60,444 LOC / 110 tests).</span></p>
+  </div>
+</footer>
+
+</body>
+</html>
