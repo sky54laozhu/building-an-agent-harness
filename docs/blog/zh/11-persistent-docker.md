@@ -40,7 +40,7 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 **朴素 5：Engine 直接调 dockerode。** Engine 包绑死 Docker，要上 K8s 就要把 SessionManager.startIdleSweep 重写。HarWork 选 callback 注入：`pauseContainer?: (id) => Promise<void>` 由外部传——dev-server.ts 看 `WORKSPACE_BACKEND` 环境变量决定具体实现，Docker 还是 K8s 都通过同一个 callback 口子进。
 
-HarWork 的答案：**Per-user 容器名 `harwork-${userId}` + container_id 存在 users 表 + 60 秒 sweep 60 分之一概率扫所有 session + 30 分钟无活动才 pause + pause 前先 pgrep sshd + ss 检查 code-server 连接 + 五个入口都 ensureContainerRunning + Docker/K8s 双 backend 通过 callback 注入**。
+HarWork 的答案：**Per-user 容器名 `harwork-${userId}` + container_id 存在 users 表 + 每 60 秒扫一遍所有 session + 30 分钟无活动才 pause + pause 前先 pgrep sshd + ss 检查 code-server 连接 + 五个入口都 ensureContainerRunning + Docker/K8s 双 backend 通过 callback 注入**。
 
 ## 核心方案：Per-User 持久容器 + 30min Idle Sweep + 双层 pause guard
 

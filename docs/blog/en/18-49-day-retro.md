@@ -11,7 +11,7 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 # Part 18: Retrospective — 49 Days Solo-Building a Harness, What Worked and What Didn't
 
-> A series finale shouldn't be "look how great I am" — it should be "what I'd do differently next time." 49 days, 287 commits, 60.7K LOC, 110 tests, 17 blog posts + 51 diagrams — that's the entire HarWork solo war effort. This post doesn't ship code or P95 charts. It delivers **4 things done right / 5 things done wrong / 4 tech-choice regrets / 4 solo tradeoffs**, plus the series closing checklist: reading map, keyword index, acknowledgments, contact. **Honest disclosure is the last pillar holding up this series' long-tail traffic.**
+> A series finale shouldn't be "look how great I am" — it should be "what I'd do differently next time." 49 days, 287 commits, 60.7K LOC, 110 tests, 18 blog posts + 54 diagrams — that's the entire HarWork solo war effort. This post doesn't ship code or P95 charts. It delivers **4 things done right / 5 things done wrong / 4 tech-choice regrets / 4 solo tradeoffs**, plus the series closing checklist: reading map, keyword index, acknowledgments, contact. **Honest disclosure is the last pillar holding up this series' long-tail traffic.**
 
 **Jump to:** [Timeline](#1-timeline-real-git-log-not-memory) · [Done right](#2-four-things-done-right) · [Done wrong](#3-five-things-done-wrong) · [Tech regrets](#4-four-tech-choice-regrets-which-look-right-in-hindsight) · [Solo tradeoffs](#5-four-solo-tradeoffs) · [Counter-intuitive](#counter-intuitive-takeaway) · [Closing checklist](#series-closing-checklist)
 
@@ -155,7 +155,7 @@ Most counter-intuitive engineering conclusion: **all 4 things done right were Da
 - **Real tests**: 110
 - **Real commits**: 287
 - **Real timeline**: 49 days (2026-04-08 → 2026-05-26)
-- **Blog output**: 18 posts / 51 SVG diagrams / ~180K Chinese characters / ~40K English words
+- **Blog output**: 18 posts / 54 SVG diagrams / ~180K Chinese characters / ~40K English words
 
 ### ④ Acknowledgments
 

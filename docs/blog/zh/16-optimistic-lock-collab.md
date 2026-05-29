@@ -12,7 +12,7 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 # Part 16：乐观锁实时协作 —— 为什么 AI 产物多人协作不该用 CRDT
 
-> AI 产物（设计稿、PRD、HTML）越好用，多人并发编辑的需求越高。Google Docs 用 OT、Figma 用 CRDT、Notion 用 OT —— 这些都是**普通文档**的协作模型。但 AI 产物的每次编辑都携带**语义决策**（"这个按钮改红是因为品牌主色"），自动合并 = 把语义判断交给 diff 算法，灾难。HarWork 选了相反的路：**乐观锁 + 显式冲突 + 不自动合并**。这一篇拆 4 个东西：5 种朴素方案为什么都不行、HarWork 的乐观锁为什么在**内存**里不在 DB 里、WebSocket `design:*` 消息协议的 5 种 type 怎么分流、以及组织级 share token 的 TTL + 软撤销 —— 共 **852 行代码**（`collab-server.ts` 183 + `version-store.ts` 89 + `ws-server.ts` 280 + `versions/route.ts` 108 + `shares/route.ts` 108 + `shares/[shareId]/route.ts` 129 + `shared/[token]/route.ts` 62 + `design-share-dialog.tsx` 138 + `share-utils.ts` 29 + `design-shares-schema.ts` 20）。
+> AI 产物（设计稿、PRD、HTML）越好用，多人并发编辑的需求越高。Google Docs 用 OT、Figma 用 CRDT、Notion 用 OT —— 这些都是**普通文档**的协作模型。但 AI 产物的每次编辑都携带**语义决策**（"这个按钮改红是因为品牌主色"），自动合并 = 把语义判断交给 diff 算法，灾难。HarWork 选了相反的路：**乐观锁 + 显式冲突 + 不自动合并**。这一篇拆 4 个东西：5 种朴素方案为什么都不行、HarWork 的乐观锁为什么在**内存**里不在 DB 里、WebSocket `design:*` 消息协议的 5 种 type 怎么分流、以及组织级 share token 的 TTL + 软撤销 —— 共 **1146 行代码**（`collab-server.ts` 183 + `version-store.ts` 89 + `ws-server.ts` 280 + `versions/route.ts` 108 + `shares/route.ts` 108 + `shares/[shareId]/route.ts` 129 + `shared/[token]/route.ts` 62 + `design-share-dialog.tsx` 138 + `share-utils.ts` 29 + `design-shares-schema.ts` 20）。
 
 **章节跳转：**[问题](#问题陈述) · [朴素方案](#朴素方案为什么不行) · [4 步管线](#核心方案4-步管线) · [反直觉](#反直觉结论) · [生产坑](#三个生产坑)
 
