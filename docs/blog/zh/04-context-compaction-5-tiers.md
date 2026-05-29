@@ -144,7 +144,7 @@ if (currentTokens >= budget * 0.85 && messages.length > 10) {
 
 针对场景：对话已经被 L3 压过一次，但用户继续追问、新工具结果继续累积，占用又冲到 85%——这时 L3 已经救不了局（旧消息早压过了），需要**语义层面的重新组织**。
 
-L5 用一段**精心设计的长 prompt**（`compact-prompt.ts`，整体 133 行），让 LLM 把整段历史压成 9 个结构化段落：① Primary Request and Intent ② Key Technical Concepts ③ Files and Code Sections ④ Errors and fixes ⑤ Problem Solving ⑥ All user messages ⑦ Pending Tasks ⑧ Current Work ⑨ Optional Next Step。
+L5 用一段**精心设计的长 prompt**（提示词单独放在 `compact-prompt.ts`——它与上面触发逻辑所在的 `llm-compact.ts` 是两个文件，恰好都是 133 行），让 LLM 把整段历史压成 9 个结构化段落：① Primary Request and Intent ② Key Technical Concepts ③ Files and Code Sections ④ Errors and fixes ⑤ Problem Solving ⑥ All user messages ⑦ Pending Tasks ⑧ Current Work ⑨ Optional Next Step。
 
 为什么是这 9 段？**因为这是 Claude Code 的开源原型**（HarWork 完整复刻并适配）——这套结构经过 Anthropic 团队在自己产品里跑了上万次对话验证，对「续写代码任务」的语义保留最好。
 

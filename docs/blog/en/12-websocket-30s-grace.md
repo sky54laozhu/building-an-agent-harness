@@ -271,7 +271,7 @@ The most counterintuitive engineering detail: **EventBuffer is a ring buffer, no
 > [!WARNING]
 > **Pitfall 1 — Assuming the front-end `lastEventId` accurately reflects what the client has seen.**
 >
-> `use-websocket.ts:115` updates `lastEventIdRef` inside `onmessage` — but React state hasn't updated, UI hasn't rendered. **If the client crashes between these** (onmessage ran, but OOM'd before React rendered), lastEventId has advanced but the user UI is still old. On reconnect, the client says "I saw X," the server believes it and doesn't send X again — **the user actually didn't see it**. HarWork's compromise: trust lastEventId first, manual refresh pulls conversation history (Part 10 path) when there's a UI discrepancy. The perfect solution is both sides report lastEventId and take the min, but it's complex and low-yield.
+> `use-websocket.ts:116` updates `lastEventIdRef` inside `onmessage` — but React state hasn't updated, UI hasn't rendered. **If the client crashes between these** (onmessage ran, but OOM'd before React rendered), lastEventId has advanced but the user UI is still old. On reconnect, the client says "I saw X," the server believes it and doesn't send X again — **the user actually didn't see it**. HarWork's compromise: trust lastEventId first, manual refresh pulls conversation history (Part 10 path) when there's a UI discrepancy. The perfect solution is both sides report lastEventId and take the min, but it's complex and low-yield.
 
 > [!WARNING]
 > **Pitfall 2 — MAX_RECONNECT_ATTEMPTS=10, max delay 16s.**

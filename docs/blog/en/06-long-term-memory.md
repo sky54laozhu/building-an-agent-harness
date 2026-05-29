@@ -75,7 +75,7 @@ This sentence matters — it elevates CLAUDE.md priority **above the default sys
 
 ### Path 2: File memory — model writes, module reads
 
-The `memory-files.ts` module is **read-only** (the source comment at L4 is explicit: "Writing is done by the model via the Write tool — this module is read-only"). How does the model write? Through the system prompt instructions in `prompts.ts:191-206`:
+The `memory-files.ts` module is **read-only** (the source comment at L5 is explicit: "Writing is done by the model via the Write tool — this module is read-only"). How does the model write? Through the system prompt instructions in `prompts.ts:191-206`:
 
 ```typescript
 // prompts.ts:191-206 the built-in "Memory management" instructions (abbrev.):

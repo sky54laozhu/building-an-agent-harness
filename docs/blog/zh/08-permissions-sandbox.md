@@ -119,7 +119,7 @@ return { allowed: true }
 
 **注意 yolo 检查的位置**——它在 bypassImmune 之后、PROTECTED 之前。`.git/` 在 yolo 也拦，`.env` 在 yolo 可以写。这条不对称设计的语义是："yolo 是相信用户，不是禁用安全"——core security invariants 永远不让步。
 
-`edit.ts:56-63` 和 `notebook-edit.ts:122-130` 完全相同的结构——三个工具共享同一个 `path-guard` 模块，**不重写**。
+`edit.ts:56-63` 和 `notebook-edit.ts:124-131` 完全相同的结构——三个工具共享同一个 `path-guard` 模块，**不重写**。
 
 ### Layer 3：Docker / K8s 沙箱 —— 内核级隔离
 

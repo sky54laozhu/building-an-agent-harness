@@ -75,7 +75,7 @@ Loop 顶端在 `loop.ts:47-70` 把这三条全部 load 完，然后塞进 `build
 
 ### 路径 2：文件 memory —— 模型写、模块读
 
-`memory-files.ts` 这个模块**只读**（源码 L4 注释明确："Writing is done by the model via the Write tool — this module is read-only.")。模型怎么写？通过 `prompts.ts:191-206` 注入的 system prompt 指令：
+`memory-files.ts` 这个模块**只读**（源码 L5 注释明确："Writing is done by the model via the Write tool — this module is read-only.")。模型怎么写？通过 `prompts.ts:191-206` 注入的 system prompt 指令：
 
 ```typescript
 // prompts.ts:191-206 内置 "Memory management" 指令（摘要）：

@@ -147,6 +147,7 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   'gpt-4o':      { inputPer1M: 2.50, outputPer1M: 10 },
   'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.60 },
   'zhipu:glm-4.7':   { inputPer1M: 0.69, outputPer1M: 0.69 },
+  'zhipu:glm-5':     { inputPer1M: 1.39, outputPer1M: 1.39 },
   'deepseek:v4-pro': { inputPer1M: 0.28, outputPer1M: 1.11 },
   'qwen:qwen-plus':  { inputPer1M: 0.11, outputPer1M: 0.56 },
   'qwen:qwen-max':   { inputPer1M: 1.39, outputPer1M: 5.56 },

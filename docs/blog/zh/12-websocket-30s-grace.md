@@ -271,7 +271,7 @@ session.clearEventBuffer()                        // ← pause 容器的同时�
 > [!WARNING]
 > **坑 1 —— 以为前端 `lastEventId` 准确反映 client 看到的状态。**
 >
-> `use-websocket.ts:115` 在 `onmessage` 里更新 `lastEventIdRef`——但 React state 还没更新、UI 还没渲染。**如果 client 中间崩了**（onmessage 走完但 React 渲染前 OOM），lastEventId 已经更新但用户看到的 UI 是旧的，重连时 client 说"我看到了 X"server 信以为真不再发 X——**用户其实没看到**。HarWork 的折中：先信 lastEventId、显示有冲突时手动 refresh 拉 conversation history（第 10 篇路径）。完美的方案是双方各报 lastEventId 取小，但实现复杂收益小。
+> `use-websocket.ts:116` 在 `onmessage` 里更新 `lastEventIdRef`——但 React state 还没更新、UI 还没渲染。**如果 client 中间崩了**（onmessage 走完但 React 渲染前 OOM），lastEventId 已经更新但用户看到的 UI 是旧的，重连时 client 说"我看到了 X"server 信以为真不再发 X——**用户其实没看到**。HarWork 的折中：先信 lastEventId、显示有冲突时手动 refresh 拉 conversation history（第 10 篇路径）。完美的方案是双方各报 lastEventId 取小，但实现复杂收益小。
 
 > [!WARNING]
 > **坑 2 —— MAX_RECONNECT_ATTEMPTS=10、最大 delay 16s。**

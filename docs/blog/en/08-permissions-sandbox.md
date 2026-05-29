@@ -119,7 +119,7 @@ return { allowed: true }
 
 **Note where the yolo check lives** — between bypassImmune and PROTECTED. `.git/` is blocked even in yolo; `.env` is allowed in yolo. That asymmetric design encodes a semantic: **"yolo means trust the user, not disable security"** — core security invariants never relax.
 
-`edit.ts:56-63` and `notebook-edit.ts:122-130` have the exact same structure — three tools share one `path-guard` module, **never duplicate**.
+`edit.ts:56-63` and `notebook-edit.ts:124-131` have the exact same structure — three tools share one `path-guard` module, **never duplicate**.
 
 ### Layer 3: Docker / K8s sandbox — kernel-level isolation
 
