@@ -1,3 +1,17 @@
+<p align="center">
+  <a href="https://sky54laozhu.github.io/building-an-agent-harness/">
+    <img src="./og-cover.png" alt="Building an Agent Harness — 49 天,一个人造了一个生产级 AI Agent Harness" width="820">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://sky54laozhu.github.io/building-an-agent-harness/"><b>🔗 在线主页 / Live site</b></a>
+  &nbsp;·&nbsp;
+  <a href="./docs/blog/reading-map.md"><b>📖 阅读地图 / Reading map</b></a>
+  &nbsp;·&nbsp;
+  <a href="http://47.107.103.144/"><b>⚙️ HarWork demo</b></a>
+</p>
+
 # Building an Agent Harness
 
 > An 18-article bilingual deep dive on the engineering behind a production-grade AI Agent Harness, drawn from HarWork — a solo-built platform shipped in 49 days.
