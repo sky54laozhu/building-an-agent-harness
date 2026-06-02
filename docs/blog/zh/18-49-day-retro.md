@@ -168,7 +168,7 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 - GitHub: [sky54laozhu/building-an-agent-harness](https://github.com/sky54laozhu/building-an-agent-harness)（这套博客的源仓库）
 - HarWork 产品（在线体验）：http://47.107.103.144/
-- 邮件：sky54laozhu@163.com（不放微信 / 微信群）
+- 邮件：sky54laozhu@163.com / sky54laozhu@gmail.com（不放微信 / 微信群）
 
 ## 配图
 

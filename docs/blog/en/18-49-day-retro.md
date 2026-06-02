@@ -168,7 +168,7 @@ Most counter-intuitive engineering conclusion: **all 4 things done right were Da
 
 - GitHub: [sky54laozhu/building-an-agent-harness](https://github.com/sky54laozhu/building-an-agent-harness) (source of this blog series)
 - HarWork product (live demo): http://47.107.103.144/
-- Email: sky54laozhu@163.com (no WeChat / WeChat groups)
+- Email: sky54laozhu@163.com / sky54laozhu@gmail.com (no WeChat / WeChat groups)
 
 ## Diagrams
 
