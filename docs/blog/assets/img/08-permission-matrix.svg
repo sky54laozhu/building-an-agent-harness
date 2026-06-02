@@ -5,6 +5,7 @@
   <style>
     .header { font-weight: 700; font-size: 12px; }
     .label { fill: #1a1a1a; font-size: 11px; }
+    .on-dark { fill: #fff; }
     .label-sm { fill: #1a1a1a; font-size: 10px; }
     .label-mono-sm { fill: #1a1a1a; font-size: 9.5px; font-family: 'SF Mono', Consolas, monospace; }
     .note { fill: #5a5a5a; font-size: 10px; font-style: italic; }
@@ -62,14 +63,14 @@
   <text x="405" y="160" text-anchor="middle" class="label" font-weight="600" fill="#7f1d1d">hard-deny</text>
 
   <rect x="465" y="125" width="120" height="60" class="cell-deny-immune"/>
-  <text x="525" y="155" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="525" y="155" text-anchor="middle" class="label on-dark" font-weight="600">hard-deny</text>
   <text x="525" y="172" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
 
   <rect x="585" y="125" width="120" height="60" class="cell-deny"/>
   <text x="645" y="160" text-anchor="middle" class="label" font-weight="600" fill="#7f1d1d">hard-deny</text>
 
   <rect x="705" y="125" width="120" height="60" class="cell-deny-immune"/>
-  <text x="765" y="155" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="765" y="155" text-anchor="middle" class="label on-dark" font-weight="600">hard-deny</text>
   <text x="765" y="172" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
 
   <!-- Row 2: normal -->
@@ -87,14 +88,14 @@
   <text x="405" y="220" text-anchor="middle" class="label" font-weight="600" fill="#78350f">提示</text>
 
   <rect x="465" y="185" width="120" height="60" class="cell-deny-immune"/>
-  <text x="525" y="215" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="525" y="215" text-anchor="middle" class="label on-dark" font-weight="600">hard-deny</text>
   <text x="525" y="232" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
 
   <rect x="585" y="185" width="120" height="60" class="cell-prompt"/>
   <text x="645" y="220" text-anchor="middle" class="label" font-weight="600" fill="#78350f">提示</text>
 
   <rect x="705" y="185" width="120" height="60" class="cell-deny-immune"/>
-  <text x="765" y="215" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="765" y="215" text-anchor="middle" class="label on-dark" font-weight="600">hard-deny</text>
   <text x="765" y="232" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
 
   <!-- Row 3: yolo -->
@@ -112,14 +113,14 @@
   <text x="405" y="280" text-anchor="middle" class="label" font-weight="600" fill="#065f46">自动</text>
 
   <rect x="465" y="245" width="120" height="60" class="cell-deny-immune"/>
-  <text x="525" y="275" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="525" y="275" text-anchor="middle" class="label on-dark" font-weight="600">hard-deny</text>
   <text x="525" y="292" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
 
   <rect x="585" y="245" width="120" height="60" class="cell-auto"/>
   <text x="645" y="280" text-anchor="middle" class="label" font-weight="600" fill="#065f46">自动</text>
 
   <rect x="705" y="245" width="120" height="60" class="cell-deny-immune"/>
-  <text x="765" y="275" text-anchor="middle" class="label" font-weight="600" fill="#fff">hard-deny</text>
+  <text x="765" y="275" text-anchor="middle" class="label on-dark" font-weight="600">hard-deny</text>
   <text x="765" y="292" text-anchor="middle" class="label-sm" fill="#fff">bypassImmune</text>
 
   <!-- bypassImmune highlight -->
