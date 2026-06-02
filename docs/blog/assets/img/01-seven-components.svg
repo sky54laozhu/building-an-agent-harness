@@ -5,6 +5,7 @@
   <style>
     .label { fill: #1a1a1a; text-anchor: middle; font-weight: 500; }
     .on-dark { fill: #fff; }
+    .label-tight { font-size: 11.5px; }
     .sub { fill: #5a5a5a; text-anchor: middle; font-size: 12px; }
     .sub-on-ring { fill: #1a1a1a; text-anchor: middle; font-size: 12px; }
     .center { fill: #1a2233; }
@@ -16,19 +17,19 @@
 
   <!-- Session & Streaming -->
   <circle cx="360" cy="360" r="290" fill="#dde9ff" stroke="#1a2233" stroke-width="1.5"/>
-  <text x="360" y="92" class="label">Session &amp; Streaming（断线续传 · 多模型路由）</text>
+  <text x="360" y="92" class="label label-tight">Session &amp; Streaming（断线续传 · 多模型路由）</text>
 
   <!-- Sandbox & Security -->
   <circle cx="360" cy="360" r="240" fill="#c9ddff" stroke="#1a2233" stroke-width="1.5"/>
-  <text x="360" y="144" class="label">Sandbox &amp; Security（沙箱 · 路径守卫 · 审批）</text>
+  <text x="360" y="144" class="label label-tight">Sandbox &amp; Security（沙箱 · 路径守卫 · 审批）</text>
 
   <!-- Extension Points -->
   <circle cx="360" cy="360" r="190" fill="#b3d0ff" stroke="#1a2233" stroke-width="1.5"/>
-  <text x="360" y="196" class="label">Extension Points（Hook · Skill · Plugin · MCP）</text>
+  <text x="360" y="196" class="label label-tight">Extension Points（Hook · Skill · Plugin · MCP）</text>
 
   <!-- Tool Protocol -->
   <circle cx="360" cy="360" r="150" fill="#9cc3ff" stroke="#1a2233" stroke-width="1.5"/>
-  <text x="360" y="240" class="label">Tool Protocol（发现 · 调用 · 中断）</text>
+  <text x="360" y="240" class="label label-tight">Tool Protocol（发现 · 调用 · 中断）</text>
 
   <!-- Context Engine -->
   <circle cx="360" cy="360" r="110" fill="#7ab2ff" stroke="#1a2233" stroke-width="1.5"/>
