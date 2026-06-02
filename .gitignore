@@ -20,3 +20,6 @@ yarn-error.log*
 dist/
 *.log
 *.tmp
+
+# Playwright MCP scratch (screenshots / console dumps)
+.playwright-mcp/

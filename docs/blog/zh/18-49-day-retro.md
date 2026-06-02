@@ -161,14 +161,14 @@ canonical: https://github.com/sky54laozhu/building-an-agent-harness/blob/master/
 
 - **Anthropic Claude Code 团队** —— 把 agent harness 工程范式公开化了
 - **Cursor / Aider / Continue.dev 团队** —— 让"AI 协助开发"成为日常
-- **Drizzle / Next.js / Drizzle / shadcn/ui** —— 让一人也能造产品级 UI
+- **Drizzle / Next.js / shadcn/ui** —— 让一人也能造产品级 UI
 - **中文工程社区**（V2EX / 即刻 / Twitter 中文圈）—— 早期反馈与批评
 
 ### ⑤ 联系方式
 
 - GitHub: [sky54laozhu/building-an-agent-harness](https://github.com/sky54laozhu/building-an-agent-harness)（这套博客的源仓库）
-- HarWork 产品（待开放注册）：占位待补
-- 邮件 / Twitter：占位待补（不放微信 / 微信群）
+- HarWork 产品（在线体验）：http://47.107.103.144/
+- 邮件：sky54laozhu@163.com（不放微信 / 微信群）
 
 ## 配图
 

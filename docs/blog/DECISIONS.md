@@ -1,6 +1,6 @@
 # Building an Agent Harness
 
-> HarWork 工程拆解博客系列 · Bilingual deep-dive into building a production-grade Agent Harness · 19 篇 · 中文 + English
+> HarWork 工程拆解博客系列 · Bilingual deep-dive into building a production-grade Agent Harness · 18 篇 · 中文 + English
 
 ## 仓库托管决策
 

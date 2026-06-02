@@ -115,7 +115,7 @@ Loop 本体就 20 行。但要让这 20 行"在断线时能续上、在工具卡
 | 沙箱 | OS 进程 | 编辑器进程 | Git 工作树 | Per-User 持久 Docker |
 | 扩展点 | Hook + Skill + Plugin + MCP | 编辑器内 | 命令行参数 | Hook + Skill + Plugin |
 
-看起来差异很大，但**底层都在解 7 个组件这同一道题**——只是各自的优先级不一样：Cursor 把交互体验推到前台，Aider 把 Git 集成做得最干净，Claude Code 把可扩展性做得最深，HarWork 则把"单人/小团队也能撑起企业级 DevOps"作为出发点（这部分要到第 16-19 篇才展开）。
+看起来差异很大，但**底层都在解 7 个组件这同一道题**——只是各自的优先级不一样：Cursor 把交互体验推到前台，Aider 把 Git 集成做得最干净，Claude Code 把可扩展性做得最深，HarWork 则把"单人/小团队也能撑起企业级 DevOps"作为出发点（这部分要到第 17 篇才展开）。
 
 如果你想自己读源码验证这一点，HarWork 项目内部的 `docs/claude-code-analysis/` 目录有 16 篇 Claude Code 源码逆向笔记，覆盖了 Agent Loop、上下文压缩、权限系统、Hook 系统、Skill/Plugin 等核心模块——本系列后面会逐一展开。
 
@@ -146,7 +146,7 @@ Loop 本体就 20 行。但要让这 20 行"在断线时能续上、在工具卡
 
 反过来，你给 Harness 换一个更强的 LLM，大概率只能解决 5% 的 bug；你把 Harness 的工具协议从 sync 改成 async streaming，往往一次性解决 30% 的 bug。这就是为什么 Cursor、Aider、Claude Code 即便共用同一批 Claude 模型，产品形态却完全不同——壳的差异决定了上限。
 
-这就是为什么本系列 19 篇里，真正讲"怎么调 LLM"的只有 1-2 篇，剩下的 17 篇全在讲循环、上下文、工具、沙箱、流式、会话、可观测、DevOps——**这才是 Harness 的本体**。
+这就是为什么本系列 18 篇里，真正讲"怎么调 LLM"的只有 1-2 篇，剩下的 16 篇全在讲循环、上下文、工具、沙箱、流式、会话、可观测、DevOps——**这才是 Harness 的本体**。
 
 ## 什么时候才该自建 Harness
 

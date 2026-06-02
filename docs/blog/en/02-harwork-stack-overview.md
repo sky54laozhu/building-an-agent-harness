@@ -128,16 +128,16 @@ You now have the whiteboard-sized big picture. Two paths through the next 17 art
 - Volume III: Tools & Extensions (Parts 06–08 — Tool / Skill / Hook)
 - Volume IV: Sandbox & Security (Parts 09–11 — per-user Docker / 138 rules / path guards)
 - Volume V: Session & Streaming (Parts 12–13 — reconnect grace / multi-model routing)
-- Volume VI: Design Collaboration (Parts 14–15 — HarWork's design-mode specifics)
-- Volume VII: DevOps (Parts 16–19 — from cloc to canary, end-to-end)
+- Volume VI: Design Collaboration (Parts 14–16 — HarWork's design-mode specifics)
+- Volume VII: DevOps (Parts 17–18 — from cloc to canary, end-to-end)
 
 **Targeted path** (jump straight to your sore point):
 - Worried about **reconnect resume**? → Part 12 (Vol V)
-- Worried about **blocking `rm -rf`**? → Part 10 (Vol IV)
+- Worried about **blocking `rm -rf`**? → Part 08 (Vol IV)
 - Worried about **community-extensible tools**? → Part 07 (Vol III)
 - Worried about **production deployment**? → Part 17 (Vol VII)
 
-> Note **layer ≠ article**. The 16 layers are the technical dependency view; the 19 articles are the reader-experience view. A single layer can split into 2–3 articles (the security layer = static analysis + path guards + approval flow, three articles). A single article can span multiple layers (the design-collab article spans Hook + Skill + UI). So "look at the big picture first, then choose how to read" beats "read in numerical order."
+> Note **layer ≠ article**. The 16 layers are the technical dependency view; the 18 articles are the reader-experience view. A single layer can split into 2–3 articles (the security layer = static analysis + path guards + approval flow, three articles). A single article can span multiple layers (the design-collab article spans Hook + Skill + UI). So "look at the big picture first, then choose how to read" beats "read in numerical order."
 
 ## Figures
 

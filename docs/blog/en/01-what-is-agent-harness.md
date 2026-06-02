@@ -146,7 +146,7 @@ Now a counter-example. Aider author Paul Gauthier ran a benchmark: asking LLMs t
 
 In the other direction: swap a more powerful LLM into the harness and you'll typically fix 5% of bugs; convert your tool protocol from sync to async streaming and you'll fix 30% in one shot. This is why Cursor, Aider, and Claude Code can all share the same Claude models and still feel completely different products — the shell sets the ceiling.
 
-That's why across the 19 articles in this series, only 1-2 are about "how to call the LLM." The other 17 are about loops, context, tools, sandboxes, streaming, sessions, observability, and DevOps — **which is the actual body of the harness**.
+That's why across the 18 articles in this series, only 1-2 are about "how to call the LLM." The other 16 are about loops, context, tools, sandboxes, streaming, sessions, observability, and DevOps — **which is the actual body of the harness**.
 
 ## When Should You Build Your Own Harness?
 
