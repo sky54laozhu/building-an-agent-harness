@@ -63,6 +63,16 @@
   .btn.ghost{border:1px solid var(--line); color:var(--fg)}
   .btn.ghost:hover{border-color:var(--accent); text-decoration:none}
 
+  /* Hero 两栏 + 终端窗口 */
+  .hero-grid{display:grid; grid-template-columns:1fr; gap:34px}
+  @media(min-width:900px){ .hero-grid{grid-template-columns:1.05fr .95fr; align-items:center; gap:46px} }
+  .term{background:#0f1115; border:1px solid var(--line); border-radius:14px; overflow:hidden; box-shadow:0 30px 70px -28px rgba(0,0,0,.85)}
+  .term .bar{display:flex; gap:7px; padding:12px 14px; background:#15171c; border-bottom:1px solid var(--line)}
+  .term .bar i{width:11px; height:11px; border-radius:50%}
+  .term .bar .r{background:#ff5f56}.term .bar .y{background:#febc2e}.term .bar .g{background:#28c840}
+  .term pre{margin:0; padding:18px; font:13.5px/1.95 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; overflow-x:auto}
+  .term .p{color:var(--muted)} .term .c{color:#e7e9ee} .term .ok{color:var(--accent-2)} .term .b{color:var(--accent)}
+
   /* 数据条 */
   .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin:40px 0 8px}
   .stat{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 12px; text-align:center}
@@ -105,25 +115,41 @@
 
 <!-- ===================== HERO ===================== -->
 <div class="hero">
-  <div class="wrap">
-    <h1>
-      <span class="lang-zh">我用 49 天,一个人造了一个<span class="accent">生产级 AI Agent Harness</span>。</span>
-      <span class="lang-en">In 49 days, solo, I built a <span class="accent">production-grade AI Agent Harness</span>.</span>
-    </h1>
-    <p class="lede">
-      <span class="lang-zh">同样调 Claude API,为什么 Claude Code、Cursor 各有各的手感?差异在 LLM 外面那层"壳"。我把这层壳从零造了出来(HarWork),并写成了 18 篇双语工程拆解 —— 每一处架构决策都有真实代码与数字支撑。现承接 <b>Agent 基础设施 / LLM 应用工程</b> 的咨询与开发。</span>
-      <span class="lang-en">Same Claude API — yet Claude Code, Cursor, Aider all feel different. The difference is the engineering shell around the LLM. I built that shell from scratch (HarWork) and documented it in 18 bilingual deep-dives, every decision backed by real code and numbers. Available for <b>agent-infrastructure / LLM-application</b> consulting & build work.</span>
-    </p>
-    <div class="cta-row">
-      <a class="btn primary" href="mailto:sky54laozhu@gmail.com?subject=Agent%20%2F%20LLM%20%E5%B7%A5%E7%A8%8B%E5%92%A8%E8%AF%A2">
-        <span class="lang-zh">→ 聊聊你的项目</span><span class="lang-en">→ Discuss your project</span>
-      </a>
-      <a class="btn ghost" href="#series">
-        <span class="lang-zh">读 18 篇拆解</span><span class="lang-en">Read the 18-part series</span>
-      </a>
-      <a class="btn ghost" href="https://github.com/sky54laozhu/building-an-agent-harness" target="_blank" rel="noopener">GitHub</a>
+  <div class="wrap hero-grid">
+    <div class="hero-main">
+      <h1>
+        <span class="lang-zh">我用 49 天,一个人造了一个<span class="accent">生产级 AI Agent Harness</span>。</span>
+        <span class="lang-en">In 49 days, solo, I built a <span class="accent">production-grade AI Agent Harness</span>.</span>
+      </h1>
+      <p class="lede">
+        <span class="lang-zh">同样调 Claude API,为什么 Claude Code、Cursor 各有各的手感?差异在 LLM 外面那层"壳"。我把这层壳从零造了出来(HarWork),并写成了 18 篇双语工程拆解 —— 每一处架构决策都有真实代码与数字支撑。现承接 <b>Agent 基础设施 / LLM 应用工程</b> 的咨询与开发。</span>
+        <span class="lang-en">Same Claude API — yet Claude Code, Cursor, Aider all feel different. The difference is the engineering shell around the LLM. I built that shell from scratch (HarWork) and documented it in 18 bilingual deep-dives, every decision backed by real code and numbers. Available for <b>agent-infrastructure / LLM-application</b> consulting & build work.</span>
+      </p>
+      <div class="cta-row">
+        <a class="btn primary" href="mailto:sky54laozhu@gmail.com?subject=Agent%20%2F%20LLM%20%E5%B7%A5%E7%A8%8B%E5%92%A8%E8%AF%A2">
+          <span class="lang-zh">→ 聊聊你的项目</span><span class="lang-en">→ Discuss your project</span>
+        </a>
+        <a class="btn ghost" href="#series">
+          <span class="lang-zh">读 18 篇拆解</span><span class="lang-en">Read the 18-part series</span>
+        </a>
+        <a class="btn ghost" href="https://github.com/sky54laozhu/building-an-agent-harness" target="_blank" rel="noopener">GitHub</a>
+      </div>
     </div>
 
+    <div class="term" aria-hidden="true">
+      <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i></div>
+<pre><span class="p">$</span> <span class="c">claude --version</span>
+Claude Code v1.0.33
+<span class="p">$</span> <span class="c">harwork serve --model glm-4.7</span>
+<span class="ok">✓</span> gateway up · <span class="b">195</span> skills loaded
+<span class="p">$</span> <span class="c">mcp list-servers</span>
+<span class="b">3</span> servers connected
+<span class="p">$</span> <span class="c">agent run "ship the feature"</span>
+<span class="ok">▸</span> plan · edit · test <span class="ok">✓</span></pre>
+    </div>
+  </div>
+
+  <div class="wrap">
     <div class="stats">
       <div class="stat"><b>49</b><span class="lang-zh">天独立开发</span><span class="lang-en">days, solo</span></div>
       <div class="stat"><b>287</b><span>commits</span></div>
