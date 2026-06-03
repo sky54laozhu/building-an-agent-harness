@@ -68,6 +68,12 @@ Dual-licensed — see [LICENSE](./LICENSE) for the full text.
 - **Content** (`docs/`, README): [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) — free to share & adapt with attribution; derivatives must use the same license.
 - **Tooling** (`scripts/`, `.github/`): [MIT](https://opensource.org/licenses/MIT) — use freely with attribution.
 
+## Disclaimer · 版权与原创声明
+
+This series analyzes the **publicly observable behavior and architecture** of AI coding tools (including Claude Code) for educational purposes. All code shown is **HarWork's own independent implementation** — a clean-room reconstruction based on public information and observable behavior. It does **not** reproduce, redistribute, or quote Anthropic's source code. Claude Code, Anthropic, and other names are property of their respective owners; the engineering ideas, interfaces, and protocols discussed are not copyrightable subject matter (17 U.S.C. §102(b)).
+
+本系列出于学习目的,分析 AI 编程工具(含 Claude Code)的**可观测行为与架构设计**。文中所有代码均为 **HarWork 自身的独立实现**——基于公开信息与可观测行为的 clean-room(净室)重建,**不复制、不转载、不摘录** Anthropic 的源代码。Claude Code、Anthropic 及其它名称归各自所有者所有;所讨论的工程思想、接口与协议不属于版权保护对象。
+
 ---
 
 🔗 中文读者：[阅读地图](./docs/blog/reading-map.md) · [seo-matrix.md](./docs/blog/seo-matrix.md) 含全部中英关键词映射。
